@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>API Catalog Editor — Integration COE</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Shared constants ── */
+  :root {
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --accent3: #22d3ee;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+  /* ── Dark theme (default) ── */
+  html, html[data-theme="dark"] {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --surface3: #1f2d45;
+    --border: #243352;
+    --border-bright: #2e4070;
+    --muted: #94a3b8;
+    --muted2: #64748b;
+    --text: #e2e8f0;
+    --text-dim: #cbd5e1;
+    --header-bg: linear-gradient(135deg, #0d1526 0%, #111f38 60%, #0b1829 100%);
+  }
+  /* ── Light theme ── */
+  html[data-theme="light"] {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #e2e8f0;
+    --border: #cbd5e1;
+    --border-bright: #94a3b8;
+    --muted: #475569;
+    --muted2: #64748b;
+    --text: #0f172a;
+    --text-dim: #1e293b;
+    --header-bg: linear-gradient(135deg, #1e3a5f 0%, #1e40af 60%, #1e3a5f 100%);
+  }
+  /* smooth transition */
+  *, *::before, *::after { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-body); font-size: 14px; min-height: 100vh; }
+  /* ── CoE Tabs ── */
+  .coe-tabs { display: flex; gap: 0; margin-bottom: 0; border-bottom: 2px solid var(--border); }
+  .coe-tab {
+    font-family: var(--font-body); font-size: 12px; font-weight: 600;
+    padding: 9px 18px; cursor: pointer; border: none;
+    background: transparent; color: var(--muted2);
+    border-bottom: 2px solid transparent; margin-bottom: -2px;
+    display: flex; align-items: center; gap: 7px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .coe-tab:hover { color: var(--text); }
+  .coe-tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .coe-tab .coe-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .coe-tab-security .coe-dot  { background: var(--danger); }
+  .coe-tab-design .coe-dot    { background: var(--accent2); }
+  .coe-tab-ops .coe-dot       { background: var(--success); }
+  .coe-panel { display: none; }
+  .coe-panel.active { display: block; }
+  .coe-section-wrap {
+    border: 1px solid var(--border); border-top: none;
+    border-radius: 0 0 var(--radius) var(--radius);
+    padding: 20px; margin-bottom: 28px;
+    background: var(--surface2);
+  }
+  .coe-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.5px;
+    padding: 3px 8px; border-radius: 3px; border: 1px solid; margin-bottom: 14px;
+  }
+  .badge-security { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: var(--danger); }
+  .badge-design   { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); color: var(--accent2); }
+  .badge-ops      { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.3); color: var(--success); }
+
+  /* dep rows */
+  .dep-row { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; }
+  .dep-row-top { display: grid; grid-template-columns: 1fr 130px; gap: 8px; margin-bottom: 8px; }
+  .dep-row-mid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; align-items: flex-start; }
+  .dep-row-mid .field { flex: 1; min-width: 140px; }
+  .dep-remove { background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted2); padding: 4px 9px; cursor: pointer; font-size: 12px; margin-top: 2px; }
+  .dep-remove:hover { border-color: var(--danger); color: var(--danger); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+  header {
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-bright);
+    padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; position: sticky; top: 0; z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-mark { width: 36px; height: 36px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; font-size: 14px; color: #fff; }
+  .logo-text { font-family: var(--font-display); font-weight: 700; font-size: 16px; }
+  .logo-sub { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); letter-spacing: 1px; text-transform: uppercase; }
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 500; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; text-decoration: none; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border-bright); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff; }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { opacity: 0.88; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { opacity: 0.88; }
+  .btn-warn { background: #f59e0b; color: #000; font-weight: 600; }
+  .btn-warn:hover { background: #d97706; opacity: 1; }
+  .btn-warn:hover { opacity: 0.88; }
+  .header-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  .app-shell { display: flex; min-height: calc(100vh - 64px); }
+  .sidebar { width: 280px; min-width: 280px; background: var(--surface); border-right: 1px solid var(--border); position: sticky; top: 64px; height: calc(100vh - 64px); overflow-y: auto; display: flex; flex-direction: column; }
+  .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .sidebar-title { font-family: var(--font-display); font-size: 13px; font-weight: 700; }
+  .api-list { flex: 1; overflow-y: auto; }
+  .api-list-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .api-list-item:hover { background: var(--surface2); }
+  .api-list-item.active { background: rgba(59,130,246,0.1); border-left: 3px solid var(--accent); }
+  .api-list-item.new-item { background: rgba(16,185,129,0.08); border-left: 3px solid var(--success); }
+  .item-layer-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .dot-EAPI { background: var(--accent3); }
+  .dot-PAPI { background: var(--accent2); }
+  .dot-SAPI { background: var(--accent); }
+  .item-name { font-size: 12.5px; font-weight: 600; line-height: 1.3; }
+  .item-meta { font-family: var(--font-mono); font-size: 9px; color: var(--muted2); margin-top: 2px; }
+  .item-unsaved { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); margin-left: 6px; }
+
+  main { flex: 1; padding: 28px 36px; max-width: 860px; }
+  .editor-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .editor-sub { font-family: var(--font-mono); font-size: 11px; color: var(--muted2); margin-bottom: 28px; }
+
+  .form-section { margin-bottom: 28px; }
+  .form-section-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .form-grid.cols-1 { grid-template-columns: 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: 0.3px; }
+  label .req { color: var(--danger); margin-left: 2px; }
+  input, select, textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    transition: border 0.15s;
+    width: 100%;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input::placeholder { color: var(--muted2); }
+  textarea { resize: vertical; min-height: 80px; font-size: 12.5px; line-height: 1.6; }
+  select option { background: var(--surface2); }
+  .field-hint { font-size: 10px; color: var(--muted2); margin-top: 2px; }
+
+  /* Multi-value tag inputs */
+  .tag-input-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 8px;
+    display: flex; flex-wrap: wrap; gap: 5px; align-items: center;
+    min-height: 42px;
+    cursor: text;
+    transition: border 0.15s;
+  }
+  .tag-input-wrap:focus-within { border-color: var(--accent); }
+  .tag-input-wrap .tag {
+    background: var(--surface3);
+    border: 1px solid var(--border-bright);
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tag-input-wrap .tag .remove { cursor: pointer; color: var(--muted2); font-size: 11px; line-height: 1; }
+  .tag-input-wrap .tag .remove:hover { color: var(--danger); }
+  .tag-input-wrap input {
+    background: transparent; border: none; padding: 3px 4px;
+    font-size: 12px; flex: 1; min-width: 80px; outline: none;
+  }
+
+  /* Link list inputs */
+  .link-list { display: flex; flex-direction: column; gap: 8px; }
+  .link-row { display: flex; gap: 8px; align-items: center; }
+  .link-row input { flex: 1; }
+  .link-row .link-label-input { max-width: 160px; }
+  .link-row .remove-link { background: transparent; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--muted2); padding: 7px 10px; cursor: pointer; font-size: 13px; flex-shrink: 0; }
+  .link-row .remove-link:hover { border-color: var(--danger); color: var(--danger); }
+  .add-link-btn { font-size: 12px; color: var(--accent); background: transparent; border: 1px dashed var(--border-bright); border-radius: var(--radius-sm); padding: 7px 12px; cursor: pointer; transition: all 0.12s; margin-top: 4px; }
+  .add-link-btn:hover { background: rgba(59,130,246,0.08); border-color: var(--accent); }
+
+  /* Notes list */
+  .notes-list { display: flex; flex-direction: column; gap: 8px; }
+  .note-row { display: flex; gap: 8px; align-items: flex-start; }
+  .note-row textarea { min-height: 60px; flex: 1; }
+  .note-row .remove-link { margin-top: 2px; }
+  
+  /* Form actions */
+  .form-actions { display: flex; gap: 10px; align-items: center; padding: 20px 0; border-top: 1px solid var(--border); margin-top: 16px; flex-wrap: wrap; }
+  .unsaved-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); animation: blink 1s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--surface2); border: 1px solid var(--border-bright);
+    border-radius: var(--radius); padding: 12px 18px;
+    font-size: 13px; z-index: 999;
+    display: flex; align-items: center; gap: 10px;
+    transform: translateY(60px); opacity: 0;
+    transition: all 0.25s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+
+  /* Empty state */
+  .empty-editor { text-align: center; padding: 80px 20px; color: var(--muted2); }
+  .empty-editor h2 { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--text-dim); margin-bottom: 8px; }
+
+  /* Delete confirmation */
+  .confirm-modal {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 300;
+    display: none;
+    align-items: center; justify-content: center;
+  }
+  .confirm-modal.open { display: flex; }
+  .confirm-box {
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    max-width: 400px; width: 90%;
+    text-align: center;
+  }
+  .confirm-box h3 { font-family: var(--font-display); font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+  .confirm-box p { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+  .badge { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.5px; padding: 3px 7px; border-radius: 3px; border: 1px solid; }
+  .badge-layer-EAPI { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.3); color: var(--accent3); }
+  .badge-layer-PAPI { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); color: var(--accent2); }
+  .badge-layer-SAPI { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); color: var(--accent); }
+
+  @media (max-width: 800px) {
+    .sidebar { display: none; }
+    main { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="confirm-modal" id="confirmModal">
+  <div class="confirm-box">
+    <h3>⚠ Delete API Entry</h3>
+    <p id="confirmText">Are you sure you want to remove this API from the catalog?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="document.getElementById('confirmModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">∫</div>
+    <div>
+      <div class="logo-text">API Catalog — Editor</div>
+      <div class="logo-sub">Integration COE · MuleSoft Migration</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <label class="btn btn-ghost" style="cursor:pointer;">
+      📂 Load JSON
+      <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
+    </label>
+    <button class="btn btn-warn" onclick="exportJSON()">⬇ Export JSON</button>
+    <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch theme" style="font-size:16px;padding:6px 10px;">🌙</button>
+    <a href="index.html" class="btn btn-ghost">← Back to Catalog</a>
+  </div>
+</header>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <span class="sidebar-title" id="listCount">APIs</span>
+      <button class="btn btn-primary" style="font-size:11px;padding:5px 10px;" onclick="createNew()">+ New</button>
+    </div>
+    <div class="api-list" id="apiList"></div>
+  </aside>
+
+  <main id="editorMain">
+    <div class="empty-editor" id="emptyState">
+      <div style="font-size:48px;margin-bottom:16px;">🗄</div>
+      <h2>Select an API to edit</h2>
+      <p>Choose from the list on the left, or create a new entry.<br/>Load your api-data.json using the button above.</p>
+      <div style="margin-top:24px;">
+        <label class="btn btn-primary" style="cursor:pointer;display:inline-flex;">
+          📂 Load JSON File
+          <input type="file" accept=".json" id="jsonFileInput2" style="display:none"/>
+        </label>
+      </div>
+    </div>
+    <div id="editorForm" style="display:none;"></div>
+  </main>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+let DATA = null;
+let CURRENT_API_ID = null;
+let UNSAVED = false;
+
+// ── File Loading ────────────────────────────
+function setupFileInput(inputId) {
+  document.getElementById(inputId).addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        DATA = JSON.parse(ev.target.result);
+        if (!DATA.apis) DATA.apis = [];
+        if (!DATA.tribes) DATA.tribes = [];
+        if (!DATA.businessCapabilities) DATA.businessCapabilities = [];
+        renderSidebar();
+        showToast('✅ Loaded ' + file.name, 'success');
+      } catch(ex) { showToast('❌ Invalid JSON file', 'error'); }
+    };
+    reader.readAsText(file);
+  });
+}
+setupFileInput('jsonFileInput');
+setupFileInput('jsonFileInput2');
+
+// ── Try auto-load ────────────────────────────
+async function tryAutoLoad() {
+  try {
+    DATA = await fetch('api-data.json').then(r => r.json());
+    if (!DATA.apis) DATA.apis = [];
+    if (!DATA.tribes) DATA.tribes = [];
+    renderSidebar();
+  } catch(e) {
+    DATA = { meta: {}, apis: [], tribes: [], businessCapabilities: [] };
+    renderSidebar();
+  }
+}
+// ── Theme ─────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('coe-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+applyTheme(localStorage.getItem('coe-theme') || 'dark');
+
+tryAutoLoad();
+
+// ── Sidebar ─────────────────────────────────
+function renderSidebar() {
+  const list = document.getElementById('apiList');
+  const apis = DATA.apis || [];
+  document.getElementById('listCount').textContent = `${apis.length} API${apis.length!==1?'s':''}`;
+  list.innerHTML = apis.map(api => {
+    const active = api.id === CURRENT_API_ID;
+    const layerDot = api.layer || 'SAPI';
+    return `<div class="api-list-item ${active?'active':''}" onclick="selectAPI('${api.id}')">
+      <div class="item-layer-dot dot-${layerDot}"></div>
+      <div>
+        <div class="item-name">${api.name || 'Unnamed API'}</div>
+        <div class="item-meta">${api.id} · ${api.layer||'?'} · ${api.version||''}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="padding:20px;color:var(--muted2);font-size:12px;text-align:center;">No APIs loaded</div>';
+}
+
+// ── Select / Edit ────────────────────────────
+function selectAPI(id) {
+  if (UNSAVED) {
+    if (!confirm('You have unsaved changes. Discard them?')) return;
+  }
+  CURRENT_API_ID = id;
+  UNSAVED = false;
+  renderSidebar();
+  renderEditor(DATA.apis.find(a => a.id === id));
+}
+
+function createNew() {
+  if (UNSAVED && !confirm('You have unsaved changes. Discard them?')) return;
+  const newId = 'api-' + String(Date.now()).slice(-6);
+  const newAPI = {
+    id: newId, name: 'New API', version: '1.0.0', type: 'System API', layer: 'SAPI',
+    protocol: 'REST', runtime: 'MuleSoft 4.3', javaVersion: 'Java 8',
+    deploymentModel: 'OnPrem', environments: [], tribeId: '', businessCapability: { l0: '', l1: '', l2: '' },
+    owningSquad: '', applicationContext: '', consumers: [], upstreamSystems: [],
+    status: 'Active', migrationStatus: 'Not Started', migrationComplexity: 'Medium',
+    ramlSpec: '', confluenceLinks: [], designReferences: [], operationalNotes: [],
+    tags: [], lastReviewedBy: '', lastReviewedDate: ''
+  };
+  DATA.apis.push(newAPI);
+  CURRENT_API_ID = newId;
+  UNSAVED = true;
+  renderSidebar();
+  renderEditor(newAPI);
+}
+
+// ── Editor Form ──────────────────────────────
+function renderEditor(api) {
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('editorForm').style.display = 'block';
+  const tribes = DATA.tribes || [];
+  const bizCaps = DATA.businessCapabilities || [];
+
+  // CoE shorthand — ensure sub-objects always exist
+  const sec = api.security       || {};
+  const des = api.solutionDesign || {};
+  const ops = api.operations     || {};
+
+  const tribeOptions = tribes.map(t => `<option value="${t.id}" ${api.tribeId===t.id?'selected':''}>${t.name}</option>`).join('');
+  const l0Options = [...new Set(bizCaps.map(b => b.l0))].map(l0 => `<option value="${l0}" ${api.businessCapability?.l0===l0?'selected':''}>${l0}</option>`).join('');
+
+  document.getElementById('editorForm').innerHTML = `
+    <div class="editor-title">${api.name}</div>
+    <div class="editor-sub">${api.id} · Last saved: in memory until export</div>
+
+    <!-- Core -->
+    <div class="form-section">
+      <div class="form-section-title">Core Identity</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>API ID <span class="req">*</span></label>
+          <input type="text" id="f_id" value="${api.id}" readonly style="opacity:0.6;cursor:not-allowed;"/>
+          <span class="field-hint">Auto-generated. Not editable.</span>
+        </div>
+        <div class="field">
+          <label>API Name <span class="req">*</span></label>
+          <input type="text" id="f_name" value="${esc(api.name)}" placeholder="e.g. Customer Profile API" oninput="markUnsaved()"/>
+		  
+        </div>
+		<div class="field">
+  <label>Code Repo / Asset Name</label>
+  <input type="text" id="f_repoApiName" value="${esc(api.repoApiName)}"
+    placeholder="e.g. jwks-process-api" oninput="markUnsaved()"/>
+  <span class="field-hint">Exact name in Anypoint Exchange / Git repo</span>
+</div>
+        <div class="field">
+          <label>Version</label>
+          <input type="text" id="f_version" value="${esc(api.version)}" placeholder="e.g. 2.3.1" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Layer <span class="req">*</span></label>
+          <input type="text" id="f_layer" value="${esc(api.layer)}" placeholder="EAPI, PAPI, SAPI, EVENT, BATCH…" oninput="markUnsaved()" list="layer_datalist"/>
+          <datalist id="layer_datalist">${(DATA.layerSuggestions||['EAPI','PAPI','SAPI','BATCH','EVENT','UTILITY','FACADE']).map(l=>`<option value="${l}">`).join('')}</datalist>
+          <span class="field-hint">Free text — use standard or define your own layer type</span>
+        </div>
+        <div class="field">
+          <label>Protocol</label>
+          <input type="text" id="f_protocol" value="${esc(api.protocol)}" placeholder="REST, SOAP, Kafka, GraphQL…" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Status</label>
+          <select id="f_status" onchange="markUnsaved()">
+            ${['Active','Deprecated','Review','Inactive'].map(s => `<option ${api.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Infrastructure -->
+    <div class="form-section">
+      <div class="form-section-title">Infrastructure & Deployment</div>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>Runtime</label>
+          <select id="f_runtime" onchange="markUnsaved()">
+            ${['MuleSoft 4.3','MuleSoft 4.9','Spring Boot 2','Spring Boot 3','Other'].map(r => `<option ${api.runtime===r?'selected':''}>${r}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Java Version</label>
+          <select id="f_javaVersion" onchange="markUnsaved()">
+            ${['Java 8','Java 11','Java 17','Java 21'].map(j => `<option ${api.javaVersion===j?'selected':''}>${j}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Deployment Model</label>
+          <select id="f_deploymentModel" onchange="markUnsaved()">
+            ${['OnPrem','AWS','Azure','Hybrid','CloudHub'].map(d => `<option ${api.deploymentModel===d?'selected':''}>${d}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-grid cols-1" style="margin-top:12px;">
+        <div class="field">
+          <label>Environments</label>
+          <div class="tag-input-wrap" id="wrap_environments" onclick="focusTagInput('ti_environments')">
+            <span id="tags_environments"></span>
+            <input id="ti_environments" placeholder="Type env + Enter (DEV, SIT, UAT, PROD)" onkeydown="addTag(event,'environments')"/>
+          </div>
+          <span class="field-hint">Press Enter or comma to add each environment</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ownership -->
+    <div class="form-section">
+      <div class="form-section-title">Ownership (Spotify Model)</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Tribe</label>
+          <select id="f_tribeId" onchange="markUnsaved()">
+            <option value="">-- Unassigned --</option>
+            ${tribeOptions}
+          </select>
+        </div>
+        <div class="field">
+          <label>Squad</label>
+          <input type="text" id="f_owningSquad" value="${esc(api.owningSquad)}" placeholder="e.g. Squad Alpha" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Application Context</label>
+          <input type="text" id="f_applicationContext" value="${esc(api.applicationContext)}" placeholder="e.g. CRM Portal, OMS, PIM" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>RAML / API Spec URL</label>
+          <input type="text" id="f_ramlSpec" value="${esc(api.ramlSpec)}" placeholder="https://anypoint.mulesoft.com/…" oninput="markUnsaved()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business Capability -->
+    <div class="form-section">
+      <div class="form-section-title">Business Capability Mapping</div>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>L0 — Business Domain</label>
+          <input type="text" id="f_biz_l0" value="${esc(api.businessCapability?.l0)}" placeholder="e.g. Commerce" oninput="markUnsaved()" list="l0_datalist"/>
+          <datalist id="l0_datalist">${l0Options}</datalist>
+        </div>
+        <div class="field">
+          <label>L1 — Capability Area</label>
+          <input type="text" id="f_biz_l1" value="${esc(api.businessCapability?.l1)}" placeholder="e.g. Order Management" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>L2 — Capability</label>
+          <input type="text" id="f_biz_l2" value="${esc(api.businessCapability?.l2)}" placeholder="e.g. Order Lifecycle" oninput="markUnsaved()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dependencies -->
+    <div class="form-section">
+      <div class="form-section-title">Integration Dependencies</div>
+      <div style="margin-bottom:16px;">
+        <div class="dep-section-label" style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">CONSUMERS (Downstream)</div>
+        <div class="dep-list" id="consumersList"></div>
+        <button class="add-link-btn" onclick="addDep('consumers')">+ Add Consumer</button>
+      </div>
+      <div>
+        <div class="dep-section-label" style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;">UPSTREAM SYSTEMS</div>
+        <div class="dep-list" id="upstreamList"></div>
+        <button class="add-link-btn" onclick="addDep('upstream')">+ Add Upstream System</button>
+      </div>
+    </div>
+
+    <!-- Migration -->
+    <div class="form-section">
+      <div class="form-section-title">Migration Assessment</div>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>Migration Status</label>
+          <select id="f_migrationStatus" onchange="markUnsaved()">
+            ${['Not Started','In Analysis','In Progress','Blocked','Complete','Decommission Candidate'].map(s => `<option ${api.migrationStatus===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Migration Complexity</label>
+          <select id="f_migrationComplexity" onchange="markUnsaved()">
+            ${['Low','Medium','High'].map(c => `<option ${api.migrationComplexity===c?'selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Tags</label>
+          <div class="tag-input-wrap" id="wrap_tags" onclick="focusTagInput('ti_tags')">
+            <span id="tags_tags"></span>
+            <input id="ti_tags" placeholder="tag + Enter" onkeydown="addTag(event,'tags')"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Operational Notes -->
+    <div class="form-section">
+      <div class="form-section-title">⚠ Operational Notes (for Ops team)</div>
+      <div class="notes-list" id="notesList"></div>
+      <button class="add-link-btn" onclick="addNote()">+ Add Note</button>
+    </div>
+
+    <!-- Confluence Links -->
+    <div class="form-section">
+      <div class="form-section-title">📄 Confluence / Documentation Links</div>
+      <div class="link-list" id="confluenceList"></div>
+      <button class="add-link-btn" onclick="addLink('confluence')">+ Add Confluence Link</button>
+    </div>
+
+    <!-- Design References -->
+    <div class="form-section">
+      <div class="form-section-title">🎨 Design References</div>
+      <div class="link-list" id="designList"></div>
+      <button class="add-link-btn" onclick="addLink('design')">+ Add Design Reference</button>
+    </div>
+
+    <!-- CoE Sections (tabbed) -->
+    <div class="form-section" style="margin-bottom:0;">
+      <div class="form-section-title">CoE Metadata</div>
+    </div>
+    <div class="coe-tabs">
+      <button class="coe-tab coe-tab-security active" onclick="switchCoeTab('security',this)">
+        <span class="coe-dot"></span> Security CoE
+      </button>
+      <button class="coe-tab coe-tab-design" onclick="switchCoeTab('design',this)">
+        <span class="coe-dot"></span> Solution Design CoE
+      </button>
+      <button class="coe-tab coe-tab-ops" onclick="switchCoeTab('ops',this)">
+        <span class="coe-dot"></span> Operations CoE
+      </button>
+    </div>
+    <div class="coe-section-wrap">
+
+      <!-- ── Security ── -->
+      <div class="coe-panel active" id="coe-security">
+        <div class="coe-badge badge-security">🔐 Security COE</div>
+        <div class="form-grid cols-3">
+          <div class="field">
+            <label>Auth Scheme</label>
+            <input type="text" id="sec_authScheme" value="${esc(sec.authScheme)}"
+              placeholder="OAuth 2.0, mTLS, API Key…" oninput="markUnsaved()" list="auth_dl"/>
+            <datalist id="auth_dl">
+              <option value="OAuth 2.0 (Client Credentials)">
+              <option value="OAuth 2.0 (Authorization Code)">
+              <option value="mTLS + OAuth 2.0"><option value="API Key (Internal)">
+              <option value="SASL/SCRAM + TLS"><option value="Basic Auth (Legacy)">
+            </datalist>
+          </div>
+          <div class="field">
+            <label>TLS Version</label>
+            <select id="sec_tlsVersion" onchange="markUnsaved()">
+              ${['','TLS 1.0 (Deprecated)','TLS 1.1 (Deprecated)','TLS 1.2','TLS 1.3'].map(t=>`<option ${sec.tlsVersion===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Data Classification</label>
+            <select id="sec_dataClassification" onchange="markUnsaved()">
+              ${['','Public','Internal','Confidential','Restricted'].map(t=>`<option ${sec.dataClassification===t?'selected':''}>${t}</option>`).join('')}
+            </select>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label>OAuth Scopes</label>
+            <div class="tag-input-wrap" onclick="this.querySelector('input').focus()">
+              <span id="tags_oauthScopes"></span>
+              <input id="ti_oauthScopes" placeholder="scope + Enter (e.g. orders:read)" onkeydown="addTag(event,'oauthScopes')"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Compliance Flags</label>
+            <div class="tag-input-wrap" onclick="this.querySelector('input').focus()">
+              <span id="tags_complianceFlags"></span>
+              <input id="ti_complianceFlags" placeholder="PCI-DSS, GDPR, SOX… + Enter" onkeydown="addTag(event,'complianceFlags')"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Gateway Policies</label>
+            <div class="tag-input-wrap" onclick="this.querySelector('input').focus()">
+              <span id="tags_gatewayPolicies"></span>
+              <input id="ti_gatewayPolicies" placeholder="Rate Limiting, JWT Validation… + Enter" onkeydown="addTag(event,'gatewayPolicies')"/>
+            </div>
+          </div>
+          <div class="field">
+            <label>Secrets / Vault Path</label>
+            <input type="text" id="sec_secretsVaultPath" value="${esc(sec.secretsVaultPath)}"
+              placeholder="/secret/prod/api-name" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>Certificate Expiry</label>
+            <input type="date" id="sec_certExpiry" value="${esc(sec.certExpiry)}" oninput="markUnsaved()"/>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Known Vulnerabilities / Security Findings</div>
+          <div class="notes-list" id="secVulnList"></div>
+          <button class="add-link-btn" onclick="addSecVuln()">+ Add Finding</button>
+        </div>
+      </div>
+
+      <!-- ── Solution Design ── -->
+      <div class="coe-panel" id="coe-design">
+        <div class="coe-badge badge-design">🏛 Solution Design COE</div>
+        <div class="form-grid cols-3">
+          <div class="field full" style="grid-column:1/-1">
+            <label>Architectural Pattern</label>
+            <input type="text" id="des_architecturalPattern" value="${esc(des.architecturalPattern)}"
+              placeholder="e.g. Façade, Orchestration PAPI, Thin SAPI, Aggregator…" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>Versioning Strategy</label>
+            <input type="text" id="des_versioningStrategy" value="${esc(des.versioningStrategy)}"
+              placeholder="URI /v2/, Header, Schema Registry…" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>SLA Target</label>
+            <input type="text" id="des_slaTarget" value="${esc(des.slaTarget)}"
+              placeholder="99.9% / < 500ms P95" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>AsyncAPI Spec URL</label>
+            <input type="text" id="des_asyncApiSpec" value="${esc(des.asyncApiSpec)}"
+              placeholder="https://…" oninput="markUnsaved()"/>
+          </div>
+          <div class="field full" style="grid-column:1/-1">
+            <label>Error Handling Strategy</label>
+            <input type="text" id="des_errorHandlingStrategy" value="${esc(des.errorHandlingStrategy)}"
+              placeholder="e.g. Standard envelope, Saga, Fire-and-forget, DLQ…" oninput="markUnsaved()"/>
+          </div>
+        </div>
+        <div class="form-grid" style="margin-top:12px;">
+          <div class="field">
+            <label>Domain Events Published</label>
+            <div class="tag-input-wrap" onclick="this.querySelector('input').focus()">
+              <span id="tags_domainEvents"></span>
+              <input id="ti_domainEvents" placeholder="order.created… + Enter" onkeydown="addTag(event,'domainEvents')"/>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">ADR / Design Decision Links</div>
+          <div class="link-list" id="adrList"></div>
+          <button class="add-link-btn" onclick="addLink('adr')">+ Add ADR Link</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Technical Debt</div>
+          <div class="notes-list" id="techDebtList"></div>
+          <button class="add-link-btn" onclick="addTechDebt()">+ Add Debt Item</button>
+        </div>
+      </div>
+
+      <!-- ── Operations ── -->
+      <div class="coe-panel" id="coe-ops">
+        <div class="coe-badge badge-ops">⚙ Operations COE</div>
+        <div class="form-grid cols-3">
+          <div class="field">
+            <label>On-Call Contact</label>
+            <input type="text" id="ops_oncallContact" value="${esc(ops.oncallContact)}"
+              placeholder="team@example.com or Slack channel" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>Uptime SLA</label>
+            <input type="text" id="ops_uptimeSla" value="${esc(ops.uptimeSla)}"
+              placeholder="99.9%" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>Alerting Threshold</label>
+            <input type="text" id="ops_alertingThreshold" value="${esc(ops.alertingThreshold)}"
+              placeholder="e.g. Error rate > 2% over 5 min → P2" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>Maintenance Window</label>
+            <input type="text" id="ops_maintenanceWindow" value="${esc(ops.maintenanceWindow)}"
+              placeholder="e.g. Sundays 02:00–04:00 UTC" oninput="markUnsaved()"/>
+          </div>
+          <div class="field">
+            <label>CI/CD Pipeline Link</label>
+            <input type="text" id="ops_pipelineLink" value="${esc(ops.pipelineLink)}"
+              placeholder="https://jenkins/…" oninput="markUnsaved()"/>
+          </div>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Monitoring Dashboard Links</div>
+          <div class="link-list" id="monitoringList"></div>
+          <button class="add-link-btn" onclick="addLink('monitoring')">+ Add Dashboard Link</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Runbook Links</div>
+          <div class="link-list" id="runbookList"></div>
+          <button class="add-link-btn" onclick="addLink('runbook')">+ Add Runbook</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Incident References</div>
+          <div class="notes-list" id="incidentList"></div>
+          <button class="add-link-btn" onclick="addIncident()">+ Add Incident</button>
+        </div>
+        <div style="margin-top:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Known Fragilities</div>
+          <div class="notes-list" id="fragilityList"></div>
+          <button class="add-link-btn" onclick="addFragility()">+ Add Known Fragility</button>
+        </div>
+      </div>
+
+    </div><!-- end coe-section-wrap -->
+
+    <!-- Audit -->
+    <div class="form-section">
+      <div class="form-section-title">Audit</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Last Reviewed By</label>
+          <input type="text" id="f_lastReviewedBy" value="${esc(api.lastReviewedBy)}" placeholder="Name / email" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Last Review Date</label>
+          <input type="date" id="f_lastReviewedDate" value="${esc(api.lastReviewedDate)}" oninput="markUnsaved()"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="form-actions">
+      <button class="btn btn-success" onclick="saveAPI()">💾 Save Changes</button>
+      <button class="btn btn-ghost" onclick="resetForm()">↩ Revert</button>
+      <span id="unsavedIndicator" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--warn);">
+        <span class="unsaved-dot"></span> Unsaved changes
+      </span>
+      <div style="flex:1;"></div>
+      <button class="btn btn-danger" onclick="confirmDelete()">🗑 Delete API</button>
+    </div>
+  `;
+
+  // Initialise tag fields
+  initTagField('environments', api.environments || []);
+  initTagField('tags', api.tags || []);
+  initTagField('oauthScopes', sec.oauthScopes || []);
+  initTagField('complianceFlags', sec.complianceFlags || []);
+  initTagField('gatewayPolicies', sec.gatewayPolicies || []);
+  initTagField('domainEvents', des.domainEvents || []);
+
+  // Initialise deps
+  initDeps('consumers', api.consumers || []);
+  initDeps('upstream', api.upstreamSystems || []);
+
+  // Initialise notes
+  renderNotes(api.operationalNotes || []);
+  renderLinks('confluence', api.confluenceLinks || []);
+  renderLinks('design', api.designReferences || []);
+
+  // Initialise CoE lists
+  renderDynamicList('secVulnList', sec.knownVulnerabilities || [], 'secVulnState', 'Security finding or vulnerability…');
+  renderDynamicList('techDebtList', des.technicalDebt || [], 'techDebtState', 'Describe the technical debt item…');
+  renderDynamicList('incidentList', ops.incidentRefs || [], 'incidentState', 'e.g. INC-20241103 — description…');
+  renderDynamicList('fragilityList', ops.knownFragilities || [], 'fragilityState', 'Known fragility or risk…');
+  renderLinks('adr', des.adrLinks || []);
+  renderLinks('monitoring', ops.monitoringLinks || []);
+  renderLinks('runbook', ops.runbookLinks || []);
+
+  // Reset to first CoE tab
+  document.querySelectorAll('.coe-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.coe-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.coe-tab-security')?.classList.add('active');
+  document.getElementById('coe-security')?.classList.add('active');
+}
+
+// ── Dep (Consumer / Upstream) Logic ─────────────
+const depState = { consumers: [], upstream: [] };
+function initDeps(kind, initial) {
+  // Normalise: legacy flat strings → rich objects
+  depState[kind] = (initial || []).map(item =>
+    typeof item === 'string'
+      ? { system: item, environments: [], contractType: '', protocol: '', notes: '' }
+      : { system: item.system||'', environments: item.environments||[], contractType: item.contractType||'', protocol: item.protocol||'', notes: item.notes||'' }
+  );
+  rebuildDeps(kind);
+}
+function rebuildDeps(kind) {
+  const containerId = kind === 'consumers' ? 'consumersList' : 'upstreamList';
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const contractSuggestions = (DATA.contractTypes||['REST','SOAP','Kafka','AsyncAPI','GraphQL','SFTP','JMS','Other']).map(c=>`<option value="${c}">`).join('');
+  const protocolField = kind === 'consumers' ? 'contractType' : 'protocol';
+  const protocolLabel = kind === 'consumers' ? 'Contract Type' : 'Protocol';
+  container.innerHTML = depState[kind].map((dep, i) => {
+    const envTags = (dep.environments||[]).map((e,ei) =>
+      `<span class="tag">${esc(e)}<span class="remove" onclick="removeDep${kind==='consumers'?'C':'U'}Env(${i},${ei})">×</span></span>`
+    ).join('');
+    return `<div class="dep-row">
+      <div class="dep-row-top">
+        <div class="field">
+          <label>System / Application Name</label>
+          <input type="text" placeholder="e.g. UXP Portal, SAP ERP" value="${esc(dep.system)}"
+            oninput="depState['${kind}'][${i}].system=this.value;markUnsaved();"/>
+        </div>
+        <div class="field">
+          <label>${protocolLabel}</label>
+          <input type="text" placeholder="REST, Kafka…" value="${esc(dep[protocolField])}"
+            oninput="depState['${kind}'][${i}].${protocolField}=this.value;markUnsaved();" list="contract_dl_${i}"/>
+          <datalist id="contract_dl_${i}">${contractSuggestions}</datalist>
+        </div>
+      </div>
+      <div class="dep-row-mid">
+        <div class="field" style="flex:2;">
+          <label>Environments</label>
+          <div class="tag-input-wrap" onclick="this.querySelector('input').focus()">
+            <span>${envTags}</span>
+            <input placeholder="env + Enter" onkeydown="addDepEnv(event,'${kind}',${i})"/>
+          </div>
+        </div>
+        <div class="field" style="flex:3;">
+          <label>Notes</label>
+          <input type="text" placeholder="Context, caveats, known issues…" value="${esc(dep.notes)}"
+            oninput="depState['${kind}'][${i}].notes=this.value;markUnsaved();"/>
+        </div>
+      </div>
+      <div style="text-align:right;"><button class="dep-remove" onclick="removeDep('${kind}',${i})">Remove</button></div>
+    </div>`;
+  }).join('') || `<p style="color:var(--muted2);font-size:12px;font-style:italic;padding:4px 0;">None added yet.</p>`;
+}
+function addDep(kind) { depState[kind].push({ system:'', environments:[], contractType:'', protocol:'', notes:'' }); rebuildDeps(kind); markUnsaved(); }
+function removeDep(kind, i) { depState[kind].splice(i,1); rebuildDeps(kind); markUnsaved(); }
+function addDepEnv(e, kind, i) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const v = e.target.value.trim().replace(/,$/,'');
+    if (v && !depState[kind][i].environments.includes(v)) { depState[kind][i].environments.push(v); rebuildDeps(kind); markUnsaved(); }
+    e.target.value = '';
+  }
+}
+function removeDepCEnv(di, ei) { depState['consumers'][di].environments.splice(ei,1); rebuildDeps('consumers'); markUnsaved(); }
+function removeDepUEnv(di, ei) { depState['upstream'][di].environments.splice(ei,1); rebuildDeps('upstream'); markUnsaved(); }
+
+// ── CoE Tab Switcher ─────────────────────────
+function switchCoeTab(tab, btn) {
+  document.querySelectorAll('.coe-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.coe-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('coe-' + tab)?.classList.add('active');
+}
+
+// ── Dynamic List (notes-style, single text field) ────
+const dynamicLists = {};
+function renderDynamicList(containerId, initial, stateKey, placeholder) {
+  dynamicLists[stateKey] = [...initial];
+  rebuildDynamicList(containerId, stateKey, placeholder);
+}
+function rebuildDynamicList(containerId, stateKey, placeholder) {
+  const list = document.getElementById(containerId);
+  if (!list) return;
+  list.innerHTML = dynamicLists[stateKey].map((item, i) => `
+    <div class="note-row">
+      <textarea oninput="dynamicLists['${stateKey}'][${i}]=this.value;markUnsaved();"
+        placeholder="${placeholder}">${esc(item)}</textarea>
+      <button class="remove-link" onclick="dynamicLists['${stateKey}'].splice(${i},1);rebuildDynamicList('${containerId}','${stateKey}','${placeholder}');markUnsaved();">🗑</button>
+    </div>`).join('');
+}
+
+function addSecVuln()  { dynamicLists['secVulnState'].push(''); rebuildDynamicList('secVulnList','secVulnState','Security finding or vulnerability…'); markUnsaved(); }
+function addTechDebt() { dynamicLists['techDebtState'].push(''); rebuildDynamicList('techDebtList','techDebtState','Describe the technical debt item…'); markUnsaved(); }
+function addIncident() { dynamicLists['incidentState'].push(''); rebuildDynamicList('incidentList','incidentState','e.g. INC-20241103 — description…'); markUnsaved(); }
+function addFragility(){ dynamicLists['fragilityState'].push(''); rebuildDynamicList('fragilityList','fragilityState','Known fragility or risk…'); markUnsaved(); }
+
+// ── Tag Field Logic ──────────────────────────
+const tagState = {};
+function initTagField(fieldName, initial) {
+  tagState[fieldName] = [...initial];
+  renderTags(fieldName);
+}
+function renderTags(fieldName) {
+  const container = document.getElementById('tags_' + fieldName);
+  if (!container) return;
+  container.innerHTML = tagState[fieldName].map((t,i) =>
+    `<span class="tag">${esc(t)}<span class="remove" onclick="removeTag('${fieldName}',${i})">×</span></span>`
+  ).join('');
+}
+function addTag(e, fieldName) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const val = e.target.value.trim().replace(/,$/,'');
+    if (val && !tagState[fieldName].includes(val)) {
+      tagState[fieldName].push(val);
+      renderTags(fieldName);
+      markUnsaved();
+    }
+    e.target.value = '';
+  }
+}
+function removeTag(fieldName, idx) {
+  tagState[fieldName].splice(idx, 1);
+  renderTags(fieldName);
+  markUnsaved();
+}
+function focusTagInput(inputId) { document.getElementById(inputId)?.focus(); }
+
+// ── Notes ────────────────────────────────────
+const notesState = [];
+function renderNotes(initial) {
+  notesState.length = 0;
+  initial.forEach(n => notesState.push(n));
+  rebuildNotes();
+}
+function rebuildNotes() {
+  const list = document.getElementById('notesList');
+  if (!list) return;
+  list.innerHTML = notesState.map((n, i) => `
+    <div class="note-row">
+      <textarea oninput="notesState[${i}]=this.value;markUnsaved();" placeholder="Operational note, known issue, incident reference…">${esc(n)}</textarea>
+      <button class="remove-link" onclick="removeNote(${i})">🗑</button>
+    </div>`).join('');
+}
+function addNote() { notesState.push(''); rebuildNotes(); markUnsaved(); }
+function removeNote(i) { notesState.splice(i,1); rebuildNotes(); markUnsaved(); }
+
+// ── Links ────────────────────────────────────
+const linksState = { confluence: [], design: [], adr: [], monitoring: [], runbook: [] };
+function renderLinks(type, initial) {
+  linksState[type] = initial.map(l => typeof l === 'string' ? { label: '', url: l } : { ...l });
+  rebuildLinks(type);
+}
+function rebuildLinks(type) {
+  const ids = { confluence: 'confluenceList', design: 'designList', adr: 'adrList', monitoring: 'monitoringList', runbook: 'runbookList' };
+  const list = document.getElementById(ids[type]);
+  if (!list) return;
+  list.innerHTML = linksState[type].map((link, i) => `
+    <div class="link-row">
+      <input class="link-label-input" type="text" placeholder="Label (optional)" value="${esc(link.label)}" oninput="linksState['${type}'][${i}].label=this.value;markUnsaved();"/>
+      <input type="text" placeholder="URL" value="${esc(link.url)}" oninput="linksState['${type}'][${i}].url=this.value;markUnsaved();"/>
+      <button class="remove-link" onclick="removeLink('${type}',${i})">×</button>
+    </div>`).join('');
+}
+function addLink(type) { linksState[type].push({ label: '', url: '' }); rebuildLinks(type); markUnsaved(); }
+function removeLink(type, i) { linksState[type].splice(i,1); rebuildLinks(type); markUnsaved(); }
+
+// ── Save ─────────────────────────────────────
+function saveAPI() {
+  const idx = DATA.apis.findIndex(a => a.id === CURRENT_API_ID);
+  if (idx === -1) return;
+  const api = DATA.apis[idx];
+  api.name = val('f_name');
+  api.repoApiName = val('f_repoApiName');
+  api.version = val('f_version');
+  api.layer = val('f_layer');
+  api.protocol = val('f_protocol');
+  api.status = val('f_status');
+  api.runtime = val('f_runtime');
+  api.javaVersion = val('f_javaVersion');
+  api.deploymentModel = val('f_deploymentModel');
+  api.environments = [...(tagState['environments'] || [])];
+  api.tribeId = val('f_tribeId');
+  api.owningSquad = val('f_owningSquad');
+  api.applicationContext = val('f_applicationContext');
+  api.ramlSpec = val('f_ramlSpec');
+  api.businessCapability = { l0: val('f_biz_l0'), l1: val('f_biz_l1'), l2: val('f_biz_l2') };
+  api.consumers = depState.consumers.filter(d => d.system).map(d => ({
+    system: d.system, environments: d.environments, contractType: d.contractType, notes: d.notes
+  }));
+  api.upstreamSystems = depState.upstream.filter(d => d.system).map(d => ({
+    system: d.system, environments: d.environments, protocol: d.protocol, notes: d.notes
+  }));
+  api.migrationStatus = val('f_migrationStatus');
+  api.migrationComplexity = val('f_migrationComplexity');
+  api.tags = [...(tagState['tags'] || [])];
+  api.operationalNotes = [...notesState].filter(n => n.trim());
+  api.confluenceLinks = linksState.confluence.filter(l => l.url);
+  api.designReferences = linksState.design.filter(l => l.url);
+  api.lastReviewedBy = val('f_lastReviewedBy');
+  api.lastReviewedDate = val('f_lastReviewedDate');
+
+  // Security COE
+  api.security = {
+    authScheme: val('sec_authScheme'),
+    oauthScopes: [...(tagState['oauthScopes'] || [])],
+    tlsVersion: val('sec_tlsVersion'),
+    gatewayPolicies: [...(tagState['gatewayPolicies'] || [])],
+    dataClassification: val('sec_dataClassification'),
+    complianceFlags: [...(tagState['complianceFlags'] || [])],
+    secretsVaultPath: val('sec_secretsVaultPath'),
+    certExpiry: val('sec_certExpiry'),
+    knownVulnerabilities: (dynamicLists['secVulnState'] || []).filter(v => v.trim())
+  };
+  // Solution Design COE
+  api.solutionDesign = {
+    architecturalPattern: val('des_architecturalPattern'),
+    versioningStrategy: val('des_versioningStrategy'),
+    errorHandlingStrategy: val('des_errorHandlingStrategy'),
+    slaTarget: val('des_slaTarget'),
+    asyncApiSpec: val('des_asyncApiSpec'),
+    adrLinks: linksState.adr.filter(l => l.url),
+    technicalDebt: (dynamicLists['techDebtState'] || []).filter(v => v.trim()),
+    domainEvents: [...(tagState['domainEvents'] || [])]
+  };
+  // Operations COE
+  api.operations = {
+    oncallContact: val('ops_oncallContact'),
+    monitoringLinks: linksState.monitoring.filter(l => l.url),
+    alertingThreshold: val('ops_alertingThreshold'),
+    maintenanceWindow: val('ops_maintenanceWindow'),
+    runbookLinks: linksState.runbook.filter(l => l.url),
+    incidentRefs: (dynamicLists['incidentState'] || []).filter(v => v.trim()),
+    knownFragilities: (dynamicLists['fragilityState'] || []).filter(v => v.trim()),
+    pipelineLink: val('ops_pipelineLink'),
+    uptimeSla: val('ops_uptimeSla')
+  };
+  DATA.apis[idx] = api;
+  UNSAVED = false;
+  document.getElementById('unsavedIndicator').style.display = 'none';
+  renderSidebar();
+  document.querySelector('.editor-title').textContent = api.name;
+  document.querySelector('.editor-sub').textContent = `${api.id} · Saved at ${new Date().toLocaleTimeString()}`;
+  showToast('✅ API saved in memory. Use Export JSON to persist.', 'success');
+}
+
+function resetForm() {
+  if (!confirm('Revert to last saved state?')) return;
+  UNSAVED = false;
+  const api = DATA.apis.find(a => a.id === CURRENT_API_ID);
+  renderEditor(api);
+}
+
+function confirmDelete() {
+  document.getElementById('confirmText').textContent = `Remove "${DATA.apis.find(a=>a.id===CURRENT_API_ID)?.name}" from the catalog?`;
+  document.getElementById('confirmDeleteBtn').onclick = () => deleteAPI();
+  document.getElementById('confirmModal').classList.add('open');
+}
+
+function deleteAPI() {
+  DATA.apis = DATA.apis.filter(a => a.id !== CURRENT_API_ID);
+  CURRENT_API_ID = null;
+  UNSAVED = false;
+  document.getElementById('confirmModal').classList.remove('open');
+  document.getElementById('editorForm').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
+  renderSidebar();
+  showToast('🗑 API deleted from catalog (not yet exported)', 'error');
+}
+
+// ── Export ───────────────────────────────────
+function exportJSON() {
+  DATA.meta = DATA.meta || {};
+  DATA.meta.lastUpdated = new Date().toISOString().split('T')[0];
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'api-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('⬇ api-data.json downloaded', 'success');
+}
+
+// ── Utilities ────────────────────────────────
+function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function markUnsaved() {
+  UNSAVED = true;
+  const ind = document.getElementById('unsavedIndicator');
+  if (ind) ind.style.display = 'inline-flex';
+}
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title><font color=Yellow>Integration COE — API Catalog</font></title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Shared constants (never change with theme) ── */
+  :root {
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --accent: #3b82f6;
+    --accent2: #6366f1;
+    --accent3: #22d3ee;
+    --success: #10b981;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+  }
+  /* ── Dark theme (default) ── */
+  html, html[data-theme="dark"] {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --surface3: #1f2d45;
+    --border: #243352;
+    --border-bright: #2e4070;
+    --muted: #94a3b8;
+    --muted2: #64748b;
+    --text: #e2e8f0;
+    --text-dim: #cbd5e1;
+    --header-bg: linear-gradient(135deg, #0d1526 0%, #111f38 60%, #0b1829 100%);
+  }
+  /* ── Light theme ── */
+  html[data-theme="light"] {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --surface3: #e2e8f0;
+    --border: #cbd5e1;
+    --border-bright: #94a3b8;
+    --muted: #475569;
+    --muted2: #64748b;
+    --text: #0f172a;
+    --text-dim: #1e293b;
+    --header-bg: linear-gradient(135deg, #1e3a5f 0%, #1e40af 60%, #1e3a5f 100%);
+  }
+  /* smooth transition when switching */
+  *, *::before, *::after { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--border-bright);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 14px;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .logo-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted2);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-weight: 500;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); border-color: var(--border-bright); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+  .data-source-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--muted2);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
+  /* ── Layout ── */
+  .app-shell { display: flex; min-height: calc(100vh - 64px); }
+  .sidebar {
+    width: 280px;
+    min-width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-track { background: transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+  .sidebar-section { padding: 0 16px 16px; }
+  .sidebar-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding: 0 16px 8px;
+    margin-top: 8px;
+  }
+  .filter-chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter-chip {
+    font-family: var(--font-body);
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+  }
+  .filter-chip:hover { border-color: var(--accent); color: var(--text); }
+  .filter-chip.active {
+    background: rgba(59,130,246,0.15);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .filter-chip.all-chip.active {
+    background: rgba(99,102,241,0.15);
+    border-color: var(--accent2);
+    color: var(--accent2);
+  }
+  .search-box {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 13px;
+    padding: 9px 12px 9px 34px;
+    outline: none;
+    transition: border 0.15s;
+  }
+  .search-box:focus { border-color: var(--accent); }
+  .search-wrap { position: relative; }
+  .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted2); font-size: 14px; pointer-events: none; }
+  .divider { height: 1px; background: var(--border); margin: 4px 16px 12px; }
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px; margin-bottom: 12px; }
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    text-align: center;
+  }
+  .stat-box .num { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--accent3); line-height: 1; }
+  .stat-box .label { font-size: 10px; color: var(--muted2); margin-top: 2px; }
+
+  /* ── Main Content ── */
+  main { flex: 1; padding: 28px 32px; overflow-x: hidden; }
+  .view-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .view-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; }
+  .view-subtitle { font-size: 12px; color: var(--muted2); margin-top: 2px; font-family: var(--font-mono); }
+  .view-toggle { display: flex; gap: 4px; }
+  .view-toggle-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.12s;
+  }
+  .view-toggle-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* ── Group View ── */
+  .group-section { margin-bottom: 36px; }
+  .group-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(99,102,241,0.15);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: var(--accent2);
+  }
+  .group-name { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+  .group-count {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--muted2);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Card Grid ── */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .api-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .api-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, linear-gradient(90deg, var(--accent), var(--accent2)));
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .api-card:hover { border-color: var(--border-bright); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+  .api-card:hover::before { opacity: 1; }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .card-name { font-family: var(--font-display); font-size: 14px; font-weight: 700; color: var(--text); line-height: 1.3; }
+  .card-version { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); margin-top: 2px; }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .status-dot.Active { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .status-dot.Deprecated { background: var(--danger); }
+  .status-dot.Review { background: var(--warn); }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.5px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    border: 1px solid;
+    white-space: nowrap;
+  }
+  .badge-layer-EAPI { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.3); color: var(--accent3); }
+  .badge-layer-PAPI { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); color: var(--accent2); }
+  .badge-layer-SAPI { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); color: var(--accent); }
+  /* custom/extensible layer values fall back to a neutral style */
+  [class^="badge-layer-"] { background: rgba(148,163,184,0.08); border-color: rgba(148,163,184,0.25); color: var(--muted); }
+  .badge-layer-EAPI { background: rgba(34,211,238,0.08); border-color: rgba(34,211,238,0.3); color: var(--accent3); }
+  .badge-layer-PAPI { background: rgba(99,102,241,0.08); border-color: rgba(99,102,241,0.3); color: var(--accent2); }
+  .badge-layer-SAPI { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); color: var(--accent); }
+  .badge-layer-EVENT { background: rgba(251,146,60,0.08); border-color: rgba(251,146,60,0.3); color: #fb923c; }
+  .badge-layer-BATCH { background: rgba(163,230,53,0.08); border-color: rgba(163,230,53,0.3); color: #a3e635; }
+  .badge-layer-UTILITY { background: rgba(216,180,254,0.08); border-color: rgba(216,180,254,0.3); color: #d8b4fe; }
+  .badge-layer-FACADE { background: rgba(253,224,71,0.08); border-color: rgba(253,224,71,0.3); color: #fde047; }
+  .badge-env {
+    background: rgba(148,163,184,0.08);
+    border-color: rgba(148,163,184,0.2);
+    color: var(--muted);
+  }
+  .badge-deploy-OnPrem { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); color: var(--warn); }
+  .badge-deploy-AWS { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); color: var(--success); }
+  .card-biz { margin-bottom: 8px; }
+  .biz-l0 { font-size: 10px; color: var(--muted2); font-family: var(--font-mono); }
+  .biz-l2 { font-size: 12px; color: var(--text-dim); font-weight: 500; }
+  .card-footer { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .squad-label { font-size: 11px; color: var(--muted2); }
+  .migration-pill {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 20px;
+    border: 1px solid;
+  }
+  .mig-not { border-color: var(--border); color: var(--muted2); }
+  .mig-analysis { border-color: var(--warn); color: var(--warn); background: rgba(245,158,11,0.08); }
+  .mig-blocked { border-color: var(--danger); color: var(--danger); background: rgba(239,68,68,0.08); }
+  .mig-decommission { border-color: var(--muted2); color: var(--muted2); background: rgba(100,116,139,0.1); text-decoration: line-through; }
+
+  /* ── Table View ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead tr { background: var(--surface2); }
+  th {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted2);
+    padding: 11px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+  .td-name { font-weight: 600; font-size: 13px; cursor: pointer; }
+  .td-name:hover { color: var(--accent); }
+  .complexity-bar { display: flex; align-items: center; gap: 6px; }
+  .complexity-pip { width: 6px; height: 6px; border-radius: 50%; }
+  .complexity-Low .complexity-pip { background: var(--success); }
+  .complexity-Medium .complexity-pip:nth-child(-n+2) { background: var(--warn); }
+  .complexity-High .complexity-pip { background: var(--danger); }
+
+  /* ── Empty state ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted2);
+  }
+  .empty-state svg { margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-size: 14px; }
+
+  /* ── Detail Drawer ── */
+  .drawer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: all; }
+  .drawer {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 520px;
+    max-width: 95vw;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); }
+  .drawer-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    flex-shrink: 0;
+  }
+  .drawer-close {
+    position: absolute;
+    top: 18px; right: 20px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: var(--radius-sm);
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+    transition: all 0.12s;
+  }
+  .drawer-close:hover { color: var(--text); border-color: var(--border-bright); }
+  .drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; }
+  .drawer-body::-webkit-scrollbar { width: 4px; }
+  .drawer-body::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+  .detail-section { margin-bottom: 20px; }
+  .detail-section-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted2);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .detail-row { display: flex; gap: 8px; margin-bottom: 8px; align-items: flex-start; }
+  .detail-key { min-width: 140px; font-size: 12px; color: var(--muted2); font-family: var(--font-mono); flex-shrink: 0; }
+  .detail-val { font-size: 13px; color: var(--text); word-break: break-word; }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag { background: var(--surface3); border: 1px solid var(--border); color: var(--muted); font-family: var(--font-mono); font-size: 10px; padding: 3px 8px; border-radius: 3px; }
+  .consumers-list { display: flex; flex-wrap: wrap; gap: 5px; }
+  .consumer-tag { background: rgba(34,211,238,0.07); border: 1px solid rgba(34,211,238,0.2); color: var(--accent3); font-size: 11px; padding: 3px 8px; border-radius: 3px; }
+  .upstream-tag { background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2); color: var(--accent2); font-size: 11px; padding: 3px 8px; border-radius: 3px; }
+  .note-item { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .link-item { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .link-item a { color: var(--accent); font-size: 12px; text-decoration: none; word-break: break-all; }
+  .link-item a:hover { text-decoration: underline; }
+  .empty-notes { color: var(--muted2); font-size: 12px; font-style: italic; }
+  .biz-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    margin-bottom: 8px;
+  }
+  .biz-breadcrumb span { color: var(--muted2); }
+  .biz-breadcrumb .sep { color: var(--border-bright); }
+
+  /* ── Groupby bar ── */
+  .groupby-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    flex-wrap: wrap;
+  }
+  .groupby-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted2); letter-spacing: 0.5px; margin-right: 4px; }
+  .groupby-btn {
+    font-size: 12px;
+    font-family: var(--font-body);
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .groupby-btn:hover { color: var(--text); border-color: var(--border-bright); }
+  .groupby-btn.active { background: rgba(59,130,246,0.12); border-color: var(--accent); color: var(--accent); }
+  .results-count { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--muted2); }
+
+  /* ── Complexity indicator ── */
+  .complexity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    padding: 3px 7px;
+    border-radius: 3px;
+    border: 1px solid;
+  }
+  .complexity-badge.Low { border-color: rgba(16,185,129,0.3); color: var(--success); background: rgba(16,185,129,0.07); }
+  .complexity-badge.Medium { border-color: rgba(245,158,11,0.3); color: var(--warn); background: rgba(245,158,11,0.07); }
+  .complexity-badge.High { border-color: rgba(239,68,68,0.3); color: var(--danger); background: rgba(239,68,68,0.07); }
+
+  /* ── CoE viewer tabs ── */
+  .coe-tabs-viewer { display:flex; gap:0; border-bottom:2px solid var(--border); margin-bottom:0; }
+  .cvtab {
+    font-family:var(--font-body); font-size:11px; font-weight:600;
+    padding:7px 14px; cursor:pointer; border:none; background:transparent;
+    color:var(--muted2); border-bottom:2px solid transparent; margin-bottom:-2px;
+    display:flex; align-items:center; gap:6px; transition:color 0.12s,border-color 0.12s;
+  }
+  .cvtab:hover { color:var(--text); }
+  .cvtab.active { color:var(--text); border-bottom-color:var(--accent); }
+  .coe-dot-v { width:6px;height:6px;border-radius:50%;flex-shrink:0; }
+  .sec-dot { background:var(--danger); }
+  .des-dot { background:var(--accent2); }
+  .ops-dot { background:var(--success); }
+  .coe-viewer-wrap { border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); padding:14px; background:var(--surface2); margin-bottom:12px; }
+  .cvpanel { display:none; }
+  .cvpanel.active { display:block; }
+  .coe-kv { display:flex; gap:8px; margin-bottom:7px; align-items:flex-start; }
+  .coe-key { min-width:130px; font-size:11px; color:var(--muted2); font-family:var(--font-mono); flex-shrink:0; }
+  .coe-val { font-size:12px; color:var(--text); word-break:break-word; }
+  .coe-list-section { margin-top:10px; }
+  .coe-list-title { font-family:var(--font-mono); font-size:9px; letter-spacing:1px; text-transform:uppercase; color:var(--muted2); margin-bottom:7px; }
+  .coe-list-item { font-size:11px; color:var(--text-dim); background:var(--surface3); border:1px solid var(--border); border-radius:var(--radius-sm); padding:6px 10px; margin-bottom:5px; line-height:1.5; }
+  .scope-tag,.policy-tag,.compliance-tag,.event-tag { display:inline-flex; font-family:var(--font-mono); font-size:9px; padding:3px 7px; border-radius:3px; border:1px solid; margin:2px; }
+  .scope-tag      { background:rgba(59,130,246,0.08);  border-color:rgba(59,130,246,0.3);  color:var(--accent); }
+  .policy-tag     { background:rgba(245,158,11,0.08);  border-color:rgba(245,158,11,0.3);  color:var(--warn); }
+  .compliance-tag { background:rgba(239,68,68,0.08);   border-color:rgba(239,68,68,0.3);   color:var(--danger); }
+  .event-tag      { background:rgba(99,102,241,0.08);  border-color:rgba(99,102,241,0.3);  color:var(--accent2); }
+
+  /* scrollbar global */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 4px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    main { padding: 16px; }
+  }
+
+  /* ── Loading ── */
+  .loading-screen {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+    z-index: 999;
+    transition: opacity 0.3s;
+  }
+  .loading-screen.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--font-mono); font-size: 12px; color: var(--muted2); }
+
+  /* animation */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card-grid .api-card { animation: fadeUp 0.3s ease both; }
+</style>
+</head>
+<body>
+
+<div class="loading-screen" id="loadingScreen">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="logo-mark">∫</div>
+    <div><div class="logo-text">API Catalog</div><div class="logo-sub">Integration COE</div></div>
+  </div>
+  <div class="spinner"></div>
+  <div class="loading-text">Loading api-data.json…</div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-mark">∫</div>
+    <div>
+      <div class="logo-text">Integration COE — API Catalog</div>
+      <div class="logo-sub">MuleSoft 4.3 → 4.9 Migration Landscape</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <span class="data-source-badge" id="dataSourceBadge">api-data.json</span>
+    <label class="btn btn-ghost" style="cursor:pointer;">
+      📂 Load JSON
+      <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
+    </label>
+    <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch theme" style="font-size:16px;padding:6px 10px;">🌙</button>
+    <a href="editor.html" class="btn btn-primary">✏️ Edit Catalog</a>
+  </div>
+</header>
+
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="divider"></div>
+
+    <!-- Search -->
+    <div class="sidebar-section">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-box" type="text" id="searchInput" placeholder="Search APIs, tags, systems…"/>
+      </div>
+    </div>
+
+    <!-- Status filter -->
+    <div class="sidebar-label">Status</div>
+    <div class="sidebar-section">
+      <div class="filter-chip-group" id="statusFilters"></div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Migration status filter -->
+    <div class="sidebar-label">Migration</div>
+    <div class="sidebar-section">
+      <div class="filter-chip-group" id="migrationFilters"></div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Environment filter -->
+    <div class="sidebar-label">Environment</div>
+    <div class="sidebar-section">
+      <div class="filter-chip-group" id="envFilters"></div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Complexity filter -->
+    <div class="sidebar-label">Migration Complexity</div>
+    <div class="sidebar-section">
+      <div class="filter-chip-group" id="complexityFilters"></div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- Deployment filter -->
+    <div class="sidebar-label">Deployment</div>
+    <div class="sidebar-section">
+      <div class="filter-chip-group" id="deployFilters"></div>
+    </div>
+  </aside>
+
+  <main id="mainContent">
+    <div class="view-controls">
+      <div>
+        <div class="view-title" id="viewTitle">API Catalog</div>
+        <div class="view-subtitle" id="viewSubtitle"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div class="view-toggle">
+          <button class="view-toggle-btn active" id="toggleCard" title="Card view" onclick="setDisplayMode('card')">▦</button>
+          <button class="view-toggle-btn" id="toggleTable" title="Table view" onclick="setDisplayMode('table')">☰</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- GroupBy bar -->
+    <div class="groupby-bar" id="groupbyBar">
+      <span class="groupby-label">Group by:</span>
+      <button class="groupby-btn active" onclick="setGroupBy('none')">All APIs</button>
+      <button class="groupby-btn" onclick="setGroupBy('tribe')">Tribe</button>
+      <button class="groupby-btn" onclick="setGroupBy('app')">Application</button>
+      <button class="groupby-btn" onclick="setGroupBy('l0')">Business Domain (L0)</button>
+      <button class="groupby-btn" onclick="setGroupBy('l1')">Capability (L1)</button>
+      <button class="groupby-btn" onclick="setGroupBy('env')">Environment</button>
+      <button class="groupby-btn" onclick="setGroupBy('layer')">API Layer</button>
+      <button class="groupby-btn" onclick="setGroupBy('migration')">Migration Status</button>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+
+    <div id="contentArea"></div>
+  </main>
+</div>
+
+<!-- Detail Drawer -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="detailDrawer">
+  <div class="drawer-header">
+    <div class="drawer-close" onclick="closeDrawer()">✕</div>
+    <div id="drawerTitle" style="font-family:var(--font-display);font-size:16px;font-weight:700;padding-right:36px;"></div>
+    <div id="drawerSub" style="font-size:11px;color:var(--muted2);font-family:var(--font-mono);margin-top:4px;"></div>
+    <div id="drawerBadges" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;"></div>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────
+let ALL_DATA = null;
+let TRIBES_MAP = {};
+let DISPLAY_MODE = 'card'; // card | table
+let GROUP_BY = 'none';
+let ACTIVE_FILTERS = {
+  status: 'All',
+  migration: 'All',
+  env: 'All',
+  complexity: 'All',
+  deploy: 'All'
+};
+let SEARCH = '';
+
+// ── Load Data ──────────────────────────────────────────────
+async function loadData(source) {
+  try {
+    const raw = typeof source === 'string' ? await fetch(source).then(r => r.json()) : source;
+    ALL_DATA = raw;
+    TRIBES_MAP = {};
+    (raw.tribes || []).forEach(t => { TRIBES_MAP[t.id] = t; });
+    document.getElementById('loadingScreen').classList.add('hidden');
+    initFilters();
+    renderStats();
+    renderContent();
+  } catch(e) {
+    document.querySelector('.loading-text').textContent = '⚠ Could not load api-data.json — use "Load JSON" button';
+    document.querySelector('.spinner').style.display = 'none';
+    ALL_DATA = { apis: [], tribes: [], businessCapabilities: [] };
+    TRIBES_MAP = {};
+    document.getElementById('loadingScreen').classList.add('hidden');
+    initFilters();
+    renderStats();
+    renderContent();
+  }
+}
+
+document.getElementById('jsonFileInput').addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('dataSourceBadge').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      loadData(JSON.parse(ev.target.result));
+    } catch(ex) { alert('Invalid JSON file'); }
+  };
+  reader.readAsText(file);
+});
+
+// ── Filters ────────────────────────────────────────────────
+function initFilters() {
+  const apis = ALL_DATA.apis || [];
+
+  const statusSet = new Set(['All', ...apis.map(a => a.status).filter(Boolean)]);
+  const migSet = new Set(['All', ...apis.map(a => a.migrationStatus).filter(Boolean)]);
+  const envSet = new Set(['All', ...apis.flatMap(a => a.environments || [])]);
+  const complexSet = new Set(['All', ...apis.map(a => a.migrationComplexity).filter(Boolean)]);
+  const deploySet = new Set(['All', ...apis.map(a => a.deploymentModel).filter(Boolean)]);
+
+  buildFilterChips('statusFilters', [...statusSet], 'status');
+  buildFilterChips('migrationFilters', [...migSet], 'migration');
+  buildFilterChips('envFilters', [...envSet], 'env');
+  buildFilterChips('complexityFilters', [...complexSet], 'complexity');
+  buildFilterChips('deployFilters', [...deploySet], 'deploy');
+}
+
+function buildFilterChips(containerId, values, filterKey) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  values.forEach(v => {
+    const chip = document.createElement('button');
+    chip.className = 'filter-chip' + (v === 'All' ? ' all-chip' : '') + (ACTIVE_FILTERS[filterKey] === v ? ' active' : '');
+    chip.textContent = v;
+    chip.onclick = () => {
+      ACTIVE_FILTERS[filterKey] = v;
+      buildFilterChips(containerId, values, filterKey);
+      renderContent();
+      renderStats();
+    };
+    container.appendChild(chip);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  SEARCH = e.target.value.toLowerCase().trim();
+  renderContent();
+});
+
+// ── Filter Logic ───────────────────────────────────────────
+function getFilteredAPIs() {
+  let apis = ALL_DATA.apis || [];
+  if (ACTIVE_FILTERS.status !== 'All') apis = apis.filter(a => a.status === ACTIVE_FILTERS.status);
+  if (ACTIVE_FILTERS.migration !== 'All') apis = apis.filter(a => a.migrationStatus === ACTIVE_FILTERS.migration);
+  if (ACTIVE_FILTERS.env !== 'All') apis = apis.filter(a => (a.environments||[]).includes(ACTIVE_FILTERS.env));
+  if (ACTIVE_FILTERS.complexity !== 'All') apis = apis.filter(a => a.migrationComplexity === ACTIVE_FILTERS.complexity);
+  if (ACTIVE_FILTERS.deploy !== 'All') apis = apis.filter(a => a.deploymentModel === ACTIVE_FILTERS.deploy);
+  if (SEARCH) {
+    apis = apis.filter(a =>
+      a.name.toLowerCase().includes(SEARCH) ||
+      (a.tags||[]).some(t => t.toLowerCase().includes(SEARCH)) ||
+      (a.owningSquad||'').toLowerCase().includes(SEARCH) ||
+      (a.applicationContext||'').toLowerCase().includes(SEARCH) ||
+      (a.businessCapability?.l0||'').toLowerCase().includes(SEARCH) ||
+      (a.businessCapability?.l2||'').toLowerCase().includes(SEARCH) ||
+      (a.upstreamSystems||[]).some(s => s.toLowerCase().includes(SEARCH)) ||
+      (a.consumers||[]).some(s => s.toLowerCase().includes(SEARCH))
+    );
+  }
+  return apis;
+}
+
+// ── Stats ──────────────────────────────────────────────────
+function renderStats() {
+  const apis = ALL_DATA.apis || [];
+  const total = apis.length;
+  const active = apis.filter(a => a.status === 'Active').length;
+  const highCx = apis.filter(a => a.migrationComplexity === 'High').length;
+  const tribes = new Set(apis.map(a => a.tribeId).filter(Boolean)).size;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-box"><div class="num">${total}</div><div class="label">Total APIs</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--success)">${active}</div><div class="label">Active</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--danger)">${highCx}</div><div class="label">High Complexity</div></div>
+    <div class="stat-box"><div class="num" style="color:var(--accent2)">${tribes}</div><div class="label">Tribes</div></div>
+  `;
+}
+
+// ── Group-by ───────────────────────────────────────────────
+function setGroupBy(key) {
+  GROUP_BY = key;
+  document.querySelectorAll('.groupby-btn').forEach((b,i) => {
+    b.classList.toggle('active', b.textContent === {
+      none:'All APIs', tribe:'Tribe', app:'Application', l0:'Business Domain (L0)',
+      l1:'Capability (L1)', env:'Environment', layer:'API Layer', migration:'Migration Status'
+    }[key]);
+  });
+  renderContent();
+}
+
+function setDisplayMode(mode) {
+  DISPLAY_MODE = mode;
+  document.getElementById('toggleCard').classList.toggle('active', mode==='card');
+  document.getElementById('toggleTable').classList.toggle('active', mode==='table');
+  renderContent();
+}
+
+function groupAPIs(apis) {
+  if (GROUP_BY === 'none') return [{ label: null, apis }];
+  const groups = {};
+  apis.forEach(api => {
+    let key = '';
+    if (GROUP_BY === 'tribe') key = (TRIBES_MAP[api.tribeId]?.name) || 'Unassigned';
+    else if (GROUP_BY === 'app') key = api.applicationContext || 'Unknown';
+    else if (GROUP_BY === 'l0') key = api.businessCapability?.l0 || 'Unclassified';
+    else if (GROUP_BY === 'l1') key = api.businessCapability?.l1 || 'Unclassified';
+    else if (GROUP_BY === 'env') {
+      (api.environments||[]).forEach(env => {
+        if (!groups[env]) groups[env] = [];
+        groups[env].push(api);
+      });
+      return;
+    }
+    else if (GROUP_BY === 'layer') key = api.layer || 'Unknown';
+    else if (GROUP_BY === 'migration') key = api.migrationStatus || 'Unknown';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(api);
+  });
+  return Object.entries(groups).map(([label, apis]) => ({ label, apis }));
+}
+
+// ── Render ─────────────────────────────────────────────────
+function renderContent() {
+  const filtered = getFilteredAPIs();
+  document.getElementById('resultsCount').textContent = `${filtered.length} API${filtered.length !== 1 ? 's' : ''}`;
+  document.getElementById('viewSubtitle').textContent = 
+    `${filtered.length} of ${(ALL_DATA.apis||[]).length} APIs • ${Object.values(ACTIVE_FILTERS).filter(v=>v!=='All').length + (SEARCH?1:0)} filter(s) active`;
+
+  const groups = groupAPIs(filtered);
+  const content = document.getElementById('contentArea');
+
+  if (DISPLAY_MODE === 'card') {
+    content.innerHTML = groups.map(g => renderCardGroup(g)).join('');
+  } else {
+    content.innerHTML = renderTable(filtered);
+  }
+
+  if (filtered.length === 0) {
+    content.innerHTML = `<div class="empty-state">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <p>No APIs match the current filters.</p>
+    </div>`;
+  }
+}
+
+function renderCardGroup(group) {
+  const cards = group.apis.map((api, i) => renderCard(api, i)).join('');
+  const header = group.label ? `
+    <div class="group-header">
+      <span class="group-tag">${GROUP_BY.toUpperCase()}</span>
+      <span class="group-name">${group.label}</span>
+      <span class="group-count">${group.apis.length} API${group.apis.length!==1?'s':''}</span>
+    </div>` : '';
+  return `<div class="group-section">${header}<div class="card-grid">${cards}</div></div>`;
+}
+
+function renderCard(api, idx) {
+  const tribe = TRIBES_MAP[api.tribeId];
+  const envBadges = (api.environments||[]).map(e => `<span class="badge badge-env">${e}</span>`).join('');
+  const migClass = getMigClass(api.migrationStatus);
+  const delay = Math.min(idx * 30, 400);
+  return `<div class="api-card" style="animation-delay:${delay}ms" onclick="openDrawer('${api.id}')">
+    <div class="card-top">
+      <div>
+        <div class="card-name">${api.name}</div>
+        <div class="card-version">v${api.version} · ${api.protocol}</div>
+      </div>
+      <div class="status-dot ${api.status||''}"></div>
+    </div>
+    <div class="card-meta">
+      <span class="badge badge-layer-${api.layer||''}">${api.layer||'?'}</span>
+      <span class="badge badge-deploy-${api.deploymentModel}">${api.deploymentModel}</span>
+      ${envBadges}
+    </div>
+    <div class="card-biz">
+      <div class="biz-l0">${api.businessCapability?.l0||'—'} › ${api.businessCapability?.l1||'—'}</div>
+      <div class="biz-l2">${api.businessCapability?.l2||'—'}</div>
+    </div>
+    <div class="card-footer">
+      <span class="squad-label">🛡 ${tribe?.name||'Unassigned'} · ${api.owningSquad||'—'}</span>
+      <span class="migration-pill ${migClass}">${api.migrationStatus||'—'}</span>
+    </div>
+  </div>`;
+}
+
+function renderTable(apis) {
+  const rows = apis.map(api => {
+    const tribe = TRIBES_MAP[api.tribeId];
+    const migClass = getMigClass(api.migrationStatus);
+    return `<tr>
+      <td class="td-name" onclick="openDrawer('${api.id}')">${api.name}</td>
+      <td><span class="badge badge-layer-${api.layer}">${api.layer}</span></td>
+      <td>${api.version}</td>
+      <td>${tribe?.name||'—'}</td>
+      <td>${api.owningSquad||'—'}</td>
+      <td>${api.businessCapability?.l0||'—'}</td>
+      <td>${api.businessCapability?.l2||'—'}</td>
+      <td><span class="badge badge-deploy-${api.deploymentModel}">${api.deploymentModel}</span></td>
+      <td>${(api.environments||[]).join(', ')}</td>
+      <td><span class="complexity-badge ${api.migrationComplexity}">${api.migrationComplexity}</span></td>
+      <td><span class="migration-pill ${migClass}">${api.migrationStatus}</span></td>
+    </tr>`;
+  }).join('');
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>API Name</th><th>Layer</th><th>Version</th><th>Tribe</th><th>Squad</th>
+      <th>L0 Domain</th><th>L2 Capability</th><th>Deploy</th><th>Environments</th>
+      <th>Complexity</th><th>Migration</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function getMigClass(status) {
+  if (!status) return 'mig-not';
+  if (status === 'In Analysis') return 'mig-analysis';
+  if (status === 'Blocked') return 'mig-blocked';
+  if (status === 'Decommission Candidate') return 'mig-decommission';
+  return 'mig-not';
+}
+
+// ── CoE Viewer Helpers ─────────────────────────────────────
+function switchDrawerTab(btn) {
+  const wrap = btn.closest('.drawer-body') || document.getElementById('drawerBody');
+  wrap.querySelectorAll('.cvtab').forEach(t => t.classList.remove('active'));
+  wrap.querySelectorAll('.cvpanel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.tab)?.classList.add('active');
+}
+
+function certExpiryColor(dateStr) {
+  if (!dateStr) return 'var(--muted2)';
+  const diff = (new Date(dateStr) - new Date()) / (1000*60*60*24);
+  if (diff < 30)  return 'var(--danger)';
+  if (diff < 90)  return 'var(--warn)';
+  return 'var(--success)';
+}
+
+// rows: [[key, val], …]   tagGroups: [[label, arr, cssClass], …]   lists: [[label, arr, icon], …]
+function renderCoeSection(title, _ns, rows, tagGroups, lists) {
+  const rowsHtml = rows.map(([k,v]) => `
+    <div class="coe-kv">
+      <span class="coe-key">${k}</span>
+      <span class="coe-val">${v || '<span style="color:var(--muted2)">—</span>'}</span>
+    </div>`).join('');
+
+  const tagsHtml = tagGroups.map(([label, arr, cls]) => arr.length ? `
+    <div class="coe-kv">
+      <span class="coe-key">${label}</span>
+      <span class="coe-val">${arr.map(t=>`<span class="${cls}">${t}</span>`).join('')}</span>
+    </div>` : '').join('');
+
+  const listsHtml = lists.map(([label, arr, icon]) => arr.length ? `
+    <div class="coe-list-section">
+      <div class="coe-list-title">${label}</div>
+      ${arr.map(item=>`<div class="coe-list-item">${icon} ${item}</div>`).join('')}
+    </div>` : '').join('');
+
+  return rowsHtml + tagsHtml + listsHtml || '<p class="empty-notes">No data recorded for this CoE.</p>';
+}
+
+// ── Detail Drawer ──────────────────────────────────────────
+function renderSystemList(items, kind) {
+  if (!items || items.length === 0) return '<p class="empty-notes">None recorded.</p>';
+  // Handle both legacy flat strings and new rich objects
+  return items.map(item => {
+    const sys = typeof item === 'string' ? { system: item } : item;
+    const envTags = (sys.environments || []).map(e => `<span class="badge badge-env">${e}</span>`).join('');
+    const proto = sys.contractType || sys.protocol || '';
+    const protoTag = proto ? `<span class="badge" style="background:rgba(99,102,241,0.08);border-color:rgba(99,102,241,0.25);color:var(--accent2);">${proto}</span>` : '';
+    const noteHtml = sys.notes ? `<div style="font-size:11px;color:var(--muted2);margin-top:5px;line-height:1.5;padding-left:2px;">ℹ ${sys.notes}</div>` : '';
+    return `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:7px;">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+        <span style="font-size:13px;font-weight:600;">${sys.system}</span>
+        ${protoTag}
+        ${envTags}
+      </div>
+      ${noteHtml}
+    </div>`;
+  }).join('');
+}
+
+function openDrawer(apiId) {
+  const api = (ALL_DATA.apis||[]).find(a => a.id === apiId);
+  if (!api) return;
+  const tribe = TRIBES_MAP[api.tribeId];
+  const sec = api.security       || {};
+  const des = api.solutionDesign || {};
+  const ops = api.operations     || {};
+
+  document.getElementById('drawerTitle').textContent = api.name;
+  document.getElementById('drawerSub').textContent = `${api.id} · v${api.version}`;
+  document.getElementById('drawerBadges').innerHTML = `
+    <span class="badge badge-layer-${api.layer}">${api.layer}</span>
+    <span class="badge badge-deploy-${api.deploymentModel}">${api.deploymentModel}</span>
+    <span class="complexity-badge ${api.migrationComplexity}">${api.migrationComplexity}</span>
+    <span class="migration-pill ${getMigClass(api.migrationStatus)}">${api.migrationStatus}</span>
+  `;
+
+  const notesHTML = (api.operationalNotes||[]).length
+    ? api.operationalNotes.map(n => `<div class="note-item">🗒 ${n}</div>`).join('')
+    : `<p class="empty-notes">No operational notes recorded.</p>`;
+  const confLinks = (api.confluenceLinks||[]).length
+    ? api.confluenceLinks.map(l => `<div class="link-item"><span>📄</span><a href="${l.url||l}" target="_blank">${l.label||l.url||l}</a></div>`).join('')
+    : `<p class="empty-notes">No Confluence links.</p>`;
+  const designLinks = (api.designReferences||[]).length
+    ? api.designReferences.map(l => `<div class="link-item"><span>🎨</span><a href="${l.url||l}" target="_blank">${l.label||l.url||l}</a></div>`).join('')
+    : `<p class="empty-notes">No design references.</p>`;
+  const tags = (api.tags||[]).map(t => `<span class="tag">${t}</span>`).join('');
+
+  document.getElementById('drawerBody').innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Business Capability</div>
+      <div class="biz-breadcrumb">
+        <span>${api.businessCapability?.l0||'—'}</span>
+        <span class="sep">›</span>
+        <span>${api.businessCapability?.l1||'—'}</span>
+        <span class="sep">›</span>
+        <strong>${api.businessCapability?.l2||'—'}</strong>
+      </div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Ownership</div>
+      <div class="detail-row"><span class="detail-key">Tribe</span><span class="detail-val">${tribe?.name||'Unassigned'}</span></div>
+      <div class="detail-row"><span class="detail-key">Squad</span><span class="detail-val">${api.owningSquad||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Application</span><span class="detail-val">${api.applicationContext||'—'}</span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Technical Profile</div>
+	  
+	  ${api.repoApiName ? `<div class="detail-row"><span class="detail-key">Repo / Asset Name</span><span class="detail-val" style="font-family:var(--font-mono);font-size:12px;">${api.repoApiName}</span></div>` : ''}
+
+      <div class="detail-row"><span class="detail-key">Runtime</span><span class="detail-val">${api.runtime}</span></div>
+      <div class="detail-row"><span class="detail-key">Java</span><span class="detail-val">${api.javaVersion}</span></div>
+      <div class="detail-row"><span class="detail-key">Protocol</span><span class="detail-val">${api.protocol}</span></div>
+      <div class="detail-row"><span class="detail-key">Deployment</span><span class="detail-val">${api.deploymentModel}</span></div>
+      <div class="detail-row"><span class="detail-key">Environments</span><span class="detail-val">${(api.environments||[]).join(', ')}</span></div>
+      ${api.ramlSpec ? `<div class="detail-row"><span class="detail-key">RAML / Spec</span><span class="detail-val"><a href="${api.ramlSpec}" target="_blank" style="color:var(--accent)">View Spec →</a></span></div>` : ''}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Migration</div>
+      <div class="detail-row"><span class="detail-key">Status</span><span class="detail-val">${api.migrationStatus}</span></div>
+      <div class="detail-row"><span class="detail-key">Complexity</span><span class="detail-val"><span class="complexity-badge ${api.migrationComplexity}">${api.migrationComplexity}</span></span></div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Consumers (downstream)</div>
+      ${renderSystemList(api.consumers || [], 'consumer')}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Upstream Systems</div>
+      ${renderSystemList(api.upstreamSystems || [], 'upstream')}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">⚠ Operational Notes</div>
+      ${notesHTML}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">📄 Confluence / Documentation</div>
+      ${confLinks}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">🎨 Design References</div>
+      ${designLinks}
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Tags</div>
+      <div class="tag-list">${tags || '<p class="empty-notes">No tags.</p>'}</div>
+    </div>
+    <div class="detail-section">
+      <div class="detail-section-title">Audit</div>
+      <div class="detail-row"><span class="detail-key">Last Reviewed By</span><span class="detail-val">${api.lastReviewedBy||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Last Review Date</span><span class="detail-val">${api.lastReviewedDate||'—'}</span></div>
+    </div>
+
+    <!-- CoE Sections -->
+    <div style="border-top:1px solid var(--border);margin:8px 0 14px;"></div>
+    <div class="coe-tabs-viewer">
+      <button class="cvtab active" data-tab="drawer-sec" onclick="switchDrawerTab(this)"><span class="coe-dot-v sec-dot"></span> Security</button>
+      <button class="cvtab" data-tab="drawer-des" onclick="switchDrawerTab(this)"><span class="coe-dot-v des-dot"></span> Solution Design</button>
+      <button class="cvtab" data-tab="drawer-ops" onclick="switchDrawerTab(this)"><span class="coe-dot-v ops-dot"></span> Operations</button>
+    </div>
+    <div class="coe-viewer-wrap">
+
+      <div class="cvpanel active" id="drawer-sec">
+        ${renderCoeSection('🔐 Security COE', 'sec', [
+          ['Auth Scheme',        sec.authScheme],
+          ['TLS Version',        sec.tlsVersion],
+          ['Data Classification',sec.dataClassification],
+          ['Vault Path',         sec.secretsVaultPath],
+          ['Cert Expiry',        sec.certExpiry ? `<span style="color:${certExpiryColor(sec.certExpiry)}">${sec.certExpiry}</span>` : '—']
+        ], [
+          ['OAuth Scopes',    (sec.oauthScopes||[]),    'scope-tag'],
+          ['Gateway Policies',(sec.gatewayPolicies||[]),'policy-tag'],
+          ['Compliance',      (sec.complianceFlags||[]), 'compliance-tag']
+        ], [
+          ['Known Vulnerabilities / Findings', sec.knownVulnerabilities||[], '⚠']
+        ])}
+      </div>
+
+      <div class="cvpanel" id="drawer-des">
+        ${renderCoeSection('🏛 Solution Design COE', 'des', [
+          ['Pattern',             des.architecturalPattern],
+          ['Versioning',          des.versioningStrategy],
+          ['Error Handling',      des.errorHandlingStrategy],
+          ['SLA Target',          des.slaTarget],
+          ['AsyncAPI Spec',       des.asyncApiSpec ? `<a href="${des.asyncApiSpec}" target="_blank" style="color:var(--accent)">View →</a>` : '—']
+        ], [
+          ['Domain Events', (des.domainEvents||[]), 'event-tag']
+        ], [
+          ['Technical Debt', des.technicalDebt||[], '🔧'],
+          ['ADR / Design Decisions', (des.adrLinks||[]).map(l=>l.label||l.url||l), '📐']
+        ])}
+      </div>
+
+      <div class="cvpanel" id="drawer-ops">
+        ${renderCoeSection('⚙ Operations COE', 'ops', [
+          ['On-Call Contact',    ops.oncallContact],
+          ['Uptime SLA',         ops.uptimeSla],
+          ['Alerting Threshold', ops.alertingThreshold],
+          ['Maintenance Window', ops.maintenanceWindow],
+          ['Pipeline',           ops.pipelineLink ? `<a href="${ops.pipelineLink}" target="_blank" style="color:var(--accent)">View →</a>` : '—']
+        ], [], [
+          ['Known Fragilities',  ops.knownFragilities||[], '⚡'],
+          ['Incident References',ops.incidentRefs||[],     '🚨'],
+          ['Runbooks',           (ops.runbookLinks||[]).map(l=>l.label||l.url||l), '📋'],
+          ['Monitoring',         (ops.monitoringLinks||[]).map(l=>`<a href="${l.url||l}" target="_blank" style="color:var(--accent)">${l.label||l.url||l}</a>`), '📊']
+        ])}
+      </div>
+
+    </div>
+  `;
+
+  document.getElementById('drawerOverlay').classList.add('open');
+  document.getElementById('detailDrawer').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawerOverlay').classList.remove('open');
+  document.getElementById('detailDrawer').classList.remove('open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+
+// ── Theme ──────────────────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('coe-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+// Apply persisted theme immediately (before render)
+applyTheme(localStorage.getItem('coe-theme') || 'dark');
+
+// ── Boot ───────────────────────────────────────────────────
+loadData('api-data.json');
+</script>
+</body>
+</html>
