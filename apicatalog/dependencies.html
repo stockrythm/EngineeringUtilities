@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>API Dependencies — Integration COE</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --font-display:'Syne',sans-serif; --font-body:'DM Sans',sans-serif; --font-mono:'DM Mono',monospace;
+  --radius:10px; --radius-sm:6px;
+  --accent:#3b82f6; --accent2:#6366f1; --accent3:#22d3ee;
+  --success:#10b981; --warn:#f59e0b; --danger:#ef4444;
+}
+html,html[data-theme="dark"] {
+  --bg:#0b0f1a; --surface:#111827; --surface2:#1a2235; --surface3:#1f2d45;
+  --border:#243352; --border-bright:#2e4070;
+  --muted:#94a3b8; --muted2:#64748b; --text:#e2e8f0; --text-dim:#cbd5e1;
+  --header-bg:linear-gradient(135deg,#0d1526 0%,#111f38 60%,#0b1829 100%);
+  --svg-bg:#0d1220;
+}
+html[data-theme="light"] {
+  --bg:#f1f5f9; --surface:#fff; --surface2:#f8fafc; --surface3:#e2e8f0;
+  --border:#cbd5e1; --border-bright:#94a3b8;
+  --muted:#475569; --muted2:#64748b; --text:#0f172a; --text-dim:#1e293b;
+  --header-bg:linear-gradient(135deg,#1e3a5f 0%,#1e40af 60%,#1e3a5f 100%);
+  --svg-bg:#e8eef7;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;min-height:100vh;overflow:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px;}
+
+/* ── Header ── */
+header{background:var(--header-bg);border-bottom:1px solid var(--border-bright);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:relative;z-index:50;flex-shrink:0;}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:800;font-size:13px;color:#fff;}
+.logo-text{font-family:var(--font-display);font-weight:700;font-size:15px;}
+.logo-sub{font-family:var(--font-mono);font-size:9px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:var(--radius-sm);font-family:var(--font-body);font-weight:500;font-size:12px;cursor:pointer;border:none;transition:all 0.15s;text-decoration:none;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,0.15);}
+.btn-ghost:hover{background:rgba(255,255,255,0.08);color:#fff;}
+
+/* ── Tabs ── */
+.tab-bar{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;flex-shrink:0;}
+.tab-btn{font-family:var(--font-body);font-size:13px;font-weight:600;padding:12px 20px;cursor:pointer;border:none;background:transparent;color:var(--muted2);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;display:flex;align-items:center;gap:8px;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent);}
+.tab-icon{font-size:15px;}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;}
+.tribe-pill{font-size:11px;font-family:var(--font-body);font-weight:500;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s;white-space:nowrap;}
+.tribe-pill:hover{border-color:var(--accent);color:var(--text);}
+.tribe-pill.active{border-color:var(--accent);background:rgba(59,130,246,0.12);color:var(--accent);}
+.tribe-pill.all{border-color:var(--accent2);}
+.tribe-pill.all.active{background:rgba(99,102,241,0.12);color:var(--accent2);border-color:var(--accent2);}
+.toolbar-sep{width:1px;height:20px;background:var(--border);flex-shrink:0;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+
+/* ── Canvas area ── */
+.canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--svg-bg);}
+svg{width:100%;height:100%;}
+
+/* ── Layout shell ── */
+.app{display:flex;flex-direction:column;height:100vh;}
+.tab-panel{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.tab-panel.active{display:flex;}
+
+/* ── Side panel ── */
+.side-panel{position:absolute;top:12px;right:12px;width:300px;background:var(--surface);border:1px solid var(--border-bright);border-radius:var(--radius);box-shadow:0 8px 32px rgba(0,0,0,0.35);z-index:30;display:none;max-height:calc(100% - 24px);overflow-y:auto;}
+.side-panel.visible{display:block;}
+.sp-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;}
+.sp-title{font-family:var(--font-display);font-size:14px;font-weight:700;line-height:1.3;}
+.sp-close{background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:16px;flex-shrink:0;padding:2px 4px;}
+.sp-close:hover{color:var(--text);}
+.sp-body{padding:14px 16px;}
+.sp-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-start;}
+.sp-key{min-width:110px;font-size:11px;color:var(--muted2);font-family:var(--font-mono);flex-shrink:0;}
+.sp-val{font-size:12px;color:var(--text);word-break:break-word;}
+.sp-section{font-family:var(--font-mono);font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted2);padding-bottom:6px;border-bottom:1px solid var(--border);margin:10px 0 8px;}
+.sp-chip-row{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;}
+.sp-chip{font-family:var(--font-mono);font-size:9px;padding:3px 7px;border-radius:3px;border:1px solid;white-space:nowrap;}
+.sp-chip-consumer{background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:var(--accent3);}
+.sp-chip-upstream{background:rgba(99,102,241,0.08);border-color:rgba(99,102,241,0.3);color:var(--accent2);}
+.sp-chip-ext{background:rgba(148,163,184,0.08);border-color:rgba(148,163,184,0.2);color:var(--muted);}
+.mig-badge{display:inline-flex;font-family:var(--font-mono);font-size:9px;padding:3px 8px;border-radius:20px;border:1px solid;}
+.mig-not-started{border-color:var(--border-bright);color:var(--muted2);}
+.mig-in-analysis{border-color:var(--warn);color:var(--warn);background:rgba(245,158,11,0.08);}
+.mig-blocked{border-color:var(--danger);color:var(--danger);background:rgba(239,68,68,0.08);}
+.mig-complete{border-color:var(--success);color:var(--success);background:rgba(16,185,129,0.08);}
+.mig-decommission{border-color:var(--muted2);color:var(--muted2);background:rgba(100,116,139,0.1);}
+.impact-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px;}
+.impact-title{font-family:var(--font-mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--muted2);margin-bottom:6px;}
+.impact-api{display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:11px;}
+.impact-api:last-child{border-bottom:none;}
+
+/* ── D3 node styles (set via JS, mirrored here as reference) ── */
+.node-label{font-family:'DM Sans',sans-serif;pointer-events:none;user-select:none;}
+.link-arrow{fill:none;stroke-width:1.5;}
+.lane-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;fill:var(--muted2);opacity:0.5;}
+
+/* ── Tooltip ── */
+.d3-tooltip{position:absolute;background:var(--surface);border:1px solid var(--border-bright);border-radius:var(--radius-sm);padding:8px 12px;font-size:11px;pointer-events:none;z-index:100;opacity:0;transition:opacity 0.15s;max-width:220px;box-shadow:0 4px 16px rgba(0,0,0,0.3);}
+
+/* ── Loading ── */
+.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--svg-bg);z-index:20;}
+.spinner{width:32px;height:32px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.load-text{font-family:var(--font-mono);font-size:11px;color:var(--muted2);}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <div class="logo">
+      <div class="logo-mark">∫</div>
+      <div>
+        <div class="logo-text">API Dependencies</div>
+        <div class="logo-sub">Migration Impact Visualiser</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <label class="btn btn-ghost" style="cursor:pointer;">📂 Load JSON<input type="file" accept=".json" id="jsonFileInput" style="display:none"/></label>
+      <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:5px 9px;">🌙</button>
+      <a href="index.html" class="btn btn-ghost">← Catalog</a>
+    </div>
+  </header>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('icicle',this)"><span class="tab-icon">🌳</span> Tribe Ownership Map</button>
+    <button class="tab-btn" onclick="switchTab('graph',this)"><span class="tab-icon">🔗</span> Dependency Graph</button>
+  </div>
+
+  <!-- ── ICICLE TAB ── -->
+  <div class="tab-panel active" id="tab-icicle">
+    <div class="toolbar" id="icicle-toolbar">
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">FILTER:</span>
+      <div id="icicle-tribe-pills"></div>
+      <div class="toolbar-sep"></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Migrated / Complete</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> In Analysis</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Blocked</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div> Not Started</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#64748b;opacity:0.5"></div> Deprecated</div>
+      <button class="btn btn-ghost" id="icicle-reset" style="margin-left:auto;font-size:11px;display:none;" onclick="resetIcicle()">↑ Zoom out</button>
+    </div>
+    <div class="canvas-wrap" id="icicle-canvas">
+      <div class="loading" id="icicle-loading"><div class="spinner"></div><div class="load-text">Building tribe map…</div></div>
+      <svg id="icicle-svg"></svg>
+      <div class="side-panel" id="icicle-panel">
+        <div class="sp-header">
+          <div class="sp-title" id="ip-title"></div>
+          <button class="sp-close" onclick="document.getElementById('icicle-panel').classList.remove('visible')">✕</button>
+        </div>
+        <div class="sp-body" id="ip-body"></div>
+      </div>
+      <div class="d3-tooltip" id="icicle-tip"></div>
+    </div>
+  </div>
+
+  <!-- ── GRAPH TAB ── -->
+  <div class="tab-panel" id="tab-graph">
+    <div class="toolbar" id="graph-toolbar">
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">FOCUS:</span>
+      <div id="graph-tribe-pills"></div>
+      <div class="toolbar-sep"></div>
+      <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Complete</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> In Analysis</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Blocked</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> Not Started</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#64748b;border-radius:2px"></div> External System</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);margin-left:auto;">Click node → highlight chain</span>
+    </div>
+    <div class="canvas-wrap" id="graph-canvas">
+      <div class="loading" id="graph-loading"><div class="spinner"></div><div class="load-text">Building dependency graph…</div></div>
+      <svg id="graph-svg"></svg>
+      <div class="side-panel" id="graph-panel">
+        <div class="sp-header">
+          <div class="sp-title" id="gp-title"></div>
+          <button class="sp-close" onclick="clearGraphSelection()">✕</button>
+        </div>
+        <div class="sp-body" id="gp-body"></div>
+      </div>
+      <div class="d3-tooltip" id="graph-tip"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let DATA = null;
+let TRIBES_MAP = {};
+let ACTIVE_TRIBE = 'all';
+let CURRENT_TAB = 'icicle';
+let icicleRoot = null;  // D3 hierarchy root for reset
+
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('coe-theme', t);
+  const btn = document.getElementById('themeToggle');
+  if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+  if (DATA) { renderIcicle(); renderGraph(); }
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+}
+applyTheme(localStorage.getItem('coe-theme') || 'dark');
+
+// ══════════════════════════════════════════════
+// FILE LOAD
+// ══════════════════════════════════════════════
+document.getElementById('jsonFileInput').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => { try { initData(JSON.parse(ev.target.result)); } catch(x) { alert('Invalid JSON'); } };
+  r.readAsText(f);
+});
+
+async function autoLoad() {
+  try { initData(await fetch('api-data.json').then(r => r.json())); }
+  catch(e) { hideLoading(); }
+}
+
+function initData(raw) {
+  DATA = raw;
+  TRIBES_MAP = {};
+  (raw.tribes||[]).forEach(t => TRIBES_MAP[t.id] = t);
+  buildTribePills('icicle-tribe-pills', 'icicle');
+  buildTribePills('graph-tribe-pills', 'graph');
+  renderIcicle();
+  renderGraph();
+}
+
+function hideLoading() {
+  document.getElementById('icicle-loading').style.display = 'none';
+  document.getElementById('graph-loading').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(name, btn) {
+  CURRENT_TAB = name;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+// TRIBE PILLS
+// ══════════════════════════════════════════════
+function buildTribePills(containerId, tabKey) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  const tribes = DATA.tribes || [];
+  c.innerHTML = `<button class="tribe-pill all active" onclick="setTribeFilter('all','${tabKey}',this)">All Tribes</button>` +
+    tribes.map(t => `<button class="tribe-pill" style="--tc:${tribeColor(t.id)}" onclick="setTribeFilter('${t.id}','${tabKey}',this)">${t.name}</button>`).join('');
+}
+
+function setTribeFilter(tribeId, tabKey, btn) {
+  ACTIVE_TRIBE = tribeId;
+  const bar = document.getElementById(tabKey + '-tribe-pills');
+  bar.querySelectorAll('.tribe-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  if (tabKey === 'icicle') renderIcicle();
+  else renderGraph();
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const MIG_COLORS = {
+  'Complete':               '#10b981',
+  'Not Started':            '#6366f1',
+  'In Analysis':            '#f59e0b',
+  'Blocked':                '#ef4444',
+  'Decommission Candidate': '#64748b',
+  'In Progress':            '#22d3ee',
+};
+function migColor(status) { return MIG_COLORS[status] || '#6366f1'; }
+
+const TRIBE_PALETTE = ['#3b82f6','#6366f1','#22d3ee','#10b981','#f59e0b','#f472b6','#a78bfa'];
+function tribeColor(id) {
+  const tribes = Object.keys(TRIBES_MAP);
+  return TRIBE_PALETTE[tribes.indexOf(id) % TRIBE_PALETTE.length] || '#94a3b8';
+}
+
+function migBadgeClass(s) {
+  if (!s) return 'mig-not-started';
+  const m = s.toLowerCase().replace(/ /g,'-');
+  if (m.includes('complete')) return 'mig-complete';
+  if (m.includes('analysis')) return 'mig-in-analysis';
+  if (m.includes('blocked')) return 'mig-blocked';
+  if (m.includes('decommission')) return 'mig-decommission';
+  return 'mig-not-started';
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+// Fuzzy match: does system name string refer to an internal API?
+function resolveInternalAPI(systemName) {
+  if (!DATA) return null;
+  const s = systemName.toLowerCase();
+  return DATA.apis.find(a => {
+    const n = a.name.toLowerCase();
+    // match if: exact, contains, or major words overlap
+    if (n === s) return true;
+    if (n.includes(s) || s.includes(n)) return true;
+    const words = n.split(' ').filter(w => w.length > 3);
+    return words.length > 1 && words.filter(w => s.includes(w)).length >= 2;
+  }) || null;
+}
+
+// ══════════════════════════════════════════════
+// ══  TAB 1: ICICLE CHART  ════════════════════
+// ══════════════════════════════════════════════
+function buildIcicleHierarchy(filterTribe) {
+  const apis = DATA.apis.filter(a => filterTribe === 'all' || a.tribeId === filterTribe);
+  const tribes = filterTribe === 'all' ? (DATA.tribes || []) : (DATA.tribes || []).filter(t => t.id === filterTribe);
+
+  const root = { name: 'Integration COE', id: '__root', children: [] };
+  tribes.forEach(tribe => {
+    const tribeApis = apis.filter(a => a.tribeId === tribe.id);
+    if (!tribeApis.length) return;
+
+    // group by squad
+    const squads = {};
+    tribeApis.forEach(a => {
+      const sq = a.owningSquad || 'Unassigned';
+      if (!squads[sq]) squads[sq] = [];
+      squads[sq].push(a);
+    });
+
+    root.children.push({
+      name: tribe.name,
+      id: tribe.id,
+      type: 'tribe',
+      color: tribeColor(tribe.id),
+      children: Object.entries(squads).map(([sq, sqApis]) => ({
+        name: sq,
+        id: 'squad-' + sq,
+        type: 'squad',
+        tribeId: tribe.id,
+        color: tribeColor(tribe.id),
+        children: sqApis.map(a => ({
+          name: a.name,
+          id: a.id,
+          type: 'api',
+          api: a,
+          tribeId: tribe.id,
+          color: migColor(a.migrationStatus),
+          value: 1
+        }))
+      }))
+    });
+  });
+  return root;
+}
+
+function renderIcicle() {
+  const container = document.getElementById('icicle-canvas');
+  const svg = d3.select('#icicle-svg');
+  svg.selectAll('*').remove();
+
+  document.getElementById('icicle-loading').style.display = 'none';
+  document.getElementById('icicle-panel').classList.remove('visible');
+
+  if (!DATA) return;
+
+  const W = container.clientWidth, H = container.clientHeight;
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const textColor = isDark ? '#e2e8f0' : '#0f172a';
+  const borderCol = isDark ? '#1a2235' : '#ffffff';
+
+  const hierarchy = buildIcicleHierarchy(ACTIVE_TRIBE);
+  const root = d3.hierarchy(hierarchy).sum(d => d.value || 0).sort((a,b) => b.value - a.value);
+
+  // partition layout — horizontal icicle
+  const partition = d3.partition().size([H, W]).padding(1);
+  partition(root);
+  icicleRoot = root;
+
+  const g = svg.append('g').attr('class', 'icicle-g');
+
+  // ── Draw cells ──
+  const cell = g.selectAll('g')
+    .data(root.descendants())
+    .join('g')
+    .attr('transform', d => `translate(${d.y0},${d.x0})`)
+    .style('cursor', d => d.data.type === 'api' ? 'pointer' : d.children ? 'pointer' : 'default');
+
+  cell.append('rect')
+    .attr('width', d => d.y1 - d.y0)
+    .attr('height', d => d.x1 - d.x0)
+    .attr('fill', d => {
+      if (d.depth === 0) return isDark ? '#0d1a2e' : '#dbe4f0';
+      if (d.data.type === 'tribe') return d.data.color + (isDark ? '33' : '22');
+      if (d.data.type === 'squad') return d.data.color + (isDark ? '22' : '18');
+      return d.data.color + 'cc';
+    })
+    .attr('stroke', borderCol)
+    .attr('stroke-width', 1)
+    .attr('rx', d => d.data.type === 'api' ? 4 : 2);
+
+  // left accent bar for tribe cells
+  cell.filter(d => d.data.type === 'tribe')
+    .append('rect')
+    .attr('width', 3)
+    .attr('height', d => d.x1 - d.x0)
+    .attr('fill', d => d.data.color)
+    .attr('rx', 1);
+
+  // Labels
+  cell.append('text')
+    .attr('class', 'node-label')
+    .attr('x', d => d.data.type === 'tribe' ? 8 : 6)
+    .attr('y', d => (d.x1 - d.x0) / 2)
+    .attr('dy', '0.35em')
+    .attr('fill', d => {
+      if (d.data.type === 'api') return '#fff';
+      return textColor;
+    })
+    .attr('font-size', d => d.depth === 0 ? 12 : d.data.type === 'tribe' ? 12 : d.data.type === 'squad' ? 11 : 10)
+    .attr('font-weight', d => d.data.type === 'tribe' ? '700' : '500')
+    .attr('font-family', d => d.data.type === 'api' ? "'DM Mono',monospace" : "'DM Sans',sans-serif")
+    .text(d => {
+      const w = d.y1 - d.y0 - 10;
+      const h = d.x1 - d.x0;
+      if (h < 14 || w < 30) return '';
+      const label = d.data.name;
+      const maxChars = Math.floor(w / 6.5);
+      return label.length > maxChars ? label.slice(0, maxChars - 1) + '…' : label;
+    });
+
+  // Layer badge for API nodes
+  cell.filter(d => d.data.type === 'api' && (d.x1 - d.x0) > 22)
+    .append('text')
+    .attr('x', d => (d.y1 - d.y0) - 6)
+    .attr('y', d => (d.x1 - d.x0) / 2)
+    .attr('dy', '0.35em')
+    .attr('text-anchor', 'end')
+    .attr('fill', 'rgba(255,255,255,0.6)')
+    .attr('font-size', 9)
+    .attr('font-family', "'DM Mono',monospace")
+    .text(d => d.data.api?.layer || '');
+
+  // ── Interactions ──
+  const tip = document.getElementById('icicle-tip');
+
+  cell.on('mousemove', (event, d) => {
+    if (d.depth === 0) { tip.style.opacity = 0; return; }
+    let html = `<strong>${d.data.name}</strong>`;
+    if (d.data.type === 'api' && d.data.api) {
+      html += `<br/><span style="color:#94a3b8">${d.data.api.layer} · ${d.data.api.migrationStatus}</span>`;
+    } else if (d.data.type === 'squad') {
+      html += `<br/><span style="color:#94a3b8">${d.descendants().filter(x=>x.data.type==='api').length} APIs</span>`;
+    } else if (d.data.type === 'tribe') {
+      html += `<br/><span style="color:#94a3b8">${d.descendants().filter(x=>x.data.type==='api').length} APIs</span>`;
+    }
+    tip.innerHTML = html;
+    tip.style.opacity = 1;
+    tip.style.left = (event.offsetX + 12) + 'px';
+    tip.style.top = (event.offsetY - 8) + 'px';
+  }).on('mouseleave', () => { tip.style.opacity = 0; });
+
+  cell.on('click', (event, d) => {
+    if (d.data.type === 'api') {
+      showIciclePanel(d.data.api);
+    } else if (d.children) {
+      zoomIcicle(d, W, H, g, cell);
+      document.getElementById('icicle-reset').style.display = 'flex';
+    }
+  });
+}
+
+function zoomIcicle(focus, W, H, g, cell) {
+  const t = d3.transition().duration(600).ease(d3.easeCubicInOut);
+  const xScale = d3.scaleLinear().domain([focus.x0, focus.x1]).range([0, H]);
+  const yScale = d3.scaleLinear().domain([focus.y0, W]).range([0, W]);
+
+  cell.transition(t)
+    .attr('transform', d => `translate(${yScale(d.y0)},${xScale(d.x0)})`);
+  cell.select('rect').transition(t)
+    .attr('height', d => xScale(d.x1) - xScale(d.x0))
+    .attr('width', d => yScale(d.y1) - yScale(d.y0));
+  cell.select('text.node-label').transition(t)
+    .attr('y', d => (xScale(d.x1) - xScale(d.x0)) / 2)
+    .text(d => {
+      const w = yScale(d.y1) - yScale(d.y0) - 10;
+      const h = xScale(d.x1) - xScale(d.x0);
+      if (h < 14 || w < 30) return '';
+      const label = d.data.name;
+      const maxChars = Math.floor(w / 6.5);
+      return label.length > maxChars ? label.slice(0, maxChars - 1) + '…' : label;
+    });
+}
+
+function resetIcicle() {
+  document.getElementById('icicle-reset').style.display = 'none';
+  renderIcicle();
+}
+
+function showIciclePanel(api) {
+  const tribe = TRIBES_MAP[api.tribeId];
+  document.getElementById('ip-title').textContent = api.name;
+
+  const extSystems = [
+    ...(api.consumers || []).filter(c => !resolveInternalAPI(c.system)).map(c => c.system),
+    ...(api.upstreamSystems || []).filter(u => !resolveInternalAPI(u.system)).map(u => u.system)
+  ];
+  const internalDeps = [
+    ...(api.upstreamSystems || []).filter(u => resolveInternalAPI(u.system)).map(u => u.system)
+  ];
+  const internalConsumers = [
+    ...(api.consumers || []).filter(c => resolveInternalAPI(c.system)).map(c => c.system)
+  ];
+
+  // migration readiness score for tribe
+  const tribeApis = DATA.apis.filter(a => a.tribeId === api.tribeId);
+  const complete = tribeApis.filter(a => a.migrationStatus === 'Complete').length;
+  const readinessPct = Math.round((complete / tribeApis.length) * 100);
+
+  document.getElementById('ip-body').innerHTML = `
+    <div class="sp-row"><span class="sp-key">Layer</span><span class="sp-val">${api.layer}</span></div>
+    <div class="sp-row"><span class="sp-key">Tribe</span><span class="sp-val">${tribe?.name||'—'}</span></div>
+    <div class="sp-row"><span class="sp-key">Squad</span><span class="sp-val">${api.owningSquad||'—'}</span></div>
+    <div class="sp-row"><span class="sp-key">Deployment</span><span class="sp-val">${api.deploymentModel}</span></div>
+    <div class="sp-row"><span class="sp-key">Migration</span><span class="sp-val"><span class="mig-badge ${migBadgeClass(api.migrationStatus)}">${api.migrationStatus}</span></span></div>
+    <div class="sp-row"><span class="sp-key">Runtime</span><span class="sp-val">${api.runtime} · ${api.javaVersion}</span></div>
+    ${api.security?.dataClassification ? `<div class="sp-row"><span class="sp-key">Classification</span><span class="sp-val">${api.security.dataClassification}</span></div>` : ''}
+
+    <div class="sp-section">Internal Consumers</div>
+    <div class="sp-chip-row">
+      ${internalConsumers.length ? internalConsumers.map(s=>`<span class="sp-chip sp-chip-consumer">${s}</span>`).join('') : '<span style="color:var(--muted2);font-size:11px;">None</span>'}
+    </div>
+
+    <div class="sp-section">Internal Upstream APIs</div>
+    <div class="sp-chip-row">
+      ${internalDeps.length ? internalDeps.map(s=>`<span class="sp-chip sp-chip-upstream">${s}</span>`).join('') : '<span style="color:var(--muted2);font-size:11px;">None</span>'}
+    </div>
+
+    <div class="sp-section">External Systems Touched</div>
+    <div class="sp-chip-row">
+      ${extSystems.length ? extSystems.map(s=>`<span class="sp-chip sp-chip-ext">${s}</span>`).join('') : '<span style="color:var(--muted2);font-size:11px;">None</span>'}
+    </div>
+
+    <div class="sp-section">Tribe Readiness</div>
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:6px;">${tribe?.name} — ${complete}/${tribeApis.length} APIs migrated</div>
+    <div style="background:var(--surface3);border-radius:20px;height:6px;overflow:hidden;">
+      <div style="width:${readinessPct}%;height:100%;background:${readinessPct===100?'#10b981':readinessPct>50?'#f59e0b':'#ef4444'};border-radius:20px;transition:width 0.5s;"></div>
+    </div>
+    <div style="font-size:10px;color:var(--muted2);margin-top:4px;font-family:var(--font-mono);">${readinessPct}% ready</div>
+  `;
+  document.getElementById('icicle-panel').classList.add('visible');
+}
+
+// ══════════════════════════════════════════════
+// ══  TAB 2: DEPENDENCY GRAPH  ════════════════
+// ══════════════════════════════════════════════
+let graphSim = null;
+
+function buildGraphData(filterTribe) {
+  const allApis = DATA.apis || [];
+  const focusApis = filterTribe === 'all' ? allApis : allApis.filter(a => a.tribeId === filterTribe);
+
+  // Collect all node IDs we need — focus APIs + any internal APIs they link to
+  const nodeIds = new Set(focusApis.map(a => a.id));
+
+  // Also include any internal APIs referenced from focus APIs (even if different tribe)
+  focusApis.forEach(api => {
+    [...(api.consumers||[]), ...(api.upstreamSystems||[])].forEach(dep => {
+      const internal = resolveInternalAPI(dep.system);
+      if (internal) nodeIds.add(internal.id);
+    });
+  });
+
+  const nodes = [];
+  const nodeMap = {};
+
+  // Internal API nodes
+  allApis.filter(a => nodeIds.has(a.id)).forEach(a => {
+    const n = {
+      id: a.id, name: a.name, type: 'api',
+      layer: a.layer, tribeId: a.tribeId,
+      migrationStatus: a.migrationStatus,
+      api: a, external: false,
+      inFocus: focusApis.some(f => f.id === a.id)
+    };
+    nodes.push(n);
+    nodeMap[a.id] = n;
+  });
+
+  // External system nodes (deduplicated)
+  const extSeen = new Set();
+  focusApis.forEach(api => {
+    [...(api.consumers||[]), ...(api.upstreamSystems||[])].forEach(dep => {
+      const internal = resolveInternalAPI(dep.system);
+      if (!internal && !extSeen.has(dep.system)) {
+        extSeen.add(dep.system);
+        const n = { id: 'ext-' + dep.system, name: dep.system, type: 'external', external: true, inFocus: false };
+        nodes.push(n);
+        nodeMap['ext-' + dep.system] = n;
+      }
+    });
+  });
+
+  // Edges
+  const links = [];
+  const seen = new Set();
+  focusApis.forEach(api => {
+    // upstream → this api (api depends on upstream)
+    (api.upstreamSystems||[]).forEach(dep => {
+      const target = api.id;
+      const internal = resolveInternalAPI(dep.system);
+      const sourceId = internal ? internal.id : ('ext-' + dep.system);
+      const key = sourceId + '→' + target;
+      if (!seen.has(key) && nodeMap[sourceId] && nodeMap[target]) {
+        seen.add(key);
+        links.push({ source: sourceId, target, internal: !!internal, protocol: dep.protocol||dep.contractType||'' });
+      }
+    });
+    // this api → consumers
+    (api.consumers||[]).forEach(dep => {
+      const internal = resolveInternalAPI(dep.system);
+      if (internal && nodeMap[internal.id]) {
+        const key = api.id + '→' + internal.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          links.push({ source: api.id, target: internal.id, internal: true, protocol: dep.contractType||'' });
+        }
+      }
+    });
+  });
+
+  return { nodes, links, nodeMap };
+}
+
+let SELECTED_NODE = null;
+
+function renderGraph() {
+  const container = document.getElementById('graph-canvas');
+  const svg = d3.select('#graph-svg');
+  svg.selectAll('*').remove();
+  document.getElementById('graph-loading').style.display = 'none';
+  document.getElementById('graph-panel').classList.remove('visible');
+  SELECTED_NODE = null;
+  if (graphSim) { graphSim.stop(); graphSim = null; }
+  if (!DATA) return;
+
+  const W = container.clientWidth, H = container.clientHeight;
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  const textColor = isDark ? '#e2e8f0' : '#1e293b';
+  const mutedColor = isDark ? '#64748b' : '#94a3b8';
+  const laneStroke = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+
+  const { nodes, links } = buildGraphData(ACTIVE_TRIBE);
+  if (!nodes.length) return;
+
+  // ── Swim lane setup ──
+  const LAYERS = ['EAPI','EVENT','PAPI','SAPI','BATCH','UTILITY','FACADE'];
+  const laneH = H / (LAYERS.length + 1);
+  const LANE_Y = {};
+  LAYERS.forEach((l, i) => LANE_Y[l] = (i + 1) * laneH);
+
+  // ── Lane background bands ──
+  const laneG = svg.append('g').attr('class', 'lanes');
+  LAYERS.forEach((l, i) => {
+    const y = i * laneH;
+    laneG.append('rect').attr('x', 0).attr('y', y).attr('width', W).attr('height', laneH)
+      .attr('fill', i % 2 === 0 ? laneStroke : 'transparent');
+    laneG.append('text').attr('class', 'lane-label')
+      .attr('x', 10).attr('y', y + 14)
+      .attr('fill', mutedColor)
+      .attr('font-size', 9).attr('font-family', "'DM Mono',monospace")
+      .attr('letter-spacing', '1px').attr('text-transform', 'uppercase')
+      .text(l);
+  });
+  laneG.append('text').attr('class', 'lane-label')
+    .attr('x', 10).attr('y', LAYERS.length * laneH + 14)
+    .attr('fill', mutedColor).attr('font-size', 9)
+    .attr('font-family', "'DM Mono',monospace").text('EXTERNAL');
+
+  // ── Arrow marker ──
+  svg.append('defs').append('marker')
+    .attr('id','arrow').attr('viewBox','0 -4 8 8').attr('refX',18).attr('refY',0)
+    .attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto')
+    .append('path').attr('d','M0,-4L8,0L0,4').attr('fill', isDark?'#2e4070':'#94a3b8');
+
+  svg.append('defs').append('marker')
+    .attr('id','arrow-highlight').attr('viewBox','0 -4 8 8').attr('refX',18).attr('refY',0)
+    .attr('markerWidth',6).attr('markerHeight',6).attr('orient','auto')
+    .append('path').attr('d','M0,-4L8,0L0,4').attr('fill','#f59e0b');
+
+  // Set initial Y positions by layer
+  nodes.forEach(n => {
+    if (n.external) { n.fy = H - laneH / 2; }
+    else {
+      const ly = LANE_Y[n.layer];
+      n.fy = ly || H / 2;
+    }
+    n.x = n.x || W / 2 + (Math.random() - 0.5) * W * 0.6;
+    n.y = n.fy;
+  });
+
+  // ── Force simulation (x-axis spread only, y fixed by lane) ──
+  graphSim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(140).strength(0.4))
+    .force('charge', d3.forceManyBody().strength(-280))
+    .force('x', d3.forceX(W / 2).strength(0.04))
+    .force('collide', d3.forceCollide(60))
+    .alphaDecay(0.03);
+
+  // ── Links ──
+  const linkG = svg.append('g');
+  const link = linkG.selectAll('line')
+    .data(links).join('line')
+    .attr('class', 'link-arrow')
+    .attr('stroke', isDark ? '#2e4070' : '#cbd5e1')
+    .attr('stroke-width', d => d.internal ? 1.5 : 1)
+    .attr('stroke-dasharray', d => d.internal ? 'none' : '4,3')
+    .attr('marker-end', 'url(#arrow)')
+    .attr('opacity', 0.7);
+
+  // ── Link labels ──
+  const linkLabel = svg.append('g')
+    .selectAll('text').data(links).join('text')
+    .attr('font-size', 8).attr('font-family', "'DM Mono',monospace")
+    .attr('fill', mutedColor).attr('text-anchor', 'middle')
+    .text(d => d.protocol || '');
+
+  // ── Nodes ──
+  const nodeG = svg.append('g');
+  const node = nodeG.selectAll('g')
+    .data(nodes).join('g')
+    .attr('cursor', 'pointer')
+    .call(d3.drag()
+      .on('start', (e, d) => { if (!e.active) graphSim.alphaTarget(0.15).restart(); d.fx = d.x; })
+      .on('drag',  (e, d) => { d.fx = e.x; })
+      .on('end',   (e, d) => { if (!e.active) graphSim.alphaTarget(0); d.fx = null; })
+    );
+
+  // Node shape
+  node.append('rect')
+    .attr('x', d => d.external ? -44 : -52)
+    .attr('y', -14)
+    .attr('width', d => d.external ? 88 : 104)
+    .attr('height', 28)
+    .attr('rx', d => d.external ? 4 : 7)
+    .attr('fill', d => {
+      if (d.external) return isDark ? '#1a2235' : '#e2e8f0';
+      const base = migColor(d.migrationStatus);
+      return d.inFocus ? base + 'dd' : base + '55';
+    })
+    .attr('stroke', d => {
+      if (d.external) return isDark ? '#2e4070' : '#94a3b8';
+      return d.inFocus ? migColor(d.migrationStatus) : migColor(d.migrationStatus) + '88';
+    })
+    .attr('stroke-width', d => d.inFocus ? 1.5 : 1);
+
+  // Tribe color left bar on API nodes
+  node.filter(d => !d.external)
+    .append('rect')
+    .attr('x', -52).attr('y', -14).attr('width', 3).attr('height', 28)
+    .attr('rx', 2)
+    .attr('fill', d => tribeColor(d.tribeId));
+
+  // Node label
+  node.append('text')
+    .attr('text-anchor', 'middle').attr('dy', '0.1em')
+    .attr('font-size', d => d.external ? 9 : 9.5)
+    .attr('font-family', "'DM Sans',sans-serif")
+    .attr('font-weight', d => d.inFocus ? '600' : '400')
+    .attr('fill', d => d.external ? mutedColor : '#fff')
+    .text(d => {
+      const name = d.name;
+      const max = d.external ? 14 : 16;
+      return name.length > max ? name.slice(0, max - 1) + '…' : name;
+    });
+
+  // Layer tag
+  node.filter(d => !d.external)
+    .append('text')
+    .attr('x', 44).attr('y', -6)
+    .attr('font-size', 7).attr('font-family', "'DM Mono',monospace")
+    .attr('fill', 'rgba(255,255,255,0.5)').attr('text-anchor', 'end')
+    .text(d => d.layer || '');
+
+  // ── Tooltip ──
+  const tip = document.getElementById('graph-tip');
+  node.on('mousemove', (event, d) => {
+    let html = `<strong>${d.name}</strong>`;
+    if (!d.external) {
+      const blockedBy = links.filter(l => (l.target.id||l.target) === d.id && !(nodes.find(n=>n.id===(l.source.id||l.source))?.migrationStatus==='Complete')).length;
+      html += `<br/><span style="color:#94a3b8">${d.layer} · ${d.migrationStatus}</span>`;
+      if (blockedBy > 0) html += `<br/><span style="color:#ef4444">⚠ ${blockedBy} upstream not migrated</span>`;
+    }
+    tip.innerHTML = html;
+    tip.style.opacity = 1;
+    tip.style.left = (event.offsetX + 14) + 'px';
+    tip.style.top = (event.offsetY - 8) + 'px';
+  }).on('mouseleave', () => { tip.style.opacity = 0; });
+
+  // ── Click → highlight chain ──
+  node.on('click', (event, d) => {
+    event.stopPropagation();
+    if (SELECTED_NODE === d.id) { clearGraphSelection(); return; }
+    SELECTED_NODE = d.id;
+    highlightChain(d, nodes, links, node, link, linkLabel);
+    showGraphPanel(d, nodes, links);
+  });
+
+  svg.on('click', () => clearGraphSelection());
+
+  // ── Simulation tick ──
+  graphSim.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    linkLabel
+      .attr('x', d => (d.source.x + d.target.x) / 2)
+      .attr('y', d => (d.source.y + d.target.y) / 2 - 4);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+
+  // Zoom + pan
+  svg.call(d3.zoom().scaleExtent([0.3, 3]).on('zoom', e => {
+    linkG.attr('transform', e.transform);
+    nodeG.attr('transform', e.transform);
+    laneG.attr('transform', `translate(0,0)scale(${e.transform.k})`); // lanes don't pan
+  }));
+}
+
+function highlightChain(d, nodes, links, nodeEl, linkEl, linkLabelEl) {
+  // Find all ancestors (upstream) and descendants (downstream)
+  const ancestors = new Set();
+  const descendants = new Set();
+  ancestors.add(d.id);
+  descendants.add(d.id);
+
+  // BFS upstream
+  let frontier = [d.id];
+  while (frontier.length) {
+    const next = [];
+    frontier.forEach(id => {
+      links.forEach(l => {
+        const tid = l.target.id || l.target;
+        const sid = l.source.id || l.source;
+        if (tid === id && !ancestors.has(sid)) { ancestors.add(sid); next.push(sid); }
+      });
+    });
+    frontier = next;
+  }
+  // BFS downstream
+  frontier = [d.id];
+  while (frontier.length) {
+    const next = [];
+    frontier.forEach(id => {
+      links.forEach(l => {
+        const tid = l.target.id || l.target;
+        const sid = l.source.id || l.source;
+        if (sid === id && !descendants.has(tid)) { descendants.add(tid); next.push(tid); }
+      });
+    });
+    frontier = next;
+  }
+  const chain = new Set([...ancestors, ...descendants]);
+
+  nodeEl.select('rect:first-child')
+    .attr('opacity', nd => chain.has(nd.id) ? 1 : 0.15)
+    .attr('stroke-width', nd => nd.id === d.id ? 2.5 : chain.has(nd.id) ? 1.5 : 1);
+
+  linkEl.attr('opacity', l => {
+    const s = l.source.id||l.source, t = l.target.id||l.target;
+    return chain.has(s) && chain.has(t) ? 1 : 0.06;
+  }).attr('stroke', l => {
+    const s = l.source.id||l.source, t = l.target.id||l.target;
+    return chain.has(s) && chain.has(t) ? '#f59e0b' : (document.documentElement.getAttribute('data-theme')==='light'?'#cbd5e1':'#2e4070');
+  }).attr('marker-end', l => {
+    const s = l.source.id||l.source, t = l.target.id||l.target;
+    return chain.has(s) && chain.has(t) ? 'url(#arrow-highlight)' : 'url(#arrow)';
+  });
+
+  linkLabelEl.attr('opacity', l => {
+    const s = l.source.id||l.source, t = l.target.id||l.target;
+    return chain.has(s) && chain.has(t) ? 1 : 0;
+  });
+}
+
+function clearGraphSelection() {
+  SELECTED_NODE = null;
+  d3.selectAll('#graph-svg g g rect').attr('opacity', 1).attr('stroke-width', null);
+  d3.selectAll('#graph-svg .link-arrow')
+    .attr('opacity', 0.7).attr('stroke', document.documentElement.getAttribute('data-theme')==='light'?'#cbd5e1':'#2e4070')
+    .attr('marker-end', 'url(#arrow)');
+  d3.selectAll('#graph-svg text').attr('opacity', null);
+  document.getElementById('graph-panel').classList.remove('visible');
+}
+
+function showGraphPanel(d, nodes, links) {
+  if (d.external) {
+    // External system — show which APIs touch it
+    const touching = DATA.apis.filter(a =>
+      [...(a.consumers||[]),(a.upstreamSystems||[])].some(dep => dep.system === d.name)
+    );
+    document.getElementById('gp-title').textContent = d.name;
+    document.getElementById('gp-body').innerHTML = `
+      <div class="sp-section">External System</div>
+      <div style="font-size:11px;color:var(--muted2);margin-bottom:10px;">This is an external system — not managed in the Integration Platform.</div>
+      <div class="sp-section">APIs that interact with this system</div>
+      ${touching.map(a => `
+        <div class="impact-api">
+          <span>${a.name}</span>
+          <span class="mig-badge ${migBadgeClass(a.migrationStatus)}">${a.migrationStatus}</span>
+        </div>`).join('') || '<span style="color:var(--muted2);font-size:11px;">None detected</span>'}
+    `;
+    document.getElementById('graph-panel').classList.add('visible');
+    return;
+  }
+
+  const api = d.api;
+  const tribe = TRIBES_MAP[api.tribeId];
+
+  // What must migrate BEFORE this API can migrate (upstream internal not yet complete)
+  const blockers = (api.upstreamSystems||[])
+    .map(u => resolveInternalAPI(u.system))
+    .filter(a => a && a.migrationStatus !== 'Complete');
+
+  // What APIs depend on THIS one (downstream internal — regression risk)
+  const regressionRisk = DATA.apis.filter(a =>
+    (a.upstreamSystems||[]).some(u => resolveInternalAPI(u.system)?.id === api.id)
+  );
+
+  // External systems this API touches
+  const extTouched = [
+    ...(api.consumers||[]).filter(c => !resolveInternalAPI(c.system)),
+    ...(api.upstreamSystems||[]).filter(u => !resolveInternalAPI(u.system))
+  ];
+
+  document.getElementById('gp-title').textContent = api.name;
+  document.getElementById('gp-body').innerHTML = `
+    <div class="sp-row"><span class="sp-key">Layer</span><span class="sp-val">${api.layer}</span></div>
+    <div class="sp-row"><span class="sp-key">Tribe</span><span class="sp-val" style="color:${tribeColor(api.tribeId)}">${tribe?.name||'—'}</span></div>
+    <div class="sp-row"><span class="sp-key">Migration</span><span class="sp-val"><span class="mig-badge ${migBadgeClass(api.migrationStatus)}">${api.migrationStatus}</span></span></div>
+    <div class="sp-row"><span class="sp-key">Runtime</span><span class="sp-val">${api.runtime}</span></div>
+    <div class="sp-row"><span class="sp-key">Complexity</span><span class="sp-val">${api.migrationComplexity}</span></div>
+
+    <div class="sp-section">⛔ Must migrate first (blockers)</div>
+    ${blockers.length
+      ? blockers.map(a => `<div class="impact-api">
+          <span>${a.name}</span>
+          <span class="mig-badge ${migBadgeClass(a.migrationStatus)}">${a.migrationStatus}</span>
+        </div>`).join('')
+      : '<div style="font-size:11px;color:var(--success);padding:4px 0;">✅ No upstream blockers</div>'}
+
+    <div class="sp-section">⚠ Regression risk if this migrates</div>
+    ${regressionRisk.length
+      ? regressionRisk.map(a => `<div class="impact-api">
+          <span style="color:${tribeColor(a.tribeId)}">${a.name}</span>
+          <span class="mig-badge ${migBadgeClass(a.migrationStatus)}">${a.migrationStatus}</span>
+        </div>`).join('')
+      : '<div style="font-size:11px;color:var(--muted2);padding:4px 0;">None detected</div>'}
+
+    <div class="sp-section">🌐 External systems touched</div>
+    <div class="sp-chip-row">
+      ${extTouched.length
+        ? extTouched.map(e=>`<span class="sp-chip sp-chip-ext">${e.system}</span>`).join('')
+        : '<span style="color:var(--muted2);font-size:11px;">None</span>'}
+    </div>
+
+    ${api.operations?.knownFragilities?.length ? `
+    <div class="sp-section">⚡ Known Fragilities</div>
+    ${api.operations.knownFragilities.map(f=>`<div class="impact-api" style="display:block;padding:5px 0;"><span style="font-size:11px;color:var(--warn);">${f}</span></div>`).join('')}
+    ` : ''}
+  `;
+  document.getElementById('graph-panel').classList.add('visible');
+}
+
+// ══════════════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════════════
+window.addEventListener('resize', () => {
+  if (DATA) { renderIcicle(); renderGraph(); }
+});
+
+autoLoad();
+</script>
+</body>
+</html>

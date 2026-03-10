@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title><font color=Yellow>Integration COE — API Catalog</font></title>
+<title>Integration COE — API Catalog</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
 <style>
   /* ── Shared constants (never change with theme) ── */
@@ -621,6 +621,7 @@
       <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
     </label>
     <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch theme" style="font-size:16px;padding:6px 10px;">🌙</button>
+    <a href="dependencies.html" class="btn btn-ghost">🔗 Dependencies</a>
     <a href="editor.html" class="btn btn-primary">✏️ Edit Catalog</a>
   </div>
 </header>
@@ -1099,9 +1100,6 @@ function openDrawer(apiId) {
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Technical Profile</div>
-	  
-	  ${api.repoApiName ? `<div class="detail-row"><span class="detail-key">Repo / Asset Name</span><span class="detail-val" style="font-family:var(--font-mono);font-size:12px;">${api.repoApiName}</span></div>` : ''}
-
       <div class="detail-row"><span class="detail-key">Runtime</span><span class="detail-val">${api.runtime}</span></div>
       <div class="detail-row"><span class="detail-key">Java</span><span class="detail-val">${api.javaVersion}</span></div>
       <div class="detail-row"><span class="detail-key">Protocol</span><span class="detail-val">${api.protocol}</span></div>
