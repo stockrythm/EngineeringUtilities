@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.3.0",
+    "version": "1.4.0",
     "lastUpdated": "2026-03-11",
     "organization": "Integration COE",
     "catalogOwner": "Integration COE Lead"
@@ -146,7 +146,9 @@
         "l2": "Identity & Auth"
       },
       "owningSquad": "Squad Alpha",
-      "applicationContext": "CRM Portal",
+      "applicationContext": [
+        "CRM Portal"
+      ],
       "consumers": [
         {
           "system": "UXP Portal",
@@ -309,7 +311,9 @@
         "l2": "Order Lifecycle"
       },
       "owningSquad": "Squad Beta",
-      "applicationContext": "OMS",
+      "applicationContext": [
+        "OMS"
+      ],
       "consumers": [
         {
           "system": "UXP Portal",
@@ -476,7 +480,9 @@
         "l2": "Product Search"
       },
       "owningSquad": "Squad Beta",
-      "applicationContext": "PIM",
+      "applicationContext": [
+        "PIM"
+      ],
       "consumers": [
         {
           "system": "Product Search EAPI",
@@ -603,7 +609,9 @@
         "l2": "Payment Processing"
       },
       "owningSquad": "Squad Gamma",
-      "applicationContext": "Payment Gateway",
+      "applicationContext": [
+        "Payment Gateway"
+      ],
       "consumers": [
         {
           "system": "Checkout EAPI",
@@ -781,7 +789,9 @@
         "l2": "Notifications"
       },
       "owningSquad": "Squad Alpha",
-      "applicationContext": "Notification Hub",
+      "applicationContext": [
+        "Notification Hub"
+      ],
       "consumers": [
         {
           "system": "UXP Portal",
@@ -937,7 +947,9 @@
         "l2": "Stock Management"
       },
       "owningSquad": "Squad Delta",
-      "applicationContext": "WMS",
+      "applicationContext": [
+        "WMS"
+      ],
       "consumers": [
         {
           "system": "Order PAPI",
@@ -1058,7 +1070,9 @@
         "l2": "Event Streaming"
       },
       "owningSquad": "Platform Squad",
-      "applicationContext": "Integration Platform",
+      "applicationContext": [
+        "Integration Platform"
+      ],
       "consumers": [
         {
           "system": "Order Lifecycle PAPI",
@@ -1191,7 +1205,9 @@
         "l2": "Shipment Tracking"
       },
       "owningSquad": "Squad Delta",
-      "applicationContext": "Logistics Portal",
+      "applicationContext": [
+        "Logistics Portal"
+      ],
       "consumers": [
         {
           "system": "UXP Portal",

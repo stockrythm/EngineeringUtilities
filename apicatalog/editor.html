@@ -449,7 +449,7 @@ function createNew() {
     id: newId, name: 'New API', version: '1.0.0', type: 'System API', layer: 'SAPI',
     protocol: 'REST', runtime: 'MuleSoft 4.3', javaVersion: 'Java 8',
     deploymentModel: 'OnPrem', environments: [], tribeId: '', businessCapability: { l0: '', l1: '', l2: '' },
-    owningSquad: '', applicationContext: '', consumers: [], upstreamSystems: [],
+    owningSquad: '', applicationContext: [], consumers: [], upstreamSystems: [],
     status: 'Active', migrationStatus: 'Not Started', migrationComplexity: 'Medium',
     ramlSpec: '', confluenceLinks: [], designReferences: [], operationalNotes: [],
     tags: [], lastReviewedBy: '', lastReviewedDate: ''
@@ -575,7 +575,11 @@ function renderEditor(api) {
         </div>
         <div class="field">
           <label>Application Context</label>
-          <input type="text" id="f_applicationContext" value="${esc(api.applicationContext)}" placeholder="e.g. CRM Portal, OMS, PIM" oninput="markUnsaved()"/>
+          <div class="tag-input-wrap" id="wrap_applicationContext" onclick="focusTagInput('ti_applicationContext')">
+            <span id="tags_applicationContext"></span>
+            <input id="ti_applicationContext" placeholder="Type app name + Enter (e.g. CRM Portal)" onkeydown="addTag(event,'applicationContext')"/>
+          </div>
+          <span class="field-hint">Press Enter or comma to add each application</span>
         </div>
         <div class="field">
           <label>RAML / API Spec URL</label>
@@ -909,6 +913,7 @@ function renderEditor(api) {
   // Initialise tag fields
   initTagField('environments', api.environments || []);
   initTagField('tags', api.tags || []);
+  initTagField('applicationContext', Array.isArray(api.applicationContext) ? api.applicationContext : (api.applicationContext ? [api.applicationContext] : []));
   initTagField('oauthScopes', sec.oauthScopes || []);
   initTagField('complianceFlags', sec.complianceFlags || []);
   initTagField('gatewayPolicies', sec.gatewayPolicies || []);
@@ -1235,7 +1240,7 @@ function saveAPI() {
   api.environments = [...(tagState['environments'] || [])];
   api.tribeId = val('f_tribeId');
   api.owningSquad = val('f_owningSquad');
-  api.applicationContext = val('f_applicationContext');
+  api.applicationContext = [...(tagState['applicationContext'] || [])];
   api.ramlSpec = val('f_ramlSpec');
   api.businessCapability = { l0: val('f_biz_l0'), l1: val('f_biz_l1'), l2: val('f_biz_l2') };
   api.consumers = depState.consumers.filter(d => d.system).map(d => ({

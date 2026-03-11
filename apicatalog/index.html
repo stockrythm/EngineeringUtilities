@@ -823,7 +823,7 @@ function getFilteredAPIs() {
       a.name.toLowerCase().includes(SEARCH) ||
       (a.tags||[]).some(t => t.toLowerCase().includes(SEARCH)) ||
       (a.owningSquad||'').toLowerCase().includes(SEARCH) ||
-      (a.applicationContext||'').toLowerCase().includes(SEARCH) ||
+      (Array.isArray(a.applicationContext) ? a.applicationContext.join(' ') : (a.applicationContext||'')).toLowerCase().includes(SEARCH) ||
       (a.businessCapability?.l0||'').toLowerCase().includes(SEARCH) ||
       (a.businessCapability?.l2||'').toLowerCase().includes(SEARCH) ||
       (a.upstreamSystems||[]).some(s => s.toLowerCase().includes(SEARCH)) ||
@@ -873,7 +873,15 @@ function groupAPIs(apis) {
   apis.forEach(api => {
     let key = '';
     if (GROUP_BY === 'tribe') key = (TRIBES_MAP[api.tribeId]?.name) || 'Unassigned';
-    else if (GROUP_BY === 'app') key = api.applicationContext || 'Unknown';
+    else if (GROUP_BY === 'app') {
+      const apps = Array.isArray(api.applicationContext) && api.applicationContext.length
+        ? api.applicationContext : ['Unknown'];
+      apps.forEach(app => {
+        if (!groups[app]) groups[app] = [];
+        groups[app].push(api);
+      });
+      return;
+    }
     else if (GROUP_BY === 'l0') key = api.businessCapability?.l0 || 'Unclassified';
     else if (GROUP_BY === 'l1') key = api.businessCapability?.l1 || 'Unclassified';
     else if (GROUP_BY === 'env') {
@@ -1130,7 +1138,7 @@ function openDrawer(apiId) {
       <div class="detail-section-title">Ownership</div>
       <div class="detail-row"><span class="detail-key">Tribe</span><span class="detail-val">${tribe?.name||'Unassigned'}</span></div>
       <div class="detail-row"><span class="detail-key">Squad</span><span class="detail-val">${api.owningSquad||'—'}</span></div>
-      <div class="detail-row"><span class="detail-key">Application</span><span class="detail-val">${api.applicationContext||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Application</span><span class="detail-val">${(Array.isArray(api.applicationContext) ? api.applicationContext : [api.applicationContext]).filter(Boolean).join(' · ') || '—'}</span></div>
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Technical Profile</div>
