@@ -1,34 +1,127 @@
 {
   "meta": {
-    "version": "1.2.0",
-    "lastUpdated": "2026-03-09",
+    "version": "1.3.0",
+    "lastUpdated": "2026-03-11",
     "organization": "Integration COE",
-    "catalogOwner": "Platform Working Group"
+    "catalogOwner": "Integration COE Lead"
   },
-  "layerSuggestions": ["EAPI", "PAPI", "SAPI", "BATCH", "EVENT", "UTILITY", "FACADE"],
-  "contractTypes": ["REST", "SOAP", "Kafka", "AsyncAPI", "GraphQL", "SFTP", "JMS", "Other"],
+  "layerSuggestions": [
+    "EAPI",
+    "PAPI",
+    "SAPI",
+    "BATCH",
+    "EVENT",
+    "UTILITY",
+    "FACADE"
+  ],
+  "contractTypes": [
+    "REST",
+    "SOAP",
+    "Kafka",
+    "AsyncAPI",
+    "GraphQL",
+    "SFTP",
+    "JMS",
+    "Other"
+  ],
   "tribes": [
-    { "id": "tribe-cx", "name": "Customer Experience", "lead": "" },
-    { "id": "tribe-commerce", "name": "Commerce & Fulfilment", "lead": "" },
-    { "id": "tribe-data", "name": "Data & Analytics", "lead": "" },
-    { "id": "tribe-platform", "name": "Platform & Foundation", "lead": "" },
-    { "id": "tribe-finance", "name": "Finance & Risk", "lead": "" }
+    {
+      "id": "tribe-cx",
+      "name": "Customer Experience",
+      "lead": ""
+    },
+    {
+      "id": "tribe-commerce",
+      "name": "Commerce & Fulfilment",
+      "lead": ""
+    },
+    {
+      "id": "tribe-data",
+      "name": "Data & Analytics",
+      "lead": ""
+    },
+    {
+      "id": "tribe-platform",
+      "name": "Platform & Foundation",
+      "lead": ""
+    },
+    {
+      "id": "tribe-finance",
+      "name": "Finance & Risk",
+      "lead": ""
+    }
   ],
   "businessCapabilities": [
-    { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Identity & Auth" },
-    { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Preferences & Consent" },
-    { "l0": "Customer Management", "l1": "Engagement", "l2": "Notifications" },
-    { "l0": "Commerce", "l1": "Order Management", "l2": "Order Lifecycle" },
-    { "l0": "Commerce", "l1": "Order Management", "l2": "Returns & Refunds" },
-    { "l0": "Commerce", "l1": "Product Catalogue", "l2": "Product Search" },
-    { "l0": "Commerce", "l1": "Pricing & Promotions", "l2": "Discount Engine" },
-    { "l0": "Supply Chain", "l1": "Inventory", "l2": "Stock Management" },
-    { "l0": "Supply Chain", "l1": "Logistics", "l2": "Shipment Tracking" },
-    { "l0": "Finance", "l1": "Billing", "l2": "Invoice Generation" },
-    { "l0": "Finance", "l1": "Payments", "l2": "Payment Processing" },
-    { "l0": "Platform", "l1": "Integration", "l2": "Event Streaming" },
-    { "l0": "Platform", "l1": "Integration", "l2": "System-of-Record Sync" },
-    { "l0": "Data", "l1": "Reporting", "l2": "Operational Reporting" }
+    {
+      "l0": "Customer Management",
+      "l1": "Customer Profile",
+      "l2": "Identity & Auth"
+    },
+    {
+      "l0": "Customer Management",
+      "l1": "Customer Profile",
+      "l2": "Preferences & Consent"
+    },
+    {
+      "l0": "Customer Management",
+      "l1": "Engagement",
+      "l2": "Notifications"
+    },
+    {
+      "l0": "Commerce",
+      "l1": "Order Management",
+      "l2": "Order Lifecycle"
+    },
+    {
+      "l0": "Commerce",
+      "l1": "Order Management",
+      "l2": "Returns & Refunds"
+    },
+    {
+      "l0": "Commerce",
+      "l1": "Product Catalogue",
+      "l2": "Product Search"
+    },
+    {
+      "l0": "Commerce",
+      "l1": "Pricing & Promotions",
+      "l2": "Discount Engine"
+    },
+    {
+      "l0": "Supply Chain",
+      "l1": "Inventory",
+      "l2": "Stock Management"
+    },
+    {
+      "l0": "Supply Chain",
+      "l1": "Logistics",
+      "l2": "Shipment Tracking"
+    },
+    {
+      "l0": "Finance",
+      "l1": "Billing",
+      "l2": "Invoice Generation"
+    },
+    {
+      "l0": "Finance",
+      "l1": "Payments",
+      "l2": "Payment Processing"
+    },
+    {
+      "l0": "Platform",
+      "l1": "Integration",
+      "l2": "Event Streaming"
+    },
+    {
+      "l0": "Platform",
+      "l1": "Integration",
+      "l2": "System-of-Record Sync"
+    },
+    {
+      "l0": "Data",
+      "l1": "Reporting",
+      "l2": "Operational Reporting"
+    }
   ],
   "apis": [
     {
@@ -40,58 +133,159 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "OnPrem",
-      "environments": ["DEV", "SIT", "UAT", "PROD"],
+      "environments": [
+        "DEV",
+        "SIT",
+        "UAT",
+        "PROD"
+      ],
       "tribeId": "tribe-cx",
-      "businessCapability": { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Identity & Auth" },
+      "businessCapability": {
+        "l0": "Customer Management",
+        "l1": "Customer Profile",
+        "l2": "Identity & Auth"
+      },
       "owningSquad": "Squad Alpha",
       "applicationContext": "CRM Portal",
       "consumers": [
-        { "system": "UXP Portal", "environments": ["UAT", "PROD"], "contractType": "REST", "notes": "Primary consumer — renders customer header" },
-        { "system": "Mobile App", "environments": ["PROD"], "contractType": "REST", "notes": "iOS + Android — uses /profile/summary endpoint only" }
+        {
+          "system": "UXP Portal",
+          "environments": [
+            "UAT",
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Primary consumer \u2014 renders customer header"
+        },
+        {
+          "system": "Mobile App",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "iOS + Android \u2014 uses /profile/summary endpoint only"
+        }
       ],
       "upstreamSystems": [
-        { "system": "Salesforce CRM", "environments": ["PROD"], "protocol": "REST", "notes": "Source of truth for customer master data" },
-        { "system": "Identity Service", "environments": ["DEV", "SIT", "UAT", "PROD"], "protocol": "REST", "notes": "OAuth token validation on every inbound request" }
+        {
+          "system": "Salesforce CRM",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "Source of truth for customer master data"
+        },
+        {
+          "system": "Identity Service",
+          "environments": [
+            "DEV",
+            "SIT",
+            "UAT",
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "OAuth token validation on every inbound request"
+        }
       ],
       "status": "Active",
       "migrationStatus": "Not Started",
       "migrationComplexity": "Medium",
       "ramlSpec": "https://anypoint.example.com/api/customer-profile",
       "confluenceLinks": [],
-      "tags": ["customer", "identity", "core"],
+      "tags": [
+        "customer",
+        "identity",
+        "core"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "OAuth 2.0 (Client Credentials)",
-        "oauthScopes": ["profile:read", "profile:write"],
+        "oauthScopes": [
+          "profile:read",
+          "profile:write"
+        ],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["Rate Limiting", "JWT Validation", "IP Allowlist"],
+        "gatewayPolicies": [
+          "Rate Limiting",
+          "JWT Validation",
+          "IP Allowlist"
+        ],
         "dataClassification": "Confidential",
-        "complianceFlags": ["GDPR"],
+        "complianceFlags": [
+          "GDPR"
+        ],
         "secretsVaultPath": "/secret/prod/customer-profile",
         "certExpiry": "2026-09-01",
         "knownVulnerabilities": []
       },
       "solutionDesign": {
-        "architecturalPattern": "Façade — aggregates CRM + Identity",
+        "architecturalPattern": "Fa\u00e7ade \u2014 aggregates CRM + Identity",
         "versioningStrategy": "URI versioning (/v2/)",
         "errorHandlingStrategy": "Standard error envelope with correlation-id",
         "slaTarget": "99.9% / < 500ms P95",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["No pagination on /customers/search — returns up to 500 records flat"],
+        "technicalDebt": [
+          "No pagination on /customers/search \u2014 returns up to 500 records flat"
+        ],
         "domainEvents": []
       },
       "operations": {
         "oncallContact": "squad-alpha@example.com",
-        "monitoringLinks": [{ "label": "Datadog Dashboard", "url": "https://app.datadoghq.com/dashboard/abc" }],
+        "monitoringLinks": [
+          {
+            "label": "Datadog Dashboard",
+            "url": "https://app.datadoghq.com/dashboard/abc"
+          }
+        ],
         "alertingThreshold": "Error rate > 2% over 5 min triggers P2",
-        "maintenanceWindow": "Sundays 02:00–04:00 UTC",
+        "maintenanceWindow": "Sundays 02:00\u201304:00 UTC",
         "runbookLinks": [],
         "incidentRefs": [],
-        "knownFragilities": ["Salesforce CRM response degrades >3s during batch sync window (02:00–03:00 UTC)"],
+        "knownFragilities": [
+          "Salesforce CRM response degrades >3s during batch sync window (02:00\u201303:00 UTC)"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.9%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "JWT Validation",
+            "version": "1.3.0",
+            "scope": "API Manager",
+            "notes": "Validates Bearer token against Identity Service JWKS endpoint"
+          },
+          {
+            "name": "Rate Limiting",
+            "version": "2.1.0",
+            "scope": "API Manager",
+            "notes": "500 rpm per client_id in PROD"
+          },
+          {
+            "name": "Client ID Enforcement",
+            "version": "1.2.0",
+            "scope": "API Manager",
+            "notes": ""
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "api-common-logging",
+            "groupId": "com.example.integration",
+            "version": "2.0.1",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -103,58 +297,161 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "AWS",
-      "environments": ["DEV", "SIT", "PROD"],
+      "environments": [
+        "DEV",
+        "SIT",
+        "PROD"
+      ],
       "tribeId": "tribe-commerce",
-      "businessCapability": { "l0": "Commerce", "l1": "Order Management", "l2": "Order Lifecycle" },
+      "businessCapability": {
+        "l0": "Commerce",
+        "l1": "Order Management",
+        "l2": "Order Lifecycle"
+      },
       "owningSquad": "Squad Beta",
       "applicationContext": "OMS",
       "consumers": [
-        { "system": "UXP Portal", "environments": ["PROD"], "contractType": "REST", "notes": "Order confirmation and status polling" },
-        { "system": "3PL Gateway", "environments": ["PROD"], "contractType": "REST", "notes": "Pushes fulfilment instructions to third-party logistics" }
+        {
+          "system": "UXP Portal",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Order confirmation and status polling"
+        },
+        {
+          "system": "3PL Gateway",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Pushes fulfilment instructions to third-party logistics"
+        }
       ],
       "upstreamSystems": [
-        { "system": "SAP ERP", "environments": ["PROD"], "protocol": "SOAP", "notes": "Order creation via BAPI — known latency issue > 2s P95" },
-        { "system": "Inventory SAPI", "environments": ["DEV", "SIT", "PROD"], "protocol": "REST", "notes": "Stock reservation check before order commit" }
+        {
+          "system": "SAP ERP",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "SOAP",
+          "notes": "Order creation via BAPI \u2014 known latency issue > 2s P95"
+        },
+        {
+          "system": "Inventory SAPI",
+          "environments": [
+            "DEV",
+            "SIT",
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "Stock reservation check before order commit"
+        }
       ],
       "status": "Active",
       "migrationStatus": "In Analysis",
       "migrationComplexity": "High",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["orders", "commerce", "SAP"],
+      "tags": [
+        "orders",
+        "commerce",
+        "SAP"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "OAuth 2.0 (Client Credentials)",
-        "oauthScopes": ["orders:read", "orders:write"],
+        "oauthScopes": [
+          "orders:read",
+          "orders:write"
+        ],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["Rate Limiting", "JWT Validation"],
+        "gatewayPolicies": [
+          "Rate Limiting",
+          "JWT Validation"
+        ],
         "dataClassification": "Internal",
         "complianceFlags": [],
         "secretsVaultPath": "/secret/prod/order-lifecycle",
         "certExpiry": "2026-12-01",
-        "knownVulnerabilities": ["SAP BAPI endpoint does not support mTLS — flagged for remediation"]
+        "knownVulnerabilities": [
+          "SAP BAPI endpoint does not support mTLS \u2014 flagged for remediation"
+        ]
       },
       "solutionDesign": {
-        "architecturalPattern": "Orchestration PAPI — coordinates SAP + Inventory + 3PL",
+        "architecturalPattern": "Orchestration PAPI \u2014 coordinates SAP + Inventory + 3PL",
         "versioningStrategy": "URI versioning (/v1/)",
-        "errorHandlingStrategy": "Saga pattern — compensating transactions on SAP failure",
+        "errorHandlingStrategy": "Saga pattern \u2014 compensating transactions on SAP failure",
         "slaTarget": "99.5% / < 2s P95",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["Synchronous SAP BAPI call blocks thread — migration candidate for async pattern", "No dead-letter queue for 3PL callback failures"],
-        "domainEvents": ["order.created", "order.cancelled"]
+        "technicalDebt": [
+          "Synchronous SAP BAPI call blocks thread \u2014 migration candidate for async pattern",
+          "No dead-letter queue for 3PL callback failures"
+        ],
+        "domainEvents": [
+          "order.created",
+          "order.cancelled"
+        ]
       },
       "operations": {
         "oncallContact": "squad-beta@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Error rate > 1% or P95 > 3s triggers P1",
-        "maintenanceWindow": "None — 24/7 critical path",
-        "runbookLinks": [{ "label": "SAP BAPI Timeout Runbook", "url": "" }],
-        "incidentRefs": ["INC-20241103 — SAP outage caused 45-min order processing delay"],
-        "knownFragilities": ["SAP BAPI single point of failure — no circuit breaker implemented"],
+        "maintenanceWindow": "None \u2014 24/7 critical path",
+        "runbookLinks": [
+          {
+            "label": "SAP BAPI Timeout Runbook",
+            "url": ""
+          }
+        ],
+        "incidentRefs": [
+          "INC-20241103 \u2014 SAP outage caused 45-min order processing delay"
+        ],
+        "knownFragilities": [
+          "SAP BAPI single point of failure \u2014 no circuit breaker implemented"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.5%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "JWT Validation",
+            "version": "1.3.0",
+            "scope": "API Manager",
+            "notes": ""
+          },
+          {
+            "name": "Rate Limiting",
+            "version": "2.1.0",
+            "scope": "API Manager",
+            "notes": "200 rpm per client_id \u2014 critical path"
+          },
+          {
+            "name": "Request Size Limit",
+            "version": "1.0.0",
+            "scope": "API Manager",
+            "notes": "Max 512KB payload"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "sap-connector-utils",
+            "groupId": "com.example.integration",
+            "version": "1.4.2",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -166,31 +463,70 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "OnPrem",
-      "environments": ["DEV", "SIT", "UAT", "PROD"],
+      "environments": [
+        "DEV",
+        "SIT",
+        "UAT",
+        "PROD"
+      ],
       "tribeId": "tribe-commerce",
-      "businessCapability": { "l0": "Commerce", "l1": "Product Catalogue", "l2": "Product Search" },
+      "businessCapability": {
+        "l0": "Commerce",
+        "l1": "Product Catalogue",
+        "l2": "Product Search"
+      },
       "owningSquad": "Squad Beta",
       "applicationContext": "PIM",
       "consumers": [
-        { "system": "Product Search EAPI", "environments": ["DEV", "SIT", "UAT", "PROD"], "contractType": "REST", "notes": "" },
-        { "system": "Pricing Engine", "environments": ["PROD"], "contractType": "REST", "notes": "Reads product category for discount eligibility" }
+        {
+          "system": "Product Search EAPI",
+          "environments": [
+            "DEV",
+            "SIT",
+            "UAT",
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": ""
+        },
+        {
+          "system": "Pricing Engine",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Reads product category for discount eligibility"
+        }
       ],
       "upstreamSystems": [
-        { "system": "SAP MDM", "environments": ["PROD"], "protocol": "SOAP", "notes": "Batch sync nightly at 02:00 UTC — do not restart MuleSoft during this window" }
+        {
+          "system": "SAP MDM",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "SOAP",
+          "notes": "Batch sync nightly at 02:00 UTC \u2014 do not restart MuleSoft during this window"
+        }
       ],
       "status": "Active",
       "migrationStatus": "Not Started",
       "migrationComplexity": "Low",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["product", "catalogue", "PIM"],
+      "tags": [
+        "product",
+        "catalogue",
+        "PIM"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "API Key (Internal)",
         "oauthScopes": [],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["IP Allowlist"],
+        "gatewayPolicies": [
+          "IP Allowlist"
+        ],
         "dataClassification": "Internal",
         "complianceFlags": [],
         "secretsVaultPath": "",
@@ -198,7 +534,7 @@
         "knownVulnerabilities": []
       },
       "solutionDesign": {
-        "architecturalPattern": "Thin SAPI — pass-through with field normalisation",
+        "architecturalPattern": "Thin SAPI \u2014 pass-through with field normalisation",
         "versioningStrategy": "URI versioning (/v3/)",
         "errorHandlingStrategy": "HTTP status propagation from MDM",
         "slaTarget": "99.5% / < 300ms P95",
@@ -211,12 +547,39 @@
         "oncallContact": "squad-beta@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Unavailability > 2 min triggers P2",
-        "maintenanceWindow": "Tuesdays 01:00–02:00 UTC (SAP MDM sync window)",
+        "maintenanceWindow": "Tuesdays 01:00\u201302:00 UTC (SAP MDM sync window)",
         "runbookLinks": [],
         "incidentRefs": [],
-        "knownFragilities": ["SAP MDM sync failure leaves stale product data until next nightly run"],
+        "knownFragilities": [
+          "SAP MDM sync failure leaves stale product data until next nightly run"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.5%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "Client ID Enforcement",
+            "version": "1.2.0",
+            "scope": "API Manager",
+            "notes": "Internal consumers only"
+          },
+          {
+            "name": "IP Allowlist",
+            "version": "1.1.0",
+            "scope": "API Manager",
+            "notes": "Restricted to internal CIDR ranges"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -228,37 +591,90 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "AWS",
-      "environments": ["SIT", "UAT", "PROD"],
+      "environments": [
+        "SIT",
+        "UAT",
+        "PROD"
+      ],
       "tribeId": "tribe-finance",
-      "businessCapability": { "l0": "Finance", "l1": "Payments", "l2": "Payment Processing" },
+      "businessCapability": {
+        "l0": "Finance",
+        "l1": "Payments",
+        "l2": "Payment Processing"
+      },
       "owningSquad": "Squad Gamma",
       "applicationContext": "Payment Gateway",
       "consumers": [
-        { "system": "Checkout EAPI", "environments": ["UAT", "PROD"], "contractType": "REST", "notes": "PCI-DSS scope — do not log request/response body" },
-        { "system": "Refund Process API", "environments": ["PROD"], "contractType": "REST", "notes": "Reverse charge flow only" }
+        {
+          "system": "Checkout EAPI",
+          "environments": [
+            "UAT",
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "PCI-DSS scope \u2014 do not log request/response body"
+        },
+        {
+          "system": "Refund Process API",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Reverse charge flow only"
+        }
       ],
       "upstreamSystems": [
-        { "system": "Stripe", "environments": ["UAT", "PROD"], "protocol": "REST", "notes": "API key rotation due Q2 — blocked migration until rotated" },
-        { "system": "Internal Ledger", "environments": ["PROD"], "protocol": "REST", "notes": "Idempotency key required on all write operations" }
+        {
+          "system": "Stripe",
+          "environments": [
+            "UAT",
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "API key rotation due Q2 \u2014 blocked migration until rotated"
+        },
+        {
+          "system": "Internal Ledger",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "Idempotency key required on all write operations"
+        }
       ],
       "status": "Active",
       "migrationStatus": "Blocked",
       "migrationComplexity": "High",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["payments", "finance", "PCI"],
+      "tags": [
+        "payments",
+        "finance",
+        "PCI"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "mTLS + OAuth 2.0",
-        "oauthScopes": ["payments:write"],
+        "oauthScopes": [
+          "payments:write"
+        ],
         "tlsVersion": "TLS 1.3",
-        "gatewayPolicies": ["mTLS Enforcement", "PCI Header Stripping", "Rate Limiting"],
+        "gatewayPolicies": [
+          "mTLS Enforcement",
+          "PCI Header Stripping",
+          "Rate Limiting"
+        ],
         "dataClassification": "Restricted",
-        "complianceFlags": ["PCI-DSS", "SOX"],
+        "complianceFlags": [
+          "PCI-DSS",
+          "SOX"
+        ],
         "secretsVaultPath": "/secret/prod/payment-processing",
         "certExpiry": "2026-06-15",
-        "knownVulnerabilities": ["Stripe API key not rotated since 2024-Q1 — P1 security action open"]
+        "knownVulnerabilities": [
+          "Stripe API key not rotated since 2024-Q1 \u2014 P1 security action open"
+        ]
       },
       "solutionDesign": {
         "architecturalPattern": "SAPI with idempotency wrapper around Stripe",
@@ -267,19 +683,81 @@
         "slaTarget": "99.99% / < 1s P99",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["No fallback PSP configured — Stripe outage = full checkout outage"],
-        "domainEvents": ["payment.completed", "payment.failed", "refund.initiated"]
+        "technicalDebt": [
+          "No fallback PSP configured \u2014 Stripe outage = full checkout outage"
+        ],
+        "domainEvents": [
+          "payment.completed",
+          "payment.failed",
+          "refund.initiated"
+        ]
       },
       "operations": {
         "oncallContact": "finance-oncall@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Any 5xx or P99 > 2s triggers immediate P1",
-        "maintenanceWindow": "None — 24/7 critical path",
+        "maintenanceWindow": "None \u2014 24/7 critical path",
         "runbookLinks": [],
-        "incidentRefs": ["INC-20250210 — Stripe rate limit hit during flash sale"],
-        "knownFragilities": ["Stripe key expiry will cause hard failure — Q2 deadline", "No circuit breaker on Internal Ledger calls"],
+        "incidentRefs": [
+          "INC-20250210 \u2014 Stripe rate limit hit during flash sale"
+        ],
+        "knownFragilities": [
+          "Stripe key expiry will cause hard failure \u2014 Q2 deadline",
+          "No circuit breaker on Internal Ledger calls"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.99%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "mTLS Enforcement",
+            "version": "2.0.0",
+            "scope": "API Manager",
+            "notes": "Mutual TLS required \u2014 PCI-DSS mandate"
+          },
+          {
+            "name": "PCI Header Stripping",
+            "version": "1.0.0",
+            "scope": "API Manager",
+            "notes": "Strips card data from logs \u2014 custom policy asset"
+          },
+          {
+            "name": "JWT Validation",
+            "version": "1.3.0",
+            "scope": "API Manager",
+            "notes": ""
+          },
+          {
+            "name": "Rate Limiting",
+            "version": "2.1.0",
+            "scope": "API Manager",
+            "notes": "100 rpm \u2014 hard ceiling per PCI audit requirement"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "pci-security-policy",
+            "groupId": "com.example.integration",
+            "version": "2.1.0",
+            "scope": "Custom policy asset \u2014 Exchange",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "idempotency-handler",
+            "groupId": "com.example.integration",
+            "version": "1.0.3",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -291,59 +769,152 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "OnPrem",
-      "environments": ["DEV", "SIT", "PROD"],
+      "environments": [
+        "DEV",
+        "SIT",
+        "PROD"
+      ],
       "tribeId": "tribe-cx",
-      "businessCapability": { "l0": "Customer Management", "l1": "Engagement", "l2": "Notifications" },
+      "businessCapability": {
+        "l0": "Customer Management",
+        "l1": "Engagement",
+        "l2": "Notifications"
+      },
       "owningSquad": "Squad Alpha",
       "applicationContext": "Notification Hub",
       "consumers": [
-        { "system": "UXP Portal", "environments": ["PROD"], "contractType": "REST", "notes": "In-app notification trigger" },
-        { "system": "Mobile App", "environments": ["PROD"], "contractType": "REST", "notes": "Push notification via FCM" },
-        { "system": "Batch Jobs", "environments": ["PROD"], "contractType": "REST", "notes": "Digest email job runs at 07:00 daily" }
+        {
+          "system": "UXP Portal",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "In-app notification trigger"
+        },
+        {
+          "system": "Mobile App",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Push notification via FCM"
+        },
+        {
+          "system": "Batch Jobs",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Digest email job runs at 07:00 daily"
+        }
       ],
       "upstreamSystems": [
-        { "system": "SendGrid", "environments": ["PROD"], "protocol": "REST", "notes": "" },
-        { "system": "Twilio", "environments": ["PROD"], "protocol": "REST", "notes": "SMS only — fallback to email if Twilio returns 503" }
+        {
+          "system": "SendGrid",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": ""
+        },
+        {
+          "system": "Twilio",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "SMS only \u2014 fallback to email if Twilio returns 503"
+        }
       ],
       "status": "Active",
       "migrationStatus": "Not Started",
       "migrationComplexity": "Low",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["notifications", "email", "sms"],
+      "tags": [
+        "notifications",
+        "email",
+        "sms"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "OAuth 2.0 (Client Credentials)",
-        "oauthScopes": ["notifications:send"],
+        "oauthScopes": [
+          "notifications:send"
+        ],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["Rate Limiting", "JWT Validation"],
+        "gatewayPolicies": [
+          "Rate Limiting",
+          "JWT Validation"
+        ],
         "dataClassification": "Internal",
-        "complianceFlags": ["GDPR"],
+        "complianceFlags": [
+          "GDPR"
+        ],
         "secretsVaultPath": "/secret/prod/notifications",
         "certExpiry": "",
         "knownVulnerabilities": []
       },
       "solutionDesign": {
-        "architecturalPattern": "Fan-out EAPI — routes to email/SMS/push based on preference",
+        "architecturalPattern": "Fan-out EAPI \u2014 routes to email/SMS/push based on preference",
         "versioningStrategy": "URI versioning (/v1/)",
         "errorHandlingStrategy": "Fire-and-forget with async delivery receipt",
         "slaTarget": "99.5% / best-effort delivery",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["No template versioning — content changes require redeployment"],
-        "domainEvents": ["notification.sent", "notification.failed"]
+        "technicalDebt": [
+          "No template versioning \u2014 content changes require redeployment"
+        ],
+        "domainEvents": [
+          "notification.sent",
+          "notification.failed"
+        ]
       },
       "operations": {
         "oncallContact": "squad-alpha@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Delivery failure rate > 5% over 10 min triggers P2",
-        "maintenanceWindow": "Sundays 02:00–04:00 UTC",
+        "maintenanceWindow": "Sundays 02:00\u201304:00 UTC",
         "runbookLinks": [],
         "incidentRefs": [],
-        "knownFragilities": ["Twilio fallback not tested since 2024 — validate in DR exercise"],
+        "knownFragilities": [
+          "Twilio fallback not tested since 2024 \u2014 validate in DR exercise"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.5%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "JWT Validation",
+            "version": "1.3.0",
+            "scope": "API Manager",
+            "notes": ""
+          },
+          {
+            "name": "Rate Limiting",
+            "version": "2.1.0",
+            "scope": "API Manager",
+            "notes": "1000 rpm \u2014 high volume notification triggers expected"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "notification-template-lib",
+            "groupId": "com.example.integration",
+            "version": "1.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -355,57 +926,116 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "AWS",
-      "environments": ["DEV", "PROD"],
+      "environments": [
+        "DEV",
+        "PROD"
+      ],
       "tribeId": "tribe-commerce",
-      "businessCapability": { "l0": "Supply Chain", "l1": "Inventory", "l2": "Stock Management" },
+      "businessCapability": {
+        "l0": "Supply Chain",
+        "l1": "Inventory",
+        "l2": "Stock Management"
+      },
       "owningSquad": "Squad Delta",
       "applicationContext": "WMS",
       "consumers": [
-        { "system": "Order PAPI", "environments": ["PROD"], "contractType": "REST", "notes": "" },
-        { "system": "Fulfilment API", "environments": ["PROD"], "contractType": "REST", "notes": "" }
+        {
+          "system": "Order PAPI",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": ""
+        },
+        {
+          "system": "Fulfilment API",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": ""
+        }
       ],
       "upstreamSystems": [
-        { "system": "Oracle WMS", "environments": ["PROD"], "protocol": "SOAP", "notes": "Upgrade to Oracle WMS Cloud in progress — SAPI wrapper to be deprecated" }
+        {
+          "system": "Oracle WMS",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "SOAP",
+          "notes": "Upgrade to Oracle WMS Cloud in progress \u2014 SAPI wrapper to be deprecated"
+        }
       ],
       "status": "Deprecated",
       "migrationStatus": "Decommission Candidate",
       "migrationComplexity": "Low",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["inventory", "WMS", "deprecated"],
+      "tags": [
+        "inventory",
+        "WMS",
+        "deprecated"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "API Key (Internal)",
         "oauthScopes": [],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["IP Allowlist"],
+        "gatewayPolicies": [
+          "IP Allowlist"
+        ],
         "dataClassification": "Internal",
         "complianceFlags": [],
         "secretsVaultPath": "",
         "certExpiry": "",
-        "knownVulnerabilities": ["API Key stored in config file — not in Vault (legacy)"]
+        "knownVulnerabilities": [
+          "API Key stored in config file \u2014 not in Vault (legacy)"
+        ]
       },
       "solutionDesign": {
-        "architecturalPattern": "Thin SAPI — Oracle WMS wrapper",
+        "architecturalPattern": "Thin SAPI \u2014 Oracle WMS wrapper",
         "versioningStrategy": "URI versioning (/v2/)",
         "errorHandlingStrategy": "HTTP passthrough",
-        "slaTarget": "Best effort — deprecated",
+        "slaTarget": "Best effort \u2014 deprecated",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["Full replacement by Oracle WMS Cloud SAPI — target Q3 2026"],
+        "technicalDebt": [
+          "Full replacement by Oracle WMS Cloud SAPI \u2014 target Q3 2026"
+        ],
         "domainEvents": []
       },
       "operations": {
         "oncallContact": "squad-delta@example.com",
         "monitoringLinks": [],
-        "alertingThreshold": "Alerting disabled — deprecated path",
+        "alertingThreshold": "Alerting disabled \u2014 deprecated path",
         "maintenanceWindow": "N/A",
         "runbookLinks": [],
         "incidentRefs": [],
-        "knownFragilities": ["Oracle WMS SOAP interface undocumented — tribal knowledge only"],
+        "knownFragilities": [
+          "Oracle WMS SOAP interface undocumented \u2014 tribal knowledge only"
+        ],
         "pipelineLink": "",
         "uptimeSla": "Best effort"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "IP Allowlist",
+            "version": "1.1.0",
+            "scope": "API Manager",
+            "notes": "Deprecated \u2014 minimal policy set"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "2.4.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -417,31 +1047,66 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "AWS",
-      "environments": ["DEV", "PROD"],
+      "environments": [
+        "DEV",
+        "PROD"
+      ],
       "tribeId": "tribe-platform",
-      "businessCapability": { "l0": "Platform", "l1": "Integration", "l2": "Event Streaming" },
+      "businessCapability": {
+        "l0": "Platform",
+        "l1": "Integration",
+        "l2": "Event Streaming"
+      },
       "owningSquad": "Platform Squad",
       "applicationContext": "Integration Platform",
       "consumers": [
-        { "system": "Order Lifecycle PAPI", "environments": ["PROD"], "contractType": "Kafka", "notes": "Subscribes to order.created topic" },
-        { "system": "Data & Analytics Pipeline", "environments": ["PROD"], "contractType": "Kafka", "notes": "CDC stream into data lake" }
+        {
+          "system": "Order Lifecycle PAPI",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "Kafka",
+          "notes": "Subscribes to order.created topic"
+        },
+        {
+          "system": "Data & Analytics Pipeline",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "Kafka",
+          "notes": "CDC stream into data lake"
+        }
       ],
       "upstreamSystems": [
-        { "system": "Kafka Cluster", "environments": ["DEV", "PROD"], "protocol": "Kafka", "notes": "Managed MSK on AWS — topic schema registry enforced" }
+        {
+          "system": "Kafka Cluster",
+          "environments": [
+            "DEV",
+            "PROD"
+          ],
+          "protocol": "Kafka",
+          "notes": "Managed MSK on AWS \u2014 topic schema registry enforced"
+        }
       ],
       "status": "Active",
       "migrationStatus": "In Analysis",
       "migrationComplexity": "High",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["kafka", "events", "platform"],
+      "tags": [
+        "kafka",
+        "events",
+        "platform"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "SASL/SCRAM + TLS",
         "oauthScopes": [],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["Schema Registry Enforcement"],
+        "gatewayPolicies": [
+          "Schema Registry Enforcement"
+        ],
         "dataClassification": "Internal",
         "complianceFlags": [],
         "secretsVaultPath": "/secret/prod/kafka-bridge",
@@ -449,25 +1114,59 @@
         "knownVulnerabilities": []
       },
       "solutionDesign": {
-        "architecturalPattern": "Event bridge — MuleSoft Kafka connector with schema enforcement",
+        "architecturalPattern": "Event bridge \u2014 MuleSoft Kafka connector with schema enforcement",
         "versioningStrategy": "Schema versioning via Confluent Schema Registry",
         "errorHandlingStrategy": "Dead-letter topic + replay mechanism",
         "slaTarget": "99.9% / < 500ms end-to-end event delivery",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["Consumer group offsets not monitored — lag alerts missing"],
-        "domainEvents": ["order.created", "order.cancelled", "payment.completed"]
+        "technicalDebt": [
+          "Consumer group offsets not monitored \u2014 lag alerts missing"
+        ],
+        "domainEvents": [
+          "order.created",
+          "order.cancelled",
+          "payment.completed"
+        ]
       },
       "operations": {
         "oncallContact": "platform-team@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Consumer lag > 10k messages triggers P2",
-        "maintenanceWindow": "Fridays 22:00–23:00 UTC (MSK maintenance)",
+        "maintenanceWindow": "Fridays 22:00\u201323:00 UTC (MSK maintenance)",
         "runbookLinks": [],
         "incidentRefs": [],
-        "knownFragilities": ["Java 8 Kafka client may not support MSK upgrade to Kafka 3.x — verify before migration"],
+        "knownFragilities": [
+          "Java 8 Kafka client may not support MSK upgrade to Kafka 3.x \u2014 verify before migration"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.9%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "Schema Registry Enforcement",
+            "version": "1.0.0",
+            "scope": "Kafka / API Manager",
+            "notes": "Custom policy \u2014 enforces Avro schema on all topics"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "kafka-schema-utils",
+            "groupId": "com.example.integration",
+            "version": "1.2.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     },
     {
@@ -479,32 +1178,80 @@
       "runtime": "MuleSoft 4.3",
       "javaVersion": "Java 8",
       "deploymentModel": "OnPrem",
-      "environments": ["DEV", "SIT", "UAT", "PROD"],
+      "environments": [
+        "DEV",
+        "SIT",
+        "UAT",
+        "PROD"
+      ],
       "tribeId": "tribe-commerce",
-      "businessCapability": { "l0": "Supply Chain", "l1": "Logistics", "l2": "Shipment Tracking" },
+      "businessCapability": {
+        "l0": "Supply Chain",
+        "l1": "Logistics",
+        "l2": "Shipment Tracking"
+      },
       "owningSquad": "Squad Delta",
       "applicationContext": "Logistics Portal",
       "consumers": [
-        { "system": "UXP Portal", "environments": ["UAT", "PROD"], "contractType": "REST", "notes": "Tracking widget on order confirmation page" },
-        { "system": "Customer Self-Service", "environments": ["PROD"], "contractType": "REST", "notes": "Unauthenticated endpoint — rate limited to 60 rpm per IP" }
+        {
+          "system": "UXP Portal",
+          "environments": [
+            "UAT",
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Tracking widget on order confirmation page"
+        },
+        {
+          "system": "Customer Self-Service",
+          "environments": [
+            "PROD"
+          ],
+          "contractType": "REST",
+          "notes": "Unauthenticated endpoint \u2014 rate limited to 60 rpm per IP"
+        }
       ],
       "upstreamSystems": [
-        { "system": "FedEx API", "environments": ["UAT", "PROD"], "protocol": "REST", "notes": "Sandbox available — credentials in Vault /secret/fedex-sandbox" },
-        { "system": "DHL API", "environments": ["PROD"], "protocol": "REST", "notes": "DHL contract expires Aug 2026 — flag for renewal" }
+        {
+          "system": "FedEx API",
+          "environments": [
+            "UAT",
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "Sandbox available \u2014 credentials in Vault /secret/fedex-sandbox"
+        },
+        {
+          "system": "DHL API",
+          "environments": [
+            "PROD"
+          ],
+          "protocol": "REST",
+          "notes": "DHL contract expires Aug 2026 \u2014 flag for renewal"
+        }
       ],
       "status": "Active",
       "migrationStatus": "Not Started",
       "migrationComplexity": "Medium",
       "ramlSpec": "",
       "confluenceLinks": [],
-      "tags": ["logistics", "tracking", "shipping"],
+      "tags": [
+        "logistics",
+        "tracking",
+        "shipping"
+      ],
       "lastReviewedBy": "",
       "lastReviewedDate": "",
       "security": {
         "authScheme": "OAuth 2.0 (Client Credentials)",
-        "oauthScopes": ["shipment:read"],
+        "oauthScopes": [
+          "shipment:read"
+        ],
         "tlsVersion": "TLS 1.2",
-        "gatewayPolicies": ["Rate Limiting", "JWT Validation"],
+        "gatewayPolicies": [
+          "Rate Limiting",
+          "JWT Validation"
+        ],
         "dataClassification": "Internal",
         "complianceFlags": [],
         "secretsVaultPath": "/secret/prod/shipment-tracking",
@@ -512,25 +1259,69 @@
         "knownVulnerabilities": []
       },
       "solutionDesign": {
-        "architecturalPattern": "Aggregator EAPI — normalises FedEx + DHL response schemas",
+        "architecturalPattern": "Aggregator EAPI \u2014 normalises FedEx + DHL response schemas",
         "versioningStrategy": "URI versioning (/v2/)",
         "errorHandlingStrategy": "Fallback to cached last-known status if carrier API unavailable",
         "slaTarget": "99.5% / < 1s P95",
         "asyncApiSpec": "",
         "adrLinks": [],
-        "technicalDebt": ["DHL response schema differs from FedEx — mapping brittle, not schema-validated"],
+        "technicalDebt": [
+          "DHL response schema differs from FedEx \u2014 mapping brittle, not schema-validated"
+        ],
         "domainEvents": []
       },
       "operations": {
         "oncallContact": "squad-delta@example.com",
         "monitoringLinks": [],
         "alertingThreshold": "Carrier API error rate > 10% triggers P2",
-        "maintenanceWindow": "Sundays 03:00–04:00 UTC",
-        "runbookLinks": [{ "label": "Carrier Failover Runbook", "url": "" }],
-        "incidentRefs": ["INC-20250118 — DHL API returned 503 for 2h, fallback cache served stale data"],
-        "knownFragilities": ["DHL contract renewal (Aug 2026) — no fallback carrier if expired", "Cache TTL not configurable at runtime"],
+        "maintenanceWindow": "Sundays 03:00\u201304:00 UTC",
+        "runbookLinks": [
+          {
+            "label": "Carrier Failover Runbook",
+            "url": ""
+          }
+        ],
+        "incidentRefs": [
+          "INC-20250118 \u2014 DHL API returned 503 for 2h, fallback cache served stale data"
+        ],
+        "knownFragilities": [
+          "DHL contract renewal (Aug 2026) \u2014 no fallback carrier if expired",
+          "Cache TTL not configurable at runtime"
+        ],
         "pipelineLink": "",
         "uptimeSla": "99.5%"
+      },
+      "dependencies": {
+        "gatewayPolicies": [
+          {
+            "name": "JWT Validation",
+            "version": "1.3.0",
+            "scope": "API Manager",
+            "notes": ""
+          },
+          {
+            "name": "Rate Limiting",
+            "version": "2.1.0",
+            "scope": "API Manager",
+            "notes": "60 rpm per IP for unauthenticated self-service endpoint"
+          }
+        ],
+        "sharedLibraries": [
+          {
+            "name": "common-error-handler",
+            "groupId": "com.example.integration",
+            "version": "3.1.0",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          },
+          {
+            "name": "carrier-normalisation-lib",
+            "groupId": "com.example.integration",
+            "version": "1.0.1",
+            "scope": "POM dependency",
+            "exchangeUrl": ""
+          }
+        ]
       }
     }
   ]

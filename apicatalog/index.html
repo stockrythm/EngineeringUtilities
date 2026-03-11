@@ -541,6 +541,7 @@
   .sec-dot { background:var(--danger); }
   .des-dot { background:var(--accent2); }
   .ops-dot { background:var(--success); }
+  .deps-dot { background:#22d3ee; }
   .coe-viewer-wrap { border:1px solid var(--border); border-top:none; border-radius:0 0 var(--radius-sm) var(--radius-sm); padding:14px; background:var(--surface2); margin-bottom:12px; }
   .cvpanel { display:none; }
   .cvpanel.active { display:block; }
@@ -1010,6 +1011,39 @@ function certExpiryColor(dateStr) {
 }
 
 // rows: [[key, val], …]   tagGroups: [[label, arr, cssClass], …]   lists: [[label, arr, icon], …]
+function renderDepsSection(dep) {
+  const policies = dep.gatewayPolicies || [];
+  const libs = dep.sharedLibraries || [];
+  if (!policies.length && !libs.length) return '<p class="empty-notes">No dependencies recorded.</p>';
+
+  const policiesHtml = policies.length ? `
+    <div class="coe-list-title">🔒 Gateway Policies (API Manager)</div>
+    ${policies.map(p => `
+      <div class="coe-list-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <strong style="font-size:11px;">${p.name || '—'}</strong>
+          ${p.version ? `<span class="sp-chip scope-tag">v${p.version}</span>` : ''}
+        </div>
+        ${p.scope ? `<div style="font-size:10px;color:var(--muted2);margin-top:3px;">${p.scope}</div>` : ''}
+        ${p.notes ? `<div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${p.notes}</div>` : ''}
+      </div>`).join('')}` : '';
+
+  const libsHtml = libs.length ? `
+    <div class="coe-list-title" style="margin-top:12px;">📦 Shared Libraries &amp; Policy Assets</div>
+    ${libs.map(l => `
+      <div class="coe-list-item">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+          <strong style="font-size:11px;font-family:var(--font-mono);">${l.name || '—'}</strong>
+          ${l.version ? `<span class="sp-chip scope-tag">v${l.version}</span>` : ''}
+        </div>
+        ${l.groupId ? `<div style="font-size:10px;color:var(--muted2);font-family:var(--font-mono);margin-top:2px;">${l.groupId}</div>` : ''}
+        ${l.scope ? `<div style="font-size:10px;color:var(--muted2);margin-top:2px;">${l.scope}</div>` : ''}
+        ${l.exchangeUrl ? `<div style="margin-top:4px;"><a href="${l.exchangeUrl}" target="_blank" style="color:var(--accent);font-size:10px;">Anypoint Exchange →</a></div>` : ''}
+      </div>`).join('')}` : '';
+
+  return policiesHtml + libsHtml;
+}
+
 function renderCoeSection(title, _ns, rows, tagGroups, lists) {
   const rowsHtml = rows.map(([k,v]) => `
     <div class="coe-kv">
@@ -1148,6 +1182,7 @@ function openDrawer(apiId) {
       <button class="cvtab active" data-tab="drawer-sec" onclick="switchDrawerTab(this)"><span class="coe-dot-v sec-dot"></span> Security</button>
       <button class="cvtab" data-tab="drawer-des" onclick="switchDrawerTab(this)"><span class="coe-dot-v des-dot"></span> Solution Design</button>
       <button class="cvtab" data-tab="drawer-ops" onclick="switchDrawerTab(this)"><span class="coe-dot-v ops-dot"></span> Operations</button>
+      <button class="cvtab" data-tab="drawer-deps" onclick="switchDrawerTab(this)"><span class="coe-dot-v deps-dot"></span> Dependencies</button>
     </div>
     <div class="coe-viewer-wrap">
 
@@ -1195,6 +1230,10 @@ function openDrawer(apiId) {
           ['Runbooks',           (ops.runbookLinks||[]).map(l=>l.label||l.url||l), '📋'],
           ['Monitoring',         (ops.monitoringLinks||[]).map(l=>`<a href="${l.url||l}" target="_blank" style="color:var(--accent)">${l.label||l.url||l}</a>`), '📊']
         ])}
+      </div>
+
+      <div class="cvpanel" id="drawer-deps">
+        ${renderDepsSection(api.dependencies || {})}
       </div>
 
     </div>

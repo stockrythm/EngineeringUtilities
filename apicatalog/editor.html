@@ -68,6 +68,7 @@
   .coe-tab-security .coe-dot  { background: var(--danger); }
   .coe-tab-design .coe-dot    { background: var(--accent2); }
   .coe-tab-ops .coe-dot       { background: var(--success); }
+  .coe-tab-deps .coe-dot      { background: var(--accent3, #22d3ee); }
   .coe-panel { display: none; }
   .coe-panel.active { display: block; }
   .coe-section-wrap {
@@ -408,7 +409,6 @@ const FALLBACK_TRIBES = [
   { id: "tribe-cards",     name: "Cards" },
   { id: "tribe-cdc", name: "Commerical Digital Channel" },
   { id: "tribe-rdc",  name: "Retail Digital Channel" },
-  { id: "tribe-icoe",  name: "Integration CoE" },
   { id: "tribe-hb",  name: "Homebuying" }
 ];
 
@@ -680,6 +680,9 @@ function renderEditor(api) {
       <button class="coe-tab coe-tab-ops" onclick="switchCoeTab('ops',this)">
         <span class="coe-dot"></span> Operations CoE
       </button>
+      <button class="coe-tab coe-tab-deps" onclick="switchCoeTab('deps',this)">
+        <span class="coe-dot"></span> Dependencies
+      </button>
     </div>
     <div class="coe-section-wrap">
 
@@ -853,6 +856,27 @@ function renderEditor(api) {
         </div>
       </div>
 
+    </div><!-- end ops panel -->
+
+      <!-- ── Dependencies ── -->
+      <div class="coe-panel" id="coe-deps">
+        <div class="coe-badge" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.3);color:#22d3ee;">🔗 Dependencies</div>
+
+        <div style="margin-bottom:14px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Gateway Policies (API Manager)</div>
+          <div class="notes-list" id="gatewayPolicyList"></div>
+          <button class="add-link-btn" onclick="addGatewayPolicy()">+ Add Policy</button>
+          <span class="field-hint" style="display:block;margin-top:6px;">Policies applied at Anypoint API Manager — e.g. JWT Validation, Rate Limiting, mTLS, Client ID Enforcement</span>
+        </div>
+
+        <div style="margin-top:18px;">
+          <div class="form-section-title" style="margin-bottom:10px;">Shared Libraries &amp; Policy Assets</div>
+          <div class="notes-list" id="sharedLibList"></div>
+          <button class="add-link-btn" onclick="addSharedLib()">+ Add Library / Policy Asset</button>
+          <span class="field-hint" style="display:block;margin-top:6px;">Versioned Exchange assets — common-error-handler, custom policy assets, shared connectors, POM parent</span>
+        </div>
+      </div>
+
     </div><!-- end coe-section-wrap -->
 
     <!-- Audit -->
@@ -907,6 +931,9 @@ function renderEditor(api) {
   renderLinks('adr', des.adrLinks || []);
   renderLinks('monitoring', ops.monitoringLinks || []);
   renderLinks('runbook', ops.runbookLinks || []);
+
+  // Initialise Dependencies block
+  initDepsBlock(api.dependencies || {});
 
   // Reset to first CoE tab
   document.querySelectorAll('.coe-tab').forEach(t => t.classList.remove('active'));
@@ -1011,6 +1038,114 @@ function addSecVuln()  { dynamicLists['secVulnState'].push(''); rebuildDynamicLi
 function addTechDebt() { dynamicLists['techDebtState'].push(''); rebuildDynamicList('techDebtList','techDebtState','Describe the technical debt item…'); markUnsaved(); }
 function addIncident() { dynamicLists['incidentState'].push(''); rebuildDynamicList('incidentList','incidentState','e.g. INC-20241103 — description…'); markUnsaved(); }
 function addFragility(){ dynamicLists['fragilityState'].push(''); rebuildDynamicList('fragilityList','fragilityState','Known fragility or risk…'); markUnsaved(); }
+
+// ── Dependencies (Gateway Policies + Shared Libraries) ──────
+const depsState = { gatewayPolicies: [], sharedLibraries: [] };
+
+function initDepsBlock(initial) {
+  const dep = initial || {};
+  depsState.gatewayPolicies = (dep.gatewayPolicies || []).map(p => ({ ...p }));
+  depsState.sharedLibraries = (dep.sharedLibraries || []).map(l => ({ ...l }));
+  rebuildGatewayPolicies();
+  rebuildSharedLibs();
+}
+
+function rebuildGatewayPolicies() {
+  const c = document.getElementById('gatewayPolicyList');
+  if (!c) return;
+  c.innerHTML = depsState.gatewayPolicies.map((p, i) => `
+    <div class="dep-row" style="margin-bottom:10px;">
+      <div class="dep-row-top">
+        <div class="field">
+          <label>Policy Name</label>
+          <input type="text" value="${esc(p.name||'')}" placeholder="e.g. JWT Validation"
+            oninput="depsState.gatewayPolicies[${i}].name=this.value;markUnsaved();" list="policy_dl"/>
+          <datalist id="policy_dl">
+            <option value="JWT Validation"><option value="Client ID Enforcement">
+            <option value="Rate Limiting"><option value="IP Allowlist">
+            <option value="mTLS Enforcement"><option value="CORS"><option value="HTTPS Redirect">
+            <option value="Request Size Limit"><option value="Schema Registry Enforcement">
+            <option value="PCI Header Stripping"><option value="OAuth 2.0 Access Token Enforcement">
+          </datalist>
+        </div>
+        <div class="field">
+          <label>Version</label>
+          <input type="text" value="${esc(p.version||'')}" placeholder="e.g. 1.3.0"
+            oninput="depsState.gatewayPolicies[${i}].version=this.value;markUnsaved();"/>
+        </div>
+        <div class="field">
+          <label>Scope</label>
+          <input type="text" value="${esc(p.scope||'')}" placeholder="API Manager / Kafka"
+            oninput="depsState.gatewayPolicies[${i}].scope=this.value;markUnsaved();" list="scope_dl"/>
+          <datalist id="scope_dl">
+            <option value="API Manager"><option value="Kafka / API Manager"><option value="Custom policy asset — Exchange">
+          </datalist>
+        </div>
+        <button class="remove-link" style="align-self:flex-end;margin-bottom:4px;"
+          onclick="depsState.gatewayPolicies.splice(${i},1);rebuildGatewayPolicies();markUnsaved();">🗑</button>
+      </div>
+      <div class="field" style="margin-top:6px;">
+        <label>Notes</label>
+        <input type="text" value="${esc(p.notes||'')}" placeholder="Context, caveats, audit requirements…"
+          oninput="depsState.gatewayPolicies[${i}].notes=this.value;markUnsaved();"/>
+      </div>
+    </div>`).join('') || '<p style="color:var(--muted2);font-size:11px;padding:4px 0;">No policies recorded.</p>';
+}
+
+function addGatewayPolicy() {
+  depsState.gatewayPolicies.push({ name:'', version:'', scope:'API Manager', notes:'' });
+  rebuildGatewayPolicies();
+  markUnsaved();
+}
+
+function rebuildSharedLibs() {
+  const c = document.getElementById('sharedLibList');
+  if (!c) return;
+  c.innerHTML = depsState.sharedLibraries.map((l, i) => `
+    <div class="dep-row" style="margin-bottom:10px;">
+      <div class="dep-row-top">
+        <div class="field">
+          <label>Library / Asset Name</label>
+          <input type="text" value="${esc(l.name||'')}" placeholder="e.g. common-error-handler"
+            oninput="depsState.sharedLibraries[${i}].name=this.value;markUnsaved();"/>
+        </div>
+        <div class="field">
+          <label>Group ID</label>
+          <input type="text" value="${esc(l.groupId||'')}" placeholder="e.g. com.example.integration"
+            oninput="depsState.sharedLibraries[${i}].groupId=this.value;markUnsaved();"/>
+        </div>
+        <div class="field">
+          <label>Version</label>
+          <input type="text" value="${esc(l.version||'')}" placeholder="e.g. 3.1.0"
+            oninput="depsState.sharedLibraries[${i}].version=this.value;markUnsaved();"/>
+        </div>
+        <button class="remove-link" style="align-self:flex-end;margin-bottom:4px;"
+          onclick="depsState.sharedLibraries.splice(${i},1);rebuildSharedLibs();markUnsaved();">🗑</button>
+      </div>
+      <div class="dep-row-top" style="margin-top:6px;">
+        <div class="field">
+          <label>Scope</label>
+          <input type="text" value="${esc(l.scope||'')}" placeholder="POM dependency / Custom policy asset — Exchange"
+            oninput="depsState.sharedLibraries[${i}].scope=this.value;markUnsaved();" list="libscope_dl"/>
+          <datalist id="libscope_dl">
+            <option value="POM dependency"><option value="Custom policy asset — Exchange">
+            <option value="Shared connector"><option value="Parent POM">
+          </datalist>
+        </div>
+        <div class="field" style="flex:2;">
+          <label>Anypoint Exchange URL</label>
+          <input type="text" value="${esc(l.exchangeUrl||'')}" placeholder="https://anypoint.mulesoft.com/exchange/…"
+            oninput="depsState.sharedLibraries[${i}].exchangeUrl=this.value;markUnsaved();"/>
+        </div>
+      </div>
+    </div>`).join('') || '<p style="color:var(--muted2);font-size:11px;padding:4px 0;">No shared libraries recorded.</p>';
+}
+
+function addSharedLib() {
+  depsState.sharedLibraries.push({ name:'', groupId:'', version:'', scope:'POM dependency', exchangeUrl:'' });
+  rebuildSharedLibs();
+  markUnsaved();
+}
 
 // ── Tag Field Logic ──────────────────────────
 const tagState = {};
@@ -1118,7 +1253,11 @@ function saveAPI() {
   api.lastReviewedBy = val('f_lastReviewedBy');
   api.lastReviewedDate = val('f_lastReviewedDate');
 
-  // Security COE
+  // Dependencies
+  api.dependencies = {
+    gatewayPolicies: depsState.gatewayPolicies.filter(p => p.name.trim()),
+    sharedLibraries: depsState.sharedLibraries.filter(l => l.name.trim())
+  };
   api.security = {
     authScheme: val('sec_authScheme'),
     oauthScopes: [...(tagState['oauthScopes'] || [])],
