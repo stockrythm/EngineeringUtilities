@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Migration Tracker — Integration COE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<style>
+:root {
+  --bg:        #080f1c;
+  --surface:   #0d1829;
+  --surface2:  #111f33;
+  --surface3:  #162440;
+  --border:    rgba(99,147,255,0.13);
+  --border2:   rgba(99,147,255,0.22);
+  --text:      #e8edf5;
+  --text-dim:  #a0aec0;
+  --muted:     #64748b;
+  --muted2:    #475569;
+  --accent:    #3b82f6;
+  --accent2:   #6366f1;
+  --accent3:   #22d3ee;
+  --success:   #10b981;
+  --warning:   #f59e0b;
+  --danger:    #ef4444;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --radius:    10px;
+  --radius-sm: 6px;
+}
+[data-theme="light"] {
+  --bg:       #f0f4fb;
+  --surface:  #ffffff;
+  --surface2: #f7f9fd;
+  --surface3: #e8edf8;
+  --border:   rgba(59,130,246,0.15);
+  --border2:  rgba(59,130,246,0.28);
+  --text:     #0f172a;
+  --text-dim: #334155;
+  --muted:    #64748b;
+  --muted2:   #94a3b8;
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { height:100%; overflow:hidden; }
+body { font-family:var(--font-body); background:var(--bg); color:var(--text); font-size:13px; display:flex; flex-direction:column; }
+
+/* ── HEADER ── */
+.header {
+  display:flex; align-items:center; gap:16px;
+  padding:0 24px; height:54px; flex-shrink:0;
+  background:var(--surface); border-bottom:1px solid var(--border2);
+}
+.header-logo { font-family:var(--font-head); font-size:15px; font-weight:800; letter-spacing:-0.3px; color:var(--text); }
+.header-logo span { color:var(--accent); }
+.header-nav { display:flex; gap:4px; margin-left:8px; }
+.nav-link { font-size:11px; padding:4px 10px; border-radius:20px; color:var(--muted); text-decoration:none; transition:all 0.15s; }
+.nav-link:hover { background:var(--surface3); color:var(--text); }
+.load-btn { font-size:11px; font-family:var(--font-mono); padding:5px 14px; border-radius:20px; border:1px solid var(--border2); background:transparent; color:var(--text-dim); cursor:pointer; transition:all 0.15s; }
+.load-btn:hover { border-color:var(--accent); color:var(--accent); }
+.print-btn { font-size:11px; font-family:var(--font-body); font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid rgba(245,158,11,0.4); background:rgba(245,158,11,0.08); color:#f59e0b; cursor:pointer; transition:all 0.15s; }
+.print-btn:hover { background:rgba(245,158,11,0.16); }
+.theme-btn { margin-left:auto; font-size:16px; background:none; border:none; cursor:pointer; padding:4px; border-radius:8px; line-height:1; }
+.schema-version { font-family:var(--font-mono); font-size:10px; color:var(--muted2); margin-left:4px; }
+
+/* ── TABS ── */
+.tab-bar { display:flex; gap:2px; padding:0 24px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; }
+.tab-btn { font-family:var(--font-body); font-size:12px; font-weight:600; padding:10px 18px; border:none; background:none; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; letter-spacing:0.2px; }
+.tab-btn:hover { color:var(--text); }
+.tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+/* ── MAIN LAYOUT ── */
+.tab-panel { display:none; flex:1; overflow:hidden; flex-direction:column; }
+.tab-panel.active { display:flex; }
+
+/* ── TOOLBAR ── */
+.toolbar { display:flex; align-items:center; gap:10px; padding:8px 24px; background:var(--surface); border-bottom:1px solid var(--border); flex-shrink:0; flex-wrap:wrap; }
+.toolbar-sep { width:1px; height:20px; background:var(--border); margin:0 4px; }
+.wave-pill { font-size:11px; font-family:var(--font-body); font-weight:600; padding:4px 12px; border-radius:20px; border:1px solid var(--border); background:transparent; color:var(--muted); cursor:pointer; transition:all 0.12s; }
+.wave-pill:hover { border-color:var(--border2); color:var(--text); }
+.wave-pill.active { color:#fff; border-color:transparent; }
+.tribe-filter { font-size:11px; padding:4px 10px; border-radius:20px; border:1px solid var(--border); background:var(--surface2); color:var(--text-dim); cursor:pointer; }
+
+/* ── RAG DASHBOARD ── */
+.rag-wrap { flex:1; overflow-y:auto; padding:20px 24px; display:flex; flex-direction:column; gap:20px; }
+
+.rag-summary { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 18px; }
+.stat-card .num { font-family:var(--font-head); font-size:28px; font-weight:800; line-height:1; }
+.stat-card .lbl { font-size:11px; color:var(--muted); margin-top:4px; }
+.stat-card .sub { font-size:10px; font-family:var(--font-mono); color:var(--muted2); margin-top:2px; }
+
+.section-title { font-family:var(--font-head); font-size:13px; font-weight:700; color:var(--text-dim); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:12px; }
+
+/* Wave readiness grid */
+.wave-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+.wave-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+.wave-card-header { padding:12px 16px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); }
+.wave-color-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.wave-card-name { font-family:var(--font-head); font-size:13px; font-weight:700; }
+.wave-card-desc { font-size:10px; color:var(--muted); margin-top:1px; }
+.wave-card-body { padding:12px 16px; }
+.wave-stat-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.wave-stat-label { font-size:11px; color:var(--muted); }
+.wave-stat-val { font-family:var(--font-mono); font-size:11px; font-weight:500; }
+.progress-track { height:6px; background:var(--surface3); border-radius:10px; overflow:hidden; margin-top:8px; }
+.progress-bar { height:100%; border-radius:10px; transition:width 0.6s ease; }
+.status-pills { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+.status-pip { font-size:10px; font-family:var(--font-mono); padding:2px 8px; border-radius:20px; }
+.pip-complete  { background:rgba(16,185,129,0.12); color:#10b981; }
+.pip-progress  { background:rgba(59,130,246,0.12); color:#3b82f6; }
+.pip-analysis  { background:rgba(245,158,11,0.12); color:#f59e0b; }
+.pip-blocked   { background:rgba(239,68,68,0.12);  color:#ef4444; }
+.pip-notstart  { background:rgba(100,116,139,0.12);color:#94a3b8; }
+
+/* Tribe RAG table */
+.rag-table { width:100%; border-collapse:collapse; background:var(--surface); border-radius:var(--radius); overflow:hidden; border:1px solid var(--border); }
+.rag-table th { font-family:var(--font-mono); font-size:10px; letter-spacing:1px; color:var(--muted); text-transform:uppercase; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); background:var(--surface2); font-weight:500; }
+.rag-table td { padding:10px 14px; border-bottom:1px solid var(--border); vertical-align:middle; font-size:12px; }
+.rag-table tr:last-child td { border-bottom:none; }
+.rag-table tr:hover td { background:var(--surface2); }
+.tribe-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:7px; vertical-align:middle; }
+.rag-cell { display:inline-flex; align-items:center; justify-content:center; min-width:28px; height:22px; padding:0 8px; border-radius:5px; font-family:var(--font-mono); font-size:11px; font-weight:500; }
+.rag-green  { background:rgba(16,185,129,0.12); color:#10b981; }
+.rag-amber  { background:rgba(245,158,11,0.12);  color:#f59e0b; }
+.rag-red    { background:rgba(239,68,68,0.12);   color:#ef4444; }
+.rag-grey   { background:rgba(100,116,139,0.1);  color:#94a3b8; }
+.readiness-pct { font-family:var(--font-mono); font-size:11px; }
+
+/* Blockers section */
+.blocker-list { display:flex; flex-direction:column; gap:8px; }
+.blocker-card { background:var(--surface); border:1px solid rgba(239,68,68,0.25); border-left:3px solid #ef4444; border-radius:var(--radius-sm); padding:12px 16px; }
+.blocker-card.decom { border-color:rgba(245,158,11,0.3); border-left-color:#f59e0b; }
+.blocker-api-name { font-family:var(--font-head); font-size:13px; font-weight:700; margin-bottom:4px; }
+.blocker-meta { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:6px; }
+.blocker-meta span { font-size:10px; font-family:var(--font-mono); color:var(--muted); }
+.blocker-reason { font-size:12px; color:var(--text-dim); line-height:1.5; }
+.blocker-owner { margin-top:6px; font-size:11px; color:var(--warning); font-family:var(--font-mono); }
+
+/* ── WAVE PLANNER ── */
+.planner-wrap { flex:1; overflow-x:auto; overflow-y:hidden; padding:0; display:flex; gap:0; }
+.wave-col { flex:1; min-width:240px; display:flex; flex-direction:column; border-right:1px solid var(--border); }
+.wave-col:last-child { border-right:none; }
+.wave-col-header { padding:14px 16px; border-bottom:1px solid var(--border); flex-shrink:0; background:var(--surface); }
+.wave-col-title { font-family:var(--font-head); font-size:13px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.wave-col-title .dot { width:8px; height:8px; border-radius:50%; }
+.wave-col-dates { font-size:10px; font-family:var(--font-mono); color:var(--muted); margin-top:3px; }
+.wave-col-count { font-size:10px; font-family:var(--font-mono); color:var(--muted2); margin-top:2px; }
+.wave-col-body { flex:1; overflow-y:auto; padding:12px 10px; display:flex; flex-direction:column; gap:8px; background:var(--bg); }
+.api-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:10px 12px; cursor:default; transition:border-color 0.15s; }
+.api-card:hover { border-color:var(--border2); }
+.api-card.has-blocker { border-left:3px solid #ef4444; }
+.api-card.has-warning { border-left:3px solid #f59e0b; }
+.api-card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-bottom:6px; }
+.api-card-name { font-family:var(--font-head); font-size:11px; font-weight:700; line-height:1.3; }
+.api-card-badges { display:flex; gap:4px; flex-wrap:wrap; align-items:center; }
+.layer-badge { font-size:9px; font-family:var(--font-mono); font-weight:500; padding:2px 6px; border-radius:4px; }
+.layer-EAPI    { background:rgba(6,182,212,0.12);  color:#06b6d4; }
+.layer-PAPI    { background:rgba(99,102,241,0.12); color:#818cf8; }
+.layer-SAPI    { background:rgba(59,130,246,0.12); color:#60a5fa; }
+.layer-EVENT   { background:rgba(249,115,22,0.12); color:#fb923c; }
+.layer-BATCH   { background:rgba(132,204,22,0.12); color:#a3e635; }
+.layer-UTILITY { background:rgba(168,85,247,0.12); color:#c084fc; }
+.layer-FACADE  { background:rgba(234,179,8,0.12);  color:#facc15; }
+.mig-badge { font-size:9px; font-family:var(--font-mono); padding:2px 6px; border-radius:4px; }
+.mig-complete { background:rgba(16,185,129,0.12); color:#10b981; }
+.mig-progress { background:rgba(59,130,246,0.12); color:#3b82f6; }
+.mig-analysis { background:rgba(245,158,11,0.12); color:#f59e0b; }
+.mig-blocked  { background:rgba(239,68,68,0.12);  color:#ef4444; }
+.mig-notstart { background:rgba(100,116,139,0.12);color:#94a3b8; }
+.mig-decom    { background:rgba(245,158,11,0.08); color:#d97706; }
+.api-card-meta { display:flex; gap:8px; flex-wrap:wrap; }
+.api-card-meta span { font-size:10px; font-family:var(--font-mono); color:var(--muted); }
+.api-card-dates { font-size:10px; color:var(--muted2); margin-top:4px; font-family:var(--font-mono); }
+.dep-warn { font-size:10px; color:#f59e0b; margin-top:4px; display:flex; align-items:center; gap:4px; }
+.blocker-snip { font-size:10px; color:#ef4444; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.tribe-bar { height:2px; border-radius:2px; margin-bottom:6px; }
+
+/* ── GANTT ── */
+.gantt-wrap { flex:1; overflow:auto; padding:20px 24px; display:flex; flex-direction:column; gap:0; }
+#gantt-svg { display:block; }
+
+/* ── PRINT ── */
+@media print {
+  .header, .tab-bar, .toolbar, .print-btn, .theme-btn, .load-btn, .nav-link { display:none !important; }
+  body { overflow:visible !important; background:#fff !important; color:#000 !important; }
+  .tab-panel { display:flex !important; overflow:visible !important; }
+  #tab-rag { display:flex !important; }
+  #tab-planner, #tab-gantt { display:none !important; }
+  .rag-wrap { overflow:visible !important; }
+  .stat-card, .wave-card, .blocker-card, .rag-table { break-inside:avoid; }
+  :root { --bg:#fff; --surface:#f8fafc; --surface2:#f1f5f9; --surface3:#e2e8f0; --border:rgba(0,0,0,0.1); --text:#0f172a; --text-dim:#334155; --muted:#64748b; --muted2:#94a3b8; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:4px; }
+.empty-state { color:var(--muted2); font-size:11px; text-align:center; padding:20px 0; font-family:var(--font-mono); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">Integration <span>COE</span></div>
+  <nav class="header-nav">
+    <a class="nav-link" href="index.html">Catalog</a>
+    <a class="nav-link" href="editor.html">Editor</a>
+    <a class="nav-link" href="dependencies.html">Dependencies</a>
+  </nav>
+  <span class="schema-version" id="schemaVer"></span>
+  <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+    <button class="print-btn" onclick="window.print()">🖨 Print / Export</button>
+    <button class="load-btn" onclick="document.getElementById('fileInput').click()">📂 Load JSON</button>
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="loadFile(event)"/>
+    <button class="theme-btn" id="themeToggle" onclick="toggleTheme()">☀️</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('rag',this)">📊 RAG Dashboard</button>
+  <button class="tab-btn" onclick="switchTab('planner',this)">🌊 Wave Planner</button>
+  <button class="tab-btn" onclick="switchTab('gantt',this)">📅 Gantt Timeline</button>
+</div>
+
+<!-- RAG DASHBOARD -->
+<div class="tab-panel active" id="tab-rag">
+  <div class="rag-wrap" id="ragContent"><div class="empty-state">Load api-data.json to view the dashboard</div></div>
+</div>
+
+<!-- WAVE PLANNER -->
+<div class="tab-panel" id="tab-planner">
+  <div class="toolbar" id="plannerToolbar">
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">FILTER:</span>
+    <div id="plannerTribeFilters"></div>
+  </div>
+  <div class="planner-wrap" id="plannerContent"><div class="empty-state" style="margin:40px auto;">Load api-data.json to view the wave planner</div></div>
+</div>
+
+<!-- GANTT -->
+<div class="tab-panel" id="tab-gantt">
+  <div class="toolbar" id="ganttToolbar">
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">WAVE:</span>
+    <div id="ganttWaveFilters"></div>
+    <div class="toolbar-sep"></div>
+    <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">TRIBE:</span>
+    <div id="ganttTribeFilters"></div>
+  </div>
+  <div class="gantt-wrap" id="ganttContent"><div class="empty-state">Load api-data.json to view the Gantt timeline</div></div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════
+let DATA = null;
+let TRIBES_MAP = {};
+let WAVES_MAP  = {};
+let ACTIVE_TAB = 'rag';
+let PLANNER_TRIBE = 'all';
+let GANTT_WAVE  = 'all';
+let GANTT_TRIBE = 'all';
+
+// ══════════════════════════════════════════════
+// THEME
+// ══════════════════════════════════════════════
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  localStorage.setItem('coe-theme', t);
+  document.getElementById('themeToggle').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+function toggleTheme() {
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  if (DATA && ACTIVE_TAB === 'gantt') renderGantt();
+}
+applyTheme(localStorage.getItem('coe-theme') || 'dark');
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(tab, btn) {
+  ACTIVE_TAB = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (DATA) {
+    if (tab === 'gantt') renderGantt();
+  }
+}
+
+// ══════════════════════════════════════════════
+// LOAD DATA
+// ══════════════════════════════════════════════
+function loadFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => initData(JSON.parse(ev.target.result));
+  reader.readAsText(file);
+}
+
+async function autoLoad() {
+  try {
+    const r = await fetch('api-data.json');
+    if (r.ok) initData(await r.json());
+  } catch(e) {}
+}
+
+function initData(raw) {
+  DATA = raw;
+  TRIBES_MAP = {};
+  WAVES_MAP  = {};
+  (raw.tribes || []).forEach(t => TRIBES_MAP[t.id] = t);
+  (raw.migrationWaves || []).forEach(w => WAVES_MAP[w.id] = w);
+  document.getElementById('schemaVer').textContent = 'v' + (raw.meta?.version || '?');
+  buildPlannerFilters();
+  buildGanttFilters();
+  renderRAG();
+  renderPlanner();
+  if (ACTIVE_TAB === 'gantt') renderGantt();
+}
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+function tribeColor(id) {
+  const palette = ['#6366f1','#3b82f6','#22d3ee','#10b981','#f59e0b','#ef4444','#a78bfa','#f472b6'];
+  const tribes = Object.keys(TRIBES_MAP);
+  const i = tribes.indexOf(id);
+  return i >= 0 ? palette[i % palette.length] : '#64748b';
+}
+
+function migBadgeClass(s) {
+  if (!s) return 'mig-notstart';
+  const m = { 'Complete':'mig-complete','In Progress':'mig-progress','In Analysis':'mig-analysis',
+               'Blocked':'mig-blocked','Not Started':'mig-notstart','Decommission Candidate':'mig-decom' };
+  return m[s] || 'mig-notstart';
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function daysUntil(d) {
+  if (!d) return null;
+  return Math.round((new Date(d) - new Date()) / 86400000);
+}
+
+function getWaveApis(waveId) {
+  return (DATA.apis || []).filter(a => (a.migrationPlan?.wave || 'unassigned') === waveId);
+}
+
+function waveReadiness(waveId) {
+  const apis = getWaveApis(waveId).filter(a => a.migrationStatus !== 'Decommission Candidate');
+  if (!apis.length) return 0;
+  return Math.round(apis.filter(a => a.migrationStatus === 'Complete').length / apis.length * 100);
+}
+
+function statusCounts(apis) {
+  const counts = { complete:0, progress:0, analysis:0, blocked:0, notstart:0, decom:0 };
+  apis.forEach(a => {
+    const s = a.migrationStatus || 'Not Started';
+    if (s === 'Complete') counts.complete++;
+    else if (s === 'In Progress') counts.progress++;
+    else if (s === 'In Analysis') counts.analysis++;
+    else if (s === 'Blocked') counts.blocked++;
+    else if (s === 'Decommission Candidate') counts.decom++;
+    else counts.notstart++;
+  });
+  return counts;
+}
+
+function hasUpstreamInLaterWave(api) {
+  const myWave = api.migrationPlan?.wave || 'unassigned';
+  const waves = DATA.migrationWaves || [];
+  const myWaveIdx = waves.findIndex(w => w.id === myWave);
+  const upstream = api.upstreamSystems || [];
+  for (const u of upstream) {
+    const match = (DATA.apis || []).find(a => a.name?.toLowerCase().includes((u.system||'').toLowerCase()) || (u.system||'').toLowerCase().includes(a.name?.toLowerCase()));
+    if (match) {
+      const theirWave = match.migrationPlan?.wave || 'unassigned';
+      const theirIdx  = waves.findIndex(w => w.id === theirWave);
+      if (theirIdx > myWaveIdx && theirIdx !== -1 && myWaveIdx !== -1) return match.name;
+    }
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════
+// RAG DASHBOARD
+// ══════════════════════════════════════════════
+function renderRAG() {
+  const apis    = DATA.apis || [];
+  const waves   = DATA.migrationWaves || [];
+  const tribes  = DATA.tribes || [];
+  const blockers = apis.filter(a => a.migrationStatus === 'Blocked' || a.migrationStatus === 'Decommission Candidate');
+  const counts  = statusCounts(apis);
+  const totalActive = apis.filter(a => a.migrationStatus !== 'Decommission Candidate').length;
+  const pctDone = totalActive ? Math.round(counts.complete / totalActive * 100) : 0;
+
+  const statsHtml = `
+    <div class="rag-summary">
+      <div class="stat-card"><div class="num" style="color:var(--accent)">${apis.length}</div><div class="lbl">Total APIs</div><div class="sub">in catalog</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--success)">${counts.complete}</div><div class="lbl">Complete</div><div class="sub">${pctDone}% of active APIs</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--accent3)">${counts.progress + counts.analysis}</div><div class="lbl">In Flight</div><div class="sub">${counts.progress} in progress · ${counts.analysis} analysis</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--danger)">${counts.blocked}</div><div class="lbl">Blocked</div><div class="sub">requires action</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--muted)">${counts.notstart}</div><div class="lbl">Not Started</div><div class="sub">&nbsp;</div></div>
+      <div class="stat-card"><div class="num" style="color:var(--warning)">${counts.decom}</div><div class="lbl">Decommission</div><div class="sub">candidates</div></div>
+    </div>`;
+
+  const waveCardsHtml = `
+    <div class="section-title">Wave Readiness</div>
+    <div class="wave-grid">
+      ${waves.map(w => {
+        const wApis = getWaveApis(w.id);
+        const sc    = statusCounts(wApis);
+        const pct   = waveReadiness(w.id);
+        const barColor = pct === 100 ? '#10b981' : pct > 50 ? '#f59e0b' : '#ef4444';
+        const dateRange = w.startDate && w.endDate ? `${fmtDate(w.startDate)} → ${fmtDate(w.endDate)}` : 'Dates TBD';
+        return `<div class="wave-card">
+          <div class="wave-card-header">
+            <div class="wave-color-dot" style="background:${w.color}"></div>
+            <div>
+              <div class="wave-card-name">${w.name}</div>
+              <div class="wave-card-desc">${w.description || dateRange}</div>
+            </div>
+            <span style="margin-left:auto;font-family:var(--font-mono);font-size:18px;font-weight:800;color:${barColor}">${pct}%</span>
+          </div>
+          <div class="wave-card-body">
+            <div class="wave-stat-row"><span class="wave-stat-label">APIs in wave</span><span class="wave-stat-val">${wApis.length}</span></div>
+            <div class="wave-stat-row"><span class="wave-stat-label">Timeline</span><span class="wave-stat-val" style="font-size:10px;">${w.startDate ? dateRange : 'TBD'}</span></div>
+            <div class="progress-track"><div class="progress-bar" style="width:${pct}%;background:${barColor}"></div></div>
+            <div class="status-pills">
+              ${sc.complete  ? `<span class="status-pip pip-complete">${sc.complete} Complete</span>` : ''}
+              ${sc.progress  ? `<span class="status-pip pip-progress">${sc.progress} In Progress</span>` : ''}
+              ${sc.analysis  ? `<span class="status-pip pip-analysis">${sc.analysis} Analysis</span>` : ''}
+              ${sc.blocked   ? `<span class="status-pip pip-blocked">${sc.blocked} Blocked</span>` : ''}
+              ${sc.notstart  ? `<span class="status-pip pip-notstart">${sc.notstart} Not Started</span>` : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Tribe RAG table
+  const tribeTableHtml = `
+    <div class="section-title">Tribe Migration Status</div>
+    <table class="rag-table">
+      <thead><tr>
+        <th>Tribe</th><th>Total APIs</th>
+        ${waves.filter(w => w.id !== 'unassigned').map(w => `<th>${w.name}</th>`).join('')}
+        <th>Unassigned</th><th>Blocked</th><th>Readiness</th>
+      </tr></thead>
+      <tbody>
+        ${tribes.map(t => {
+          const tApis  = apis.filter(a => a.tribeId === t.id);
+          const tc     = statusCounts(tApis);
+          const active = tApis.filter(a => a.migrationStatus !== 'Decommission Candidate').length;
+          const pct    = active ? Math.round(tApis.filter(a => a.migrationStatus === 'Complete').length / active * 100) : 0;
+          const barColor = pct === 100 ? '#10b981' : pct > 50 ? '#f59e0b' : '#ef4444';
+          return `<tr>
+            <td><span class="tribe-dot" style="background:${tribeColor(t.id)}"></span>${t.name}</td>
+            <td style="font-family:var(--font-mono);">${tApis.length}</td>
+            ${waves.filter(w => w.id !== 'unassigned').map(w => {
+              const n = tApis.filter(a => (a.migrationPlan?.wave||'unassigned') === w.id).length;
+              return `<td><span class="rag-cell ${n > 0 ? 'rag-grey' : ''}">${n || '—'}</span></td>`;
+            }).join('')}
+            <td><span class="rag-cell rag-grey">${tApis.filter(a => (a.migrationPlan?.wave||'unassigned') === 'unassigned').length || '—'}</span></td>
+            <td><span class="rag-cell ${tc.blocked ? 'rag-red' : 'rag-grey'}">${tc.blocked || '—'}</span></td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;min-width:60px;"><div class="progress-track"><div class="progress-bar" style="width:${pct}%;background:${barColor}"></div></div></div>
+                <span class="readiness-pct" style="color:${barColor}">${pct}%</span>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+
+  const blockersHtml = blockers.length ? `
+    <div class="section-title">⛔ Blockers & Decommission Candidates (${blockers.length})</div>
+    <div class="blocker-list">
+      ${blockers.map(a => {
+        const tribe = TRIBES_MAP[a.tribeId];
+        const plan  = a.migrationPlan || {};
+        const isDecom = a.migrationStatus === 'Decommission Candidate';
+        return `<div class="blocker-card${isDecom ? ' decom' : ''}">
+          <div class="blocker-api-name">${a.name}</div>
+          <div class="blocker-meta">
+            <span>Layer: ${a.layer}</span>
+            <span>Tribe: ${tribe?.name || '—'}</span>
+            <span>Wave: ${WAVES_MAP[plan.wave]?.name || 'Unassigned'}</span>
+            <span>Status: <span class="mig-badge ${migBadgeClass(a.migrationStatus)}">${a.migrationStatus}</span></span>
+          </div>
+          ${plan.blockerReason ? `<div class="blocker-reason">${plan.blockerReason}</div>` : ''}
+          ${plan.blockerOwner  ? `<div class="blocker-owner">Owner: ${plan.blockerOwner}</div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  document.getElementById('ragContent').innerHTML = statsHtml + waveCardsHtml + tribeTableHtml + blockersHtml;
+}
+
+// ══════════════════════════════════════════════
+// WAVE PLANNER
+// ══════════════════════════════════════════════
+function buildPlannerFilters() {
+  const tribes = DATA.tribes || [];
+  document.getElementById('plannerTribeFilters').innerHTML =
+    `<button class="wave-pill active" style="background:var(--accent2);border-color:var(--accent2);" onclick="setPlannerTribe('all',this)">All Tribes</button>` +
+    tribes.map(t => `<button class="wave-pill" style="--tc:${tribeColor(t.id)}" onclick="setPlannerTribe('${t.id}',this)">${t.name}</button>`).join('');
+}
+
+function setPlannerTribe(id, btn) {
+  PLANNER_TRIBE = id;
+  document.querySelectorAll('#plannerTribeFilters .wave-pill').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = '';
+    b.style.borderColor = '';
+    b.style.color = '';
+  });
+  btn.classList.add('active');
+  btn.style.background = id === 'all' ? 'var(--accent2)' : tribeColor(id);
+  btn.style.borderColor = id === 'all' ? 'var(--accent2)' : tribeColor(id);
+  btn.style.color = '#fff';
+  renderPlanner();
+}
+
+function renderPlanner() {
+  const waves  = DATA.migrationWaves || [];
+  const allApis = DATA.apis || [];
+  const c = document.getElementById('plannerContent');
+
+  const colsHtml = waves.map(w => {
+    let wApis = allApis.filter(a => (a.migrationPlan?.wave || 'unassigned') === w.id);
+    if (PLANNER_TRIBE !== 'all') wApis = wApis.filter(a => a.tribeId === PLANNER_TRIBE);
+    const dateRange = w.startDate && w.endDate ? `${fmtDate(w.startDate)} → ${fmtDate(w.endDate)}` : 'Dates TBD';
+
+    const cardsHtml = wApis.length ? wApis.map(a => {
+      const tribe   = TRIBES_MAP[a.tribeId];
+      const plan    = a.migrationPlan || {};
+      const warnDep = hasUpstreamInLaterWave(a);
+      const isBlocked = a.migrationStatus === 'Blocked' || a.migrationStatus === 'Decommission Candidate';
+      const daysLeft = daysUntil(plan.targetDate);
+      const overdueClass = daysLeft !== null && daysLeft < 0 && a.migrationStatus !== 'Complete' ? 'color:#ef4444;' : '';
+      return `<div class="api-card${isBlocked ? ' has-blocker' : warnDep ? ' has-warning' : ''}">
+        <div class="tribe-bar" style="background:${tribeColor(a.tribeId)}"></div>
+        <div class="api-card-top">
+          <div class="api-card-name">${a.name}</div>
+          <div class="api-card-badges">
+            <span class="layer-badge layer-${a.layer}">${a.layer}</span>
+            <span class="mig-badge ${migBadgeClass(a.migrationStatus)}">${a.migrationStatus}</span>
+          </div>
+        </div>
+        <div class="api-card-meta">
+          <span>${tribe?.name || '—'}</span>
+          <span>${a.migrationComplexity || '—'} complexity</span>
+        </div>
+        ${plan.targetDate ? `<div class="api-card-dates" style="${overdueClass}">🎯 ${fmtDate(plan.targetStartDate)} → ${fmtDate(plan.targetDate)}${daysLeft !== null && a.migrationStatus !== 'Complete' ? ` (${daysLeft < 0 ? Math.abs(daysLeft) + 'd overdue' : daysLeft + 'd left'})` : ''}</div>` : ''}
+        ${plan.completionDate ? `<div class="api-card-dates" style="color:var(--success)">✅ Completed ${fmtDate(plan.completionDate)}</div>` : ''}
+        ${warnDep ? `<div class="dep-warn">⚠ Upstream "${warnDep}" in later wave</div>` : ''}
+        ${isBlocked && plan.blockerReason ? `<div class="blocker-snip">⛔ ${plan.blockerReason}</div>` : ''}
+      </div>`;
+    }).join('') : `<div class="empty-state">No APIs${PLANNER_TRIBE !== 'all' ? ' for this tribe' : ''}</div>`;
+
+    return `<div class="wave-col">
+      <div class="wave-col-header">
+        <div class="wave-col-title"><span class="dot" style="background:${w.color}"></span>${w.name}</div>
+        <div class="wave-col-dates">${dateRange}</div>
+        <div class="wave-col-count">${wApis.length} API${wApis.length !== 1 ? 's' : ''}</div>
+      </div>
+      <div class="wave-col-body">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+
+  c.innerHTML = colsHtml;
+}
+
+// ══════════════════════════════════════════════
+// GANTT TIMELINE
+// ══════════════════════════════════════════════
+function buildGanttFilters() {
+  const waves  = DATA.migrationWaves || [];
+  const tribes = DATA.tribes || [];
+
+  document.getElementById('ganttWaveFilters').innerHTML =
+    `<button class="wave-pill active" style="background:var(--accent);border-color:var(--accent);color:#fff;" onclick="setGanttWave('all',this)">All Waves</button>` +
+    waves.map(w => `<button class="wave-pill" onclick="setGanttWave('${w.id}',this)">${w.name}</button>`).join('');
+
+  document.getElementById('ganttTribeFilters').innerHTML =
+    `<button class="wave-pill active" style="background:var(--accent2);border-color:var(--accent2);color:#fff;" onclick="setGanttTribe('all',this)">All Tribes</button>` +
+    tribes.map(t => `<button class="wave-pill" onclick="setGanttTribe('${t.id}',this)">${t.name}</button>`).join('');
+}
+
+function setGanttWave(id, btn) {
+  GANTT_WAVE = id;
+  document.querySelectorAll('#ganttWaveFilters .wave-pill').forEach(b => { b.classList.remove('active'); b.style.cssText = ''; });
+  btn.classList.add('active'); btn.style.background = id === 'all' ? 'var(--accent)' : WAVES_MAP[id]?.color || 'var(--accent)';
+  btn.style.borderColor = btn.style.background; btn.style.color = '#fff';
+  renderGantt();
+}
+
+function setGanttTribe(id, btn) {
+  GANTT_TRIBE = id;
+  document.querySelectorAll('#ganttTribeFilters .wave-pill').forEach(b => { b.classList.remove('active'); b.style.cssText = ''; });
+  btn.classList.add('active'); btn.style.background = id === 'all' ? 'var(--accent2)' : tribeColor(id);
+  btn.style.borderColor = btn.style.background; btn.style.color = '#fff';
+  renderGantt();
+}
+
+function renderGantt() {
+  const container = document.getElementById('ganttContent');
+  container.innerHTML = '';
+
+  const waves  = DATA.migrationWaves || [];
+  const allApis = DATA.apis || [];
+  const isDark  = document.documentElement.getAttribute('data-theme') !== 'light';
+
+  // filter
+  let apis = allApis.filter(a => {
+    const plan = a.migrationPlan || {};
+    if (GANTT_WAVE !== 'all' && (plan.wave || 'unassigned') !== GANTT_WAVE) return false;
+    if (GANTT_TRIBE !== 'all' && a.tribeId !== GANTT_TRIBE) return false;
+    return plan.targetStartDate || plan.targetDate;
+  });
+
+  if (!apis.length) {
+    container.innerHTML = '<div class="empty-state">No APIs with dates match the current filter. Set Target Start Date and Target Date in the editor.</div>';
+    return;
+  }
+
+  // Sort by wave order then targetStartDate
+  const waveOrder = Object.fromEntries(waves.map((w,i) => [w.id, i]));
+  apis = [...apis].sort((a,b) => {
+    const wi = (waveOrder[a.migrationPlan?.wave] ?? 99) - (waveOrder[b.migrationPlan?.wave] ?? 99);
+    if (wi !== 0) return wi;
+    return (a.migrationPlan?.targetStartDate || '9999') < (b.migrationPlan?.targetStartDate || '9999') ? -1 : 1;
+  });
+
+  const ROW_H  = 32;
+  const ROW_GAP = 4;
+  const LABEL_W = 220;
+  const HEADER_H = 40;
+  const FOOTER_H = 30;
+  const totalH = HEADER_H + apis.length * (ROW_H + ROW_GAP) + FOOTER_H;
+
+  // Date extent — pad by 2 weeks each side
+  const allDates = apis.flatMap(a => [a.migrationPlan?.targetStartDate, a.migrationPlan?.targetDate, a.migrationPlan?.completionDate].filter(Boolean)).map(d => new Date(d));
+  const minDate = new Date(Math.min(...allDates) - 14 * 86400000);
+  const maxDate = new Date(Math.max(...allDates) + 14 * 86400000);
+
+  const W = Math.max(container.clientWidth || 900, 800);
+  const chartW = W - LABEL_W - 20;
+
+  const x = d3.scaleTime().domain([minDate, maxDate]).range([0, chartW]);
+  const ticks = x.ticks(d3.timeMonth.every(1));
+
+  const svg = d3.select(container).append('svg')
+    .attr('id', 'gantt-svg')
+    .attr('width', W)
+    .attr('height', totalH);
+
+  const col = v => isDark ? v : v;
+  const textCol   = isDark ? '#e8edf5' : '#0f172a';
+  const mutedCol  = isDark ? '#64748b' : '#94a3b8';
+  const borderCol = isDark ? 'rgba(99,147,255,0.13)' : 'rgba(59,130,246,0.12)';
+  const surfCol   = isDark ? '#0d1829' : '#ffffff';
+  const surf2Col  = isDark ? '#111f33' : '#f7f9fd';
+
+  // Background
+  svg.append('rect').attr('width', W).attr('height', totalH).attr('fill', surfCol);
+
+  // Wave background bands
+  const waveG = svg.append('g').attr('transform', `translate(${LABEL_W},${HEADER_H})`);
+  waves.forEach(w => {
+    if (!w.startDate || !w.endDate) return;
+    const wx0 = x(new Date(w.startDate));
+    const wx1 = x(new Date(w.endDate));
+    waveG.append('rect')
+      .attr('x', wx0).attr('y', 0)
+      .attr('width', Math.max(wx1 - wx0, 0))
+      .attr('height', totalH - HEADER_H - FOOTER_H)
+      .attr('fill', w.color + '08');
+    waveG.append('text')
+      .attr('x', wx0 + 6).attr('y', 12)
+      .attr('font-size', 10).attr('font-family', "'DM Mono',monospace")
+      .attr('fill', w.color + '80').text(w.name);
+  });
+
+  // Grid lines
+  const gridG = svg.append('g').attr('transform', `translate(${LABEL_W},0)`);
+  ticks.forEach(t => {
+    gridG.append('line')
+      .attr('x1', x(t)).attr('x2', x(t))
+      .attr('y1', 0).attr('y2', totalH)
+      .attr('stroke', borderCol).attr('stroke-width', 1);
+  });
+
+  // Header axis
+  const axisG = svg.append('g').attr('transform', `translate(${LABEL_W},0)`);
+  axisG.append('rect').attr('width', chartW).attr('height', HEADER_H).attr('fill', surf2Col);
+  ticks.forEach(t => {
+    axisG.append('text')
+      .attr('x', x(t) + 4).attr('y', HEADER_H - 8)
+      .attr('font-size', 10).attr('font-family', "'DM Mono',monospace")
+      .attr('fill', mutedCol)
+      .text(d3.timeFormat('%b %Y')(t));
+  });
+  axisG.append('line').attr('x1',0).attr('x2',chartW).attr('y1',HEADER_H).attr('y2',HEADER_H).attr('stroke',borderCol);
+
+  // Today line
+  const today = new Date();
+  if (today >= minDate && today <= maxDate) {
+    const tx = x(today);
+    svg.append('line')
+      .attr('x1', LABEL_W + tx).attr('x2', LABEL_W + tx)
+      .attr('y1', 0).attr('y2', totalH)
+      .attr('stroke', '#ef4444').attr('stroke-width', 1.5).attr('stroke-dasharray', '4,3').attr('opacity', 0.7);
+    svg.append('text')
+      .attr('x', LABEL_W + tx + 3).attr('y', HEADER_H - 6)
+      .attr('font-size', 9).attr('font-family', "'DM Mono',monospace")
+      .attr('fill', '#ef4444').text('TODAY');
+  }
+
+  // Rows
+  const rowsG = svg.append('g').attr('transform', `translate(0,${HEADER_H})`);
+  apis.forEach((api, i) => {
+    const plan  = api.migrationPlan || {};
+    const y     = i * (ROW_H + ROW_GAP);
+    const tribe = TRIBES_MAP[api.tribeId];
+    const wave  = WAVES_MAP[plan.wave] || {};
+    const tc    = tribeColor(api.tribeId);
+
+    // Alternating row bg
+    rowsG.append('rect')
+      .attr('x', 0).attr('y', y)
+      .attr('width', W).attr('height', ROW_H)
+      .attr('fill', i % 2 === 0 ? 'transparent' : (isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.015)'));
+
+    // Tribe bar
+    rowsG.append('rect')
+      .attr('x', 0).attr('y', y + 4)
+      .attr('width', 3).attr('height', ROW_H - 8)
+      .attr('fill', tc).attr('rx', 2);
+
+    // Label
+    rowsG.append('text')
+      .attr('x', 10).attr('y', y + ROW_H / 2 + 1)
+      .attr('dominant-baseline', 'middle')
+      .attr('font-size', 11).attr('font-family', "'DM Sans',sans-serif").attr('font-weight', '500')
+      .attr('fill', textCol)
+      .text(api.name.length > 26 ? api.name.slice(0, 24) + '…' : api.name);
+
+    rowsG.append('text')
+      .attr('x', 10).attr('y', y + ROW_H - 5)
+      .attr('font-size', 9).attr('font-family', "'DM Mono',monospace")
+      .attr('fill', mutedCol)
+      .text(`${api.layer} · ${tribe?.name || '—'}`);
+
+    // Bar
+    const barG = rowsG.append('g').attr('transform', `translate(${LABEL_W},0)`);
+
+    const s  = plan.targetStartDate ? new Date(plan.targetStartDate) : null;
+    const e  = plan.targetDate ? new Date(plan.targetDate) : null;
+    const ac = plan.completionDate ? new Date(plan.completionDate) : null;
+
+    if (s && e) {
+      const bx  = x(s);
+      const bx2 = x(e);
+      const bw  = Math.max(bx2 - bx, 4);
+      const barColor = wave.color || '#6366f1';
+      const isOverdue = e < today && api.migrationStatus !== 'Complete';
+      const isBlocked = api.migrationStatus === 'Blocked';
+
+      // planned bar
+      barG.append('rect')
+        .attr('x', bx).attr('y', y + 8)
+        .attr('width', bw).attr('height', ROW_H - 16)
+        .attr('rx', 4)
+        .attr('fill', isBlocked ? '#ef444444' : isOverdue ? '#f59e0b33' : barColor + '33')
+        .attr('stroke', isBlocked ? '#ef4444' : isOverdue ? '#f59e0b' : barColor)
+        .attr('stroke-width', 1.5);
+
+      // progress fill if in progress
+      if (api.migrationStatus === 'In Progress' && s && e) {
+        const elapsed = Math.max(0, Math.min(1, (today - s) / (e - s)));
+        barG.append('rect')
+          .attr('x', bx).attr('y', y + 8)
+          .attr('width', bw * elapsed).attr('height', ROW_H - 16)
+          .attr('rx', 4).attr('fill', barColor + '88');
+      }
+
+      // actual completion marker
+      if (ac) {
+        const acx = x(ac);
+        barG.append('line')
+          .attr('x1', acx).attr('x2', acx)
+          .attr('y1', y + 6).attr('y2', y + ROW_H - 6)
+          .attr('stroke', '#10b981').attr('stroke-width', 2.5).attr('stroke-linecap', 'round');
+        barG.append('circle')
+          .attr('cx', acx).attr('cy', y + ROW_H / 2)
+          .attr('r', 4).attr('fill', '#10b981');
+      }
+
+      // status label inside bar if wide enough
+      if (bw > 70) {
+        barG.append('text')
+          .attr('x', bx + bw / 2).attr('y', y + ROW_H / 2)
+          .attr('text-anchor', 'middle').attr('dominant-baseline', 'middle')
+          .attr('font-size', 9).attr('font-family', "'DM Mono',monospace")
+          .attr('fill', isBlocked ? '#ef4444' : textCol)
+          .attr('pointer-events', 'none')
+          .text(api.migrationStatus);
+      }
+    } else {
+      // No dates — show placeholder
+      barG.append('text')
+        .attr('x', 6).attr('y', y + ROW_H / 2)
+        .attr('dominant-baseline', 'middle')
+        .attr('font-size', 10).attr('font-family', "'DM Mono',monospace")
+        .attr('fill', mutedCol).text('No dates set');
+    }
+  });
+
+  // Legend
+  const legG = svg.append('g').attr('transform', `translate(${LABEL_W}, ${totalH - FOOTER_H + 8})`);
+  const legItems = [
+    { color:'#6366f1', label:'Planned range' },
+    { color:'#10b981', label:'✓ Actual completion' },
+    { color:'#f59e0b', label:'Overdue' },
+    { color:'#ef4444', label:'Blocked' },
+  ];
+  let lx = 0;
+  legItems.forEach(item => {
+    legG.append('rect').attr('x', lx).attr('y', 3).attr('width', 12).attr('height', 8).attr('rx', 2).attr('fill', item.color + '60').attr('stroke', item.color).attr('stroke-width', 1);
+    legG.append('text').attr('x', lx + 16).attr('y', 11).attr('font-size', 9).attr('font-family', "'DM Mono',monospace").attr('fill', mutedCol).text(item.label);
+    lx += item.label.length * 6.5 + 28;
+  });
+}
+
+autoLoad();
+</script>
+</body>
+</html>

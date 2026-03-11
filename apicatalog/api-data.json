@@ -1,6 +1,6 @@
 {
   "meta": {
-    "version": "1.4.0",
+    "version": "1.5.0",
     "lastUpdated": "2026-03-11",
     "organization": "Integration COE",
     "catalogOwner": "Integration COE Lead"
@@ -288,6 +288,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-2",
+        "targetStartDate": "2026-07-01",
+        "targetDate": "2026-07-31",
+        "completionDate": "",
+        "blockerReason": "",
+        "blockerOwner": ""
       }
     },
     {
@@ -456,6 +464,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-2",
+        "targetStartDate": "2026-08-01",
+        "targetDate": "2026-09-15",
+        "completionDate": "",
+        "blockerReason": "",
+        "blockerOwner": ""
       }
     },
     {
@@ -586,6 +602,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-1",
+        "targetStartDate": "2026-04-01",
+        "targetDate": "2026-05-15",
+        "completionDate": "",
+        "blockerReason": "",
+        "blockerOwner": ""
       }
     },
     {
@@ -766,6 +790,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-3",
+        "targetStartDate": "2026-10-01",
+        "targetDate": "2026-11-30",
+        "completionDate": "",
+        "blockerReason": "Stripe API key rotation must complete before migration \u2014 Q2 deadline. Cert expiry June 2026 also requires resolution.",
+        "blockerOwner": "finance-oncall@example.com"
       }
     },
     {
@@ -925,6 +957,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-2",
+        "targetStartDate": "2026-07-15",
+        "targetDate": "2026-08-15",
+        "completionDate": "",
+        "blockerReason": "",
+        "blockerOwner": ""
       }
     },
     {
@@ -1048,6 +1088,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "unassigned",
+        "targetStartDate": "",
+        "targetDate": "",
+        "completionDate": "",
+        "blockerReason": "Decommission candidate \u2014 pending Oracle WMS Cloud cutover decision.",
+        "blockerOwner": "squad-delta@example.com"
       }
     },
     {
@@ -1181,6 +1229,14 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-1",
+        "targetStartDate": "2026-04-01",
+        "targetDate": "2026-06-15",
+        "completionDate": "",
+        "blockerReason": "Java 8 Kafka client compatibility with MSK Kafka 3.x must be validated before migration start.",
+        "blockerOwner": "platform-team@example.com"
       }
     },
     {
@@ -1338,7 +1394,49 @@
             "exchangeUrl": ""
           }
         ]
+      },
+      "migrationPlan": {
+        "wave": "wave-2",
+        "targetStartDate": "2026-08-15",
+        "targetDate": "2026-09-30",
+        "completionDate": "",
+        "blockerReason": "",
+        "blockerOwner": ""
       }
+    }
+  ],
+  "migrationWaves": [
+    {
+      "id": "wave-1",
+      "name": "Wave 1",
+      "description": "Foundation & Platform APIs",
+      "startDate": "2026-04-01",
+      "endDate": "2026-06-30",
+      "color": "#6366f1"
+    },
+    {
+      "id": "wave-2",
+      "name": "Wave 2",
+      "description": "Core Business APIs",
+      "startDate": "2026-07-01",
+      "endDate": "2026-09-30",
+      "color": "#3b82f6"
+    },
+    {
+      "id": "wave-3",
+      "name": "Wave 3",
+      "description": "Experience & Channel APIs",
+      "startDate": "2026-10-01",
+      "endDate": "2026-12-31",
+      "color": "#22d3ee"
+    },
+    {
+      "id": "unassigned",
+      "name": "Unassigned",
+      "description": "",
+      "startDate": "",
+      "endDate": "",
+      "color": "#64748b"
     }
   ]
 }

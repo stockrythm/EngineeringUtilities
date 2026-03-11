@@ -319,7 +319,7 @@
     </label>
     <button class="btn btn-warn" onclick="exportJSON()">⬇ Export JSON</button>
     <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch theme" style="font-size:16px;padding:6px 10px;">🌙</button>
-    <a href="index.html" class="btn btn-ghost">← Back to Catalog</a>
+    <a href="index.html" class="btn btn-ghost">← Back to Catalog</a><a href="migration.html" class="btn btn-ghost">📊 Migration</a>
   </div>
 </header>
 
@@ -629,7 +629,7 @@ function renderEditor(api) {
       <div class="form-grid cols-3">
         <div class="field">
           <label>Migration Status</label>
-          <select id="f_migrationStatus" onchange="markUnsaved()">
+          <select id="f_migrationStatus" onchange="markUnsaved();toggleBlockerFields();">
             ${['Not Started','In Analysis','In Progress','Blocked','Complete','Decommission Candidate'].map(s => `<option ${api.migrationStatus===s?'selected':''}>${s}</option>`).join('')}
           </select>
         </div>
@@ -640,10 +640,44 @@ function renderEditor(api) {
           </select>
         </div>
         <div class="field">
+          <label>Wave Assignment</label>
+          <select id="f_wave" onchange="markUnsaved()">
+            ${(DATA.migrationWaves||[]).map(w => `<option value="${w.id}" ${(api.migrationPlan?.wave||'unassigned')===w.id?'selected':''}>${w.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Target Start Date</label>
+          <input type="date" id="f_targetStartDate" value="${esc(api.migrationPlan?.targetStartDate||'')}" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Target Completion Date</label>
+          <input type="date" id="f_targetDate" value="${esc(api.migrationPlan?.targetDate||'')}" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
+          <label>Actual Completion Date</label>
+          <input type="date" id="f_completionDate" value="${esc(api.migrationPlan?.completionDate||'')}" oninput="markUnsaved()"/>
+        </div>
+        <div class="field">
           <label>Tags</label>
           <div class="tag-input-wrap" id="wrap_tags" onclick="focusTagInput('ti_tags')">
             <span id="tags_tags"></span>
             <input id="ti_tags" placeholder="tag + Enter" onkeydown="addTag(event,'tags')"/>
+          </div>
+        </div>
+      </div>
+      <div id="blockerFields" style="margin-top:12px;display:${api.migrationStatus==='Blocked'||api.migrationStatus==='Decommission Candidate'?'block':'none'};">
+        <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.25);border-radius:var(--radius-sm);padding:14px;">
+          <div style="font-size:10px;font-family:var(--font-mono);color:var(--danger);letter-spacing:1px;margin-bottom:10px;">⛔ BLOCKER DETAILS</div>
+          <div class="form-grid">
+            <div class="field" style="grid-column:1/-1">
+              <label>Blocker Reason</label>
+              <textarea id="f_blockerReason" rows="2" placeholder="Describe the blocker — what is preventing migration?" oninput="markUnsaved()" style="resize:vertical;">${esc(api.migrationPlan?.blockerReason||'')}</textarea>
+            </div>
+            <div class="field">
+              <label>Blocker Owner</label>
+              <input type="text" id="f_blockerOwner" value="${esc(api.migrationPlan?.blockerOwner||'')}"
+                placeholder="email or team responsible for resolving" oninput="markUnsaved()"/>
+            </div>
           </div>
         </div>
       </div>
@@ -1251,6 +1285,14 @@ function saveAPI() {
   }));
   api.migrationStatus = val('f_migrationStatus');
   api.migrationComplexity = val('f_migrationComplexity');
+  api.migrationPlan = {
+    wave:            val('f_wave') || 'unassigned',
+    targetStartDate: val('f_targetStartDate'),
+    targetDate:      val('f_targetDate'),
+    completionDate:  val('f_completionDate'),
+    blockerReason:   (document.getElementById('f_blockerReason')||{value:''}).value.trim(),
+    blockerOwner:    val('f_blockerOwner') || ''
+  };
   api.tags = [...(tagState['tags'] || [])];
   api.operationalNotes = [...notesState].filter(n => n.trim());
   api.confluenceLinks = linksState.confluence.filter(l => l.url);
@@ -1347,6 +1389,13 @@ function exportJSON() {
 // ── Utilities ────────────────────────────────
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toggleBlockerFields() {
+  const s = document.getElementById('f_migrationStatus')?.value || '';
+  const show = s === 'Blocked' || s === 'Decommission Candidate';
+  const el = document.getElementById('blockerFields');
+  if (el) el.style.display = show ? 'block' : 'none';
+}
+
 function markUnsaved() {
   UNSAVED = true;
   const ind = document.getElementById('unsavedIndicator');

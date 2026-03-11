@@ -622,7 +622,7 @@
       <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
     </label>
     <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" title="Switch theme" style="font-size:16px;padding:6px 10px;">🌙</button>
-    <a href="dependencies.html" class="btn btn-ghost">🔗 Dependencies</a>
+    <a href="dependencies.html" class="btn btn-ghost">🔗 Dependencies</a><a href="migration.html" class="btn btn-ghost">📊 Migration</a>
     <a href="editor.html" class="btn btn-primary">✏️ Edit Catalog</a>
   </div>
 </header>
@@ -821,13 +821,20 @@ function getFilteredAPIs() {
   if (SEARCH) {
     apis = apis.filter(a =>
       a.name.toLowerCase().includes(SEARCH) ||
+      (a.repoApiName||'').toLowerCase().includes(SEARCH) ||
       (a.tags||[]).some(t => t.toLowerCase().includes(SEARCH)) ||
       (a.owningSquad||'').toLowerCase().includes(SEARCH) ||
       (Array.isArray(a.applicationContext) ? a.applicationContext.join(' ') : (a.applicationContext||'')).toLowerCase().includes(SEARCH) ||
       (a.businessCapability?.l0||'').toLowerCase().includes(SEARCH) ||
+      (a.businessCapability?.l1||'').toLowerCase().includes(SEARCH) ||
       (a.businessCapability?.l2||'').toLowerCase().includes(SEARCH) ||
-      (a.upstreamSystems||[]).some(s => s.toLowerCase().includes(SEARCH)) ||
-      (a.consumers||[]).some(s => s.toLowerCase().includes(SEARCH))
+      (a.layer||'').toLowerCase().includes(SEARCH) ||
+      (a.protocol||'').toLowerCase().includes(SEARCH) ||
+      (a.deploymentModel||'').toLowerCase().includes(SEARCH) ||
+      (a.upstreamSystems||[]).some(s => (s.system||s||'').toLowerCase().includes(SEARCH) || (s.notes||'').toLowerCase().includes(SEARCH)) ||
+      (a.consumers||[]).some(s => (s.system||s||'').toLowerCase().includes(SEARCH) || (s.notes||'').toLowerCase().includes(SEARCH)) ||
+      (a.security?.complianceFlags||[]).some(f => f.toLowerCase().includes(SEARCH)) ||
+      (a.operationalNotes||[]).some(n => n.toLowerCase().includes(SEARCH))
     );
   }
   return apis;

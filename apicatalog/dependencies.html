@@ -58,6 +58,9 @@ header{background:var(--header-bg);border-bottom:1px solid var(--border-bright);
 .tribe-pill.active{border-color:var(--accent);background:rgba(59,130,246,0.12);color:var(--accent);}
 .tribe-pill.all{border-color:var(--accent2);}
 .tribe-pill.all.active{background:rgba(99,102,241,0.12);color:var(--accent2);border-color:var(--accent2);}
+  .mode-toggle{font-size:11px;font-family:var(--font-body);font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.12s;}
+  .mode-toggle:hover{border-color:var(--accent);color:var(--text);}
+  .mode-toggle.active{background:rgba(59,130,246,0.12);border-color:var(--accent);color:var(--accent);}
 .toolbar-sep{width:1px;height:20px;background:var(--border);flex-shrink:0;}
 .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted2);}
 .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
@@ -127,7 +130,7 @@ svg{width:100%;height:100%;}
     <div class="header-right">
       <label class="btn btn-ghost" style="cursor:pointer;">📂 Load JSON<input type="file" accept=".json" id="jsonFileInput" style="display:none"/></label>
       <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:5px 9px;">🌙</button>
-      <a href="index.html" class="btn btn-ghost">← Catalog</a>
+      <a href="index.html" class="btn btn-ghost">← Catalog</a><a href="migration.html" class="btn btn-ghost">📊 Migration</a>
     </div>
   </header>
 
@@ -139,7 +142,11 @@ svg{width:100%;height:100%;}
   <!-- ── ICICLE TAB ── -->
   <div class="tab-panel active" id="tab-icicle">
     <div class="toolbar" id="icicle-toolbar">
-      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">FILTER:</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">VIEW BY:</span>
+      <button class="mode-toggle active" id="icicle-mode-tribe" onclick="setIcicleMode('tribe',this)">Tribe</button>
+      <button class="mode-toggle" id="icicle-mode-app" onclick="setIcicleMode('app',this)">Application</button>
+      <div class="toolbar-sep"></div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);" id="icicle-filter-label">FILTER:</span>
       <div id="icicle-tribe-pills"></div>
       <div class="toolbar-sep"></div>
       <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Migrated / Complete</div>
@@ -166,7 +173,11 @@ svg{width:100%;height:100%;}
   <!-- ── GRAPH TAB ── -->
   <div class="tab-panel" id="tab-graph">
     <div class="toolbar" id="graph-toolbar">
-      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">FOCUS:</span>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);">VIEW BY:</span>
+      <button class="mode-toggle active" id="mode-tribe" onclick="setGraphMode('tribe',this)">Tribe</button>
+      <button class="mode-toggle" id="mode-app" onclick="setGraphMode('app',this)">Application</button>
+      <div class="toolbar-sep"></div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--muted2);" id="graph-filter-label">FOCUS:</span>
       <div id="graph-tribe-pills"></div>
       <div class="toolbar-sep"></div>
       <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Complete</div>
@@ -197,9 +208,13 @@ svg{width:100%;height:100%;}
 // ══════════════════════════════════════════════
 let DATA = null;
 let TRIBES_MAP = {};
-let ACTIVE_TRIBE = 'all';
+let ACTIVE_TRIBE = 'all';           // icicle tribe filter
+let ICICLE_MODE = 'tribe';          // 'tribe' | 'app'
+let ICICLE_FILTER_VALUE = 'all';    // tribe id, app name, or 'all'
+let GRAPH_FILTER_MODE = 'tribe';    // 'tribe' | 'app'
+let GRAPH_FILTER_VALUE = 'all';     // tribe id, app name, or 'all'
 let CURRENT_TAB = 'icicle';
-let icicleRoot = null;  // D3 hierarchy root for reset
+let icicleRoot = null;
 
 // ══════════════════════════════════════════════
 // THEME
@@ -235,9 +250,13 @@ function initData(raw) {
   DATA = raw;
   TRIBES_MAP = {};
   (raw.tribes||[]).forEach(t => TRIBES_MAP[t.id] = t);
+  GRAPH_FILTER_MODE = 'tribe';
+  GRAPH_FILTER_VALUE = 'all';
+  ACTIVE_TRIBE = 'all';
+  ICICLE_MODE = 'tribe';
+  ICICLE_FILTER_VALUE = 'all';
   buildTribePills('icicle-tribe-pills', 'icicle');
-  buildTribePills('graph-tribe-pills', 'graph');
-  renderIcicle();
+  buildTribePills('graph-tribe-pills', 'graph');  renderIcicle();
   renderGraph();
 }
 
@@ -268,13 +287,55 @@ function buildTribePills(containerId, tabKey) {
     tribes.map(t => `<button class="tribe-pill" style="--tc:${tribeColor(t.id)}" onclick="setTribeFilter('${t.id}','${tabKey}',this)">${t.name}</button>`).join('');
 }
 
+function buildAppPills(containerId) {
+  const c = document.getElementById(containerId);
+  if (!c) return;
+  // Collect all unique application context values across all APIs
+  const apps = [...new Set(
+    (DATA.apis || []).flatMap(a =>
+      Array.isArray(a.applicationContext) ? a.applicationContext : (a.applicationContext ? [a.applicationContext] : [])
+    ).filter(Boolean)
+  )].sort();
+  c.innerHTML = `<button class="tribe-pill all active" onclick="setAppFilter('all',this)">All Apps</button>` +
+    apps.map((app, i) => `<button class="tribe-pill" style="--tc:${APP_PALETTE[i % APP_PALETTE.length]}" onclick="setAppFilter('${app.replace(/'/g,"\\'")}',this)">${app}</button>`).join('');
+}
+
+const APP_PALETTE = ['#22d3ee','#a78bfa','#f472b6','#34d399','#fb923c','#60a5fa','#facc15','#4ade80'];
+
+function setGraphMode(mode, btn) {
+  GRAPH_FILTER_MODE = mode;
+  GRAPH_FILTER_VALUE = 'all';
+  document.querySelectorAll('.mode-toggle').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const label = document.getElementById('graph-filter-label');
+  if (mode === 'tribe') {
+    label.textContent = 'FOCUS:';
+    buildTribePills('graph-tribe-pills', 'graph');
+  } else {
+    label.textContent = 'APP:';
+    buildAppPills('graph-tribe-pills');
+  }
+  renderGraph();
+}
+
 function setTribeFilter(tribeId, tabKey, btn) {
-  ACTIVE_TRIBE = tribeId;
+  if (tabKey === 'graph') {
+    GRAPH_FILTER_VALUE = tribeId;
+  } else {
+    ACTIVE_TRIBE = tribeId;
+  }
   const bar = document.getElementById(tabKey + '-tribe-pills');
   bar.querySelectorAll('.tribe-pill').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  if (tabKey === 'icicle') renderIcicle();
+  if (tabKey === 'icicle') { document.getElementById('icicle-reset').style.display = 'none'; renderIcicle(); }
   else renderGraph();
+}
+
+function setAppFilter(app, btn) {
+  GRAPH_FILTER_VALUE = app;
+  document.getElementById('graph-tribe-pills').querySelectorAll('.tribe-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  renderGraph();
 }
 
 // ══════════════════════════════════════════════
@@ -327,6 +388,94 @@ function resolveInternalAPI(systemName) {
 // ══════════════════════════════════════════════
 // ══  TAB 1: ICICLE CHART  ════════════════════
 // ══════════════════════════════════════════════
+// ── Icicle mode switcher ─────────────────────
+function setIcicleMode(mode, btn) {
+  ICICLE_MODE = mode;
+  ICICLE_FILTER_VALUE = 'all';
+  document.querySelectorAll('#icicle-mode-tribe, #icicle-mode-app').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const label = document.getElementById('icicle-filter-label');
+  if (mode === 'tribe') {
+    label.textContent = 'FILTER:';
+    buildTribePills('icicle-tribe-pills', 'icicle');
+  } else {
+    label.textContent = 'APP:';
+    buildIcicleAppPills();
+  }
+  resetIcicle();
+}
+
+function buildIcicleAppPills() {
+  const c = document.getElementById('icicle-tribe-pills');
+  if (!c) return;
+  const apps = [...new Set(
+    (DATA.apis || []).flatMap(a =>
+      Array.isArray(a.applicationContext) ? a.applicationContext
+        : (a.applicationContext ? [a.applicationContext] : [])
+    ).filter(Boolean)
+  )].sort();
+  c.innerHTML = `<button class="tribe-pill all active" onclick="setIcicleAppFilter('all',this)">All Apps</button>` +
+    apps.map((app, i) => `<button class="tribe-pill" style="--tc:${APP_PALETTE[i % APP_PALETTE.length]}"
+      onclick="setIcicleAppFilter('${app.replace(/'/g, "\\'")}',this)">${app}</button>`).join('');
+}
+
+function setIcicleAppFilter(app, btn) {
+  ICICLE_FILTER_VALUE = app;
+  document.getElementById('icicle-tribe-pills').querySelectorAll('.tribe-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('icicle-reset').style.display = 'none';
+  renderIcicle();
+}
+
+// ── App icicle hierarchy: COE → Application → API ────
+function buildIcicleHierarchyByApp(filterApp) {
+  const allApis = DATA.apis || [];
+  const apis = filterApp === 'all' ? allApis : allApis.filter(a => {
+    const ctx = Array.isArray(a.applicationContext) ? a.applicationContext
+      : (a.applicationContext ? [a.applicationContext] : []);
+    return ctx.includes(filterApp);
+  });
+
+  // Collect unique app names from filtered set
+  const appNames = filterApp === 'all'
+    ? [...new Set(apis.flatMap(a =>
+        Array.isArray(a.applicationContext) ? a.applicationContext
+          : (a.applicationContext ? [a.applicationContext] : ['Unassigned'])
+      ))].sort()
+    : [filterApp];
+
+  const root = { name: 'Integration COE', id: '__root', children: [] };
+
+  appNames.forEach((app, i) => {
+    const appApis = apis.filter(a => {
+      const ctx = Array.isArray(a.applicationContext) ? a.applicationContext
+        : (a.applicationContext ? [a.applicationContext] : []);
+      return ctx.includes(app);
+    });
+    if (!appApis.length) return;
+
+    const appColor = APP_PALETTE[i % APP_PALETTE.length];
+
+    root.children.push({
+      name: app,
+      id: 'app-' + app,
+      type: 'appgroup',
+      color: appColor,
+      children: appApis.map(a => ({
+        name: a.name,
+        id: a.id,
+        type: 'api',
+        api: a,
+        tribeId: a.tribeId,
+        appColor,
+        color: migColor(a.migrationStatus),
+        value: 1
+      }))
+    });
+  });
+  return root;
+}
+
 function buildIcicleHierarchy(filterTribe) {
   const apis = DATA.apis.filter(a => filterTribe === 'all' || a.tribeId === filterTribe);
   const tribes = filterTribe === 'all' ? (DATA.tribes || []) : (DATA.tribes || []).filter(t => t.id === filterTribe);
@@ -385,7 +534,9 @@ function renderIcicle() {
   const textColor = isDark ? '#e2e8f0' : '#0f172a';
   const borderCol = isDark ? '#1a2235' : '#ffffff';
 
-  const hierarchy = buildIcicleHierarchy(ACTIVE_TRIBE);
+  const hierarchy = ICICLE_MODE === 'app'
+    ? buildIcicleHierarchyByApp(ICICLE_FILTER_VALUE)
+    : buildIcicleHierarchy(ACTIVE_TRIBE);
   const root = d3.hierarchy(hierarchy).sum(d => d.value || 0).sort((a,b) => b.value - a.value);
 
   // partition layout — horizontal icicle
@@ -407,16 +558,17 @@ function renderIcicle() {
     .attr('height', d => d.x1 - d.x0)
     .attr('fill', d => {
       if (d.depth === 0) return isDark ? '#0d1a2e' : '#dbe4f0';
-      if (d.data.type === 'tribe') return d.data.color + (isDark ? '33' : '22');
-      if (d.data.type === 'squad') return d.data.color + (isDark ? '22' : '18');
+      if (d.data.type === 'tribe')    return d.data.color + (isDark ? '33' : '22');
+      if (d.data.type === 'appgroup') return d.data.color + (isDark ? '33' : '22');
+      if (d.data.type === 'squad')    return d.data.color + (isDark ? '22' : '18');
       return d.data.color + 'cc';
     })
     .attr('stroke', borderCol)
     .attr('stroke-width', 1)
     .attr('rx', d => d.data.type === 'api' ? 4 : 2);
 
-  // left accent bar for tribe cells
-  cell.filter(d => d.data.type === 'tribe')
+  // left accent bar for tribe and appgroup cells
+  cell.filter(d => d.data.type === 'tribe' || d.data.type === 'appgroup')
     .append('rect')
     .attr('width', 3)
     .attr('height', d => d.x1 - d.x0)
@@ -433,8 +585,8 @@ function renderIcicle() {
       if (d.data.type === 'api') return '#fff';
       return textColor;
     })
-    .attr('font-size', d => d.depth === 0 ? 12 : d.data.type === 'tribe' ? 12 : d.data.type === 'squad' ? 11 : 10)
-    .attr('font-weight', d => d.data.type === 'tribe' ? '700' : '500')
+    .attr('font-size', d => d.depth === 0 ? 12 : (d.data.type === 'tribe' || d.data.type === 'appgroup') ? 12 : d.data.type === 'squad' ? 11 : 10)
+    .attr('font-weight', d => (d.data.type === 'tribe' || d.data.type === 'appgroup') ? '700' : '500')
     .attr('font-family', d => d.data.type === 'api' ? "'DM Mono',monospace" : "'DM Sans',sans-serif")
     .text(d => {
       const w = d.y1 - d.y0 - 10;
@@ -465,10 +617,13 @@ function renderIcicle() {
     let html = `<strong>${d.data.name}</strong>`;
     if (d.data.type === 'api' && d.data.api) {
       html += `<br/><span style="color:#94a3b8">${d.data.api.layer} · ${d.data.api.migrationStatus}</span>`;
+      if (d.data.tribeId) html += `<br/><span style="color:${tribeColor(d.data.tribeId)}">${TRIBES_MAP[d.data.tribeId]?.name||''}</span>`;
     } else if (d.data.type === 'squad') {
       html += `<br/><span style="color:#94a3b8">${d.descendants().filter(x=>x.data.type==='api').length} APIs</span>`;
     } else if (d.data.type === 'tribe') {
       html += `<br/><span style="color:#94a3b8">${d.descendants().filter(x=>x.data.type==='api').length} APIs</span>`;
+    } else if (d.data.type === 'appgroup') {
+      html += `<br/><span style="color:#94a3b8">${d.descendants().filter(x=>x.data.type==='api').length} APIs · click to zoom</span>`;
     }
     tip.innerHTML = html;
     tip.style.opacity = 1;
@@ -521,22 +676,38 @@ function showIciclePanel(api) {
     ...(api.consumers || []).filter(c => !resolveInternalAPI(c.system)).map(c => c.system),
     ...(api.upstreamSystems || []).filter(u => !resolveInternalAPI(u.system)).map(u => u.system)
   ];
-  const internalDeps = [
-    ...(api.upstreamSystems || []).filter(u => resolveInternalAPI(u.system)).map(u => u.system)
-  ];
-  const internalConsumers = [
-    ...(api.consumers || []).filter(c => resolveInternalAPI(c.system)).map(c => c.system)
-  ];
+  const internalDeps = (api.upstreamSystems || []).filter(u => resolveInternalAPI(u.system)).map(u => u.system);
+  const internalConsumers = (api.consumers || []).filter(c => resolveInternalAPI(c.system)).map(c => c.system);
 
-  // migration readiness score for tribe
-  const tribeApis = DATA.apis.filter(a => a.tribeId === api.tribeId);
-  const complete = tribeApis.filter(a => a.migrationStatus === 'Complete').length;
-  const readinessPct = Math.round((complete / tribeApis.length) * 100);
+  // Application contexts this API serves
+  const appCtx = Array.isArray(api.applicationContext) ? api.applicationContext
+    : (api.applicationContext ? [api.applicationContext] : []);
+
+  // Readiness — tribe mode shows tribe readiness, app mode shows app readiness
+  let readinessLabel, readinessPct, readinessDetail;
+  if (ICICLE_MODE === 'app' && appCtx.length) {
+    const focusApp = ICICLE_FILTER_VALUE !== 'all' ? ICICLE_FILTER_VALUE : appCtx[0];
+    const appApis = DATA.apis.filter(a => {
+      const ctx = Array.isArray(a.applicationContext) ? a.applicationContext : (a.applicationContext ? [a.applicationContext] : []);
+      return ctx.includes(focusApp);
+    });
+    const complete = appApis.filter(a => a.migrationStatus === 'Complete').length;
+    readinessPct = Math.round((complete / appApis.length) * 100);
+    readinessLabel = 'App Readiness';
+    readinessDetail = `${focusApp} — ${complete}/${appApis.length} APIs migrated`;
+  } else {
+    const tribeApis = DATA.apis.filter(a => a.tribeId === api.tribeId);
+    const complete = tribeApis.filter(a => a.migrationStatus === 'Complete').length;
+    readinessPct = Math.round((complete / tribeApis.length) * 100);
+    readinessLabel = 'Tribe Readiness';
+    readinessDetail = `${tribe?.name} — ${complete}/${tribeApis.length} APIs migrated`;
+  }
 
   document.getElementById('ip-body').innerHTML = `
     <div class="sp-row"><span class="sp-key">Layer</span><span class="sp-val">${api.layer}</span></div>
     <div class="sp-row"><span class="sp-key">Tribe</span><span class="sp-val">${tribe?.name||'—'}</span></div>
     <div class="sp-row"><span class="sp-key">Squad</span><span class="sp-val">${api.owningSquad||'—'}</span></div>
+    ${appCtx.length ? `<div class="sp-row"><span class="sp-key">Applications</span><span class="sp-val">${appCtx.map(a=>`<span class="sp-chip sp-chip-consumer" style="margin:1px;">${a}</span>`).join('')}</span></div>` : ''}
     <div class="sp-row"><span class="sp-key">Deployment</span><span class="sp-val">${api.deploymentModel}</span></div>
     <div class="sp-row"><span class="sp-key">Migration</span><span class="sp-val"><span class="mig-badge ${migBadgeClass(api.migrationStatus)}">${api.migrationStatus}</span></span></div>
     <div class="sp-row"><span class="sp-key">Runtime</span><span class="sp-val">${api.runtime} · ${api.javaVersion}</span></div>
@@ -557,8 +728,8 @@ function showIciclePanel(api) {
       ${extSystems.length ? extSystems.map(s=>`<span class="sp-chip sp-chip-ext">${s}</span>`).join('') : '<span style="color:var(--muted2);font-size:11px;">None</span>'}
     </div>
 
-    <div class="sp-section">Tribe Readiness</div>
-    <div style="font-size:11px;color:var(--muted2);margin-bottom:6px;">${tribe?.name} — ${complete}/${tribeApis.length} APIs migrated</div>
+    <div class="sp-section">${readinessLabel}</div>
+    <div style="font-size:11px;color:var(--muted2);margin-bottom:6px;">${readinessDetail}</div>
     <div style="background:var(--surface3);border-radius:20px;height:6px;overflow:hidden;">
       <div style="width:${readinessPct}%;height:100%;background:${readinessPct===100?'#10b981':readinessPct>50?'#f59e0b':'#ef4444'};border-radius:20px;transition:width 0.5s;"></div>
     </div>
@@ -572,9 +743,20 @@ function showIciclePanel(api) {
 // ══════════════════════════════════════════════
 let graphSim = null;
 
-function buildGraphData(filterTribe) {
+function buildGraphData(filterMode, filterValue) {
   const allApis = DATA.apis || [];
-  const focusApis = filterTribe === 'all' ? allApis : allApis.filter(a => a.tribeId === filterTribe);
+  let focusApis;
+  if (filterValue === 'all') {
+    focusApis = allApis;
+  } else if (filterMode === 'tribe') {
+    focusApis = allApis.filter(a => a.tribeId === filterValue);
+  } else {
+    // app mode — match any API whose applicationContext array includes the value
+    focusApis = allApis.filter(a => {
+      const ctx = Array.isArray(a.applicationContext) ? a.applicationContext : (a.applicationContext ? [a.applicationContext] : []);
+      return ctx.includes(filterValue);
+    });
+  }
 
   // Collect all node IDs we need — focus APIs + any internal APIs they link to
   const nodeIds = new Set(focusApis.map(a => a.id));
@@ -666,7 +848,7 @@ function renderGraph() {
   const mutedColor = isDark ? '#64748b' : '#94a3b8';
   const laneStroke = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
 
-  const { nodes, links } = buildGraphData(ACTIVE_TRIBE);
+  const { nodes, links } = buildGraphData(GRAPH_FILTER_MODE, GRAPH_FILTER_VALUE);
   if (!nodes.length) return;
 
   // ── Swim lane setup ──
