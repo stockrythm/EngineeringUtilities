@@ -3,7 +3,7 @@
     "version": "1.2.0",
     "lastUpdated": "2026-03-09",
     "organization": "Integration COE",
-    "catalogOwner": "Integration COE Lead"
+    "catalogOwner": "Platform Working Group"
   },
   "layerSuggestions": ["EAPI", "PAPI", "SAPI", "BATCH", "EVENT", "UTILITY", "FACADE"],
   "contractTypes": ["REST", "SOAP", "Kafka", "AsyncAPI", "GraphQL", "SFTP", "JMS", "Other"],

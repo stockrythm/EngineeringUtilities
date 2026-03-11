@@ -1,0 +1,161 @@
+{
+  "meta": {
+    "version": "1.2.0",
+    "lastUpdated": "2026-03-09",
+    "organization": "Integration COE",
+    "catalogOwner": "Platform Working Group"
+  },
+  "layerSuggestions": ["EAPI", "PAPI", "SAPI", "BATCH", "EVENT", "UTILITY", "FACADE"],
+  "contractTypes": ["REST", "SOAP", "Kafka", "AsyncAPI", "GraphQL", "SFTP", "JMS", "Other"],
+  "tribes": [
+    { "id": "tribe-rdc", "name": "Retail Digital Channels", "lead": "Vidhya" },
+    { "id": "tribe-cdc", "name": "Commercial Digital Channel", "lead": "" },
+    { "id": "tribe-icoe", "name": "Integration COE", "lead": "" },
+    { "id": "tribe-platform", "name": "Platform & Foundation", "lead": "" },
+    { "id": "tribe-payments", "name": "Payments", "lead": "" }
+  ],
+  "businessCapabilities": [
+    { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Identity & Auth" },
+    { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Preferences & Consent" },
+    { "l0": "Customer Management", "l1": "Engagement", "l2": "Notifications" },
+    { "l0": "Commerce", "l1": "Order Management", "l2": "Order Lifecycle" },
+    { "l0": "Commerce", "l1": "Order Management", "l2": "Returns & Refunds" },
+    { "l0": "Commerce", "l1": "Product Catalogue", "l2": "Product Search" },
+    { "l0": "Commerce", "l1": "Pricing & Promotions", "l2": "Discount Engine" },
+    { "l0": "Supply Chain", "l1": "Inventory", "l2": "Stock Management" },
+    { "l0": "Supply Chain", "l1": "Logistics", "l2": "Shipment Tracking" },
+    { "l0": "Finance", "l1": "Billing", "l2": "Invoice Generation" },
+    { "l0": "Finance", "l1": "Payments", "l2": "Payment Processing" },
+    { "l0": "Platform", "l1": "Integration", "l2": "Event Streaming" },
+    { "l0": "Platform", "l1": "Integration", "l2": "System-of-Record Sync" },
+    { "l0": "Data", "l1": "Reporting", "l2": "Operational Reporting" }
+  ],
+  "apis": [
+    {
+      "id": "api-001",
+      "name": "OAUTH Experience API",
+      "version": "2.3.1",
+      "layer": "EAPI",
+      "protocol": "REST",
+      "runtime": "MuleSoft 4.3",
+      "javaVersion": "Java 8",
+      "deploymentModel": "AWS",
+      "environments": ["DEV", "SIT", "UAT", "PROD"],
+      "tribeId": "tribe-icoe",
+      "businessCapability": { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Identity & Auth" },
+      "owningSquad": "Squad Alpha",
+      "applicationContext": "CRM Portal",
+      "consumers": [
+        { "system": "UXP Portal", "environments": ["UAT", "PROD"], "contractType": "REST", "notes": "Primary consumer — renders customer header" },
+        { "system": "Mobile App", "environments": ["PROD"], "contractType": "REST", "notes": "iOS + Android — uses /profile/summary endpoint only" }
+      ],
+      "upstreamSystems": [
+        { "system": "Salesforce CRM", "environments": ["PROD"], "protocol": "REST", "notes": "Source of truth for customer master data" },
+        { "system": "Identity Service", "environments": ["DEV", "SIT", "UAT", "PROD"], "protocol": "REST", "notes": "OAuth token validation on every inbound request" }
+      ],
+      "status": "Active",
+      "migrationStatus": "Not Started",
+      "migrationComplexity": "Medium",
+      "ramlSpec": "https://anypoint.example.com/api/customer-profile",
+      "confluenceLinks": [],
+      "tags": ["customer", "identity", "core"],
+      "lastReviewedBy": "",
+      "lastReviewedDate": "",
+      "security": {
+        "authScheme": "OAuth 2.0 (Client Credentials)",
+        "oauthScopes": ["profile:read", "profile:write"],
+        "tlsVersion": "TLS 1.2",
+        "gatewayPolicies": ["Rate Limiting", "JWT Validation", "IP Allowlist"],
+        "dataClassification": "Confidential",
+        "complianceFlags": ["GDPR"],
+        "secretsVaultPath": "/secret/prod/customer-profile",
+        "certExpiry": "2026-09-01",
+        "knownVulnerabilities": []
+      },
+      "solutionDesign": {
+        "architecturalPattern": "Façade — aggregates CRM + Identity",
+        "versioningStrategy": "URI versioning (/v2/)",
+        "errorHandlingStrategy": "Standard error envelope with correlation-id",
+        "slaTarget": "99.9% / < 500ms P95",
+        "asyncApiSpec": "",
+        "adrLinks": [],
+        "technicalDebt": ["No pagination on /customers/search — returns up to 500 records flat"],
+        "domainEvents": []
+      },
+      "operations": {
+        "oncallContact": "squad-alpha@example.com",
+        "monitoringLinks": [{ "label": "Datadog Dashboard", "url": "https://app.datadoghq.com/dashboard/abc" }],
+        "alertingThreshold": "Error rate > 2% over 5 min triggers P2",
+        "maintenanceWindow": "Sundays 02:00–04:00 UTC",
+        "runbookLinks": [],
+        "incidentRefs": [],
+        "knownFragilities": ["Salesforce CRM response degrades >3s during batch sync window (02:00–03:00 UTC)"],
+        "pipelineLink": "",
+        "uptimeSla": "99.9%"
+      }
+    },
+        {
+      "id": "api-002",
+      "name": "Customer Profile API",
+      "version": "2.3.1",
+      "layer": "EAPI",
+      "protocol": "REST",
+      "runtime": "MuleSoft 4.3",
+      "javaVersion": "Java 8",
+      "deploymentModel": "OnPrem",
+      "environments": ["DEV", "SIT", "UAT", "PROD"],
+      "tribeId": "tribe-cx",
+      "businessCapability": { "l0": "Customer Management", "l1": "Customer Profile", "l2": "Identity & Auth" },
+      "owningSquad": "Squad Alpha",
+      "applicationContext": "CRM Portal",
+      "consumers": [
+        { "system": "UXP Portal", "environments": ["UAT", "PROD"], "contractType": "REST", "notes": "Primary consumer — renders customer header" },
+        { "system": "Mobile App", "environments": ["PROD"], "contractType": "REST", "notes": "iOS + Android — uses /profile/summary endpoint only" }
+      ],
+      "upstreamSystems": [
+        { "system": "Salesforce CRM", "environments": ["PROD"], "protocol": "REST", "notes": "Source of truth for customer master data" },
+        { "system": "Identity Service", "environments": ["DEV", "SIT", "UAT", "PROD"], "protocol": "REST", "notes": "OAuth token validation on every inbound request" }
+      ],
+      "status": "Active",
+      "migrationStatus": "Not Started",
+      "migrationComplexity": "Medium",
+      "ramlSpec": "https://anypoint.example.com/api/customer-profile",
+      "confluenceLinks": [],
+      "tags": ["customer", "identity", "core"],
+      "lastReviewedBy": "",
+      "lastReviewedDate": "",
+      "security": {
+        "authScheme": "OAuth 2.0 (Client Credentials)",
+        "oauthScopes": ["profile:read", "profile:write"],
+        "tlsVersion": "TLS 1.2",
+        "gatewayPolicies": ["Rate Limiting", "JWT Validation", "IP Allowlist"],
+        "dataClassification": "Confidential",
+        "complianceFlags": ["GDPR"],
+        "secretsVaultPath": "/secret/prod/customer-profile",
+        "certExpiry": "2026-09-01",
+        "knownVulnerabilities": []
+      },
+      "solutionDesign": {
+        "architecturalPattern": "Façade — aggregates CRM + Identity",
+        "versioningStrategy": "URI versioning (/v2/)",
+        "errorHandlingStrategy": "Standard error envelope with correlation-id",
+        "slaTarget": "99.9% / < 500ms P95",
+        "asyncApiSpec": "",
+        "adrLinks": [],
+        "technicalDebt": ["No pagination on /customers/search — returns up to 500 records flat"],
+        "domainEvents": []
+      },
+      "operations": {
+        "oncallContact": "squad-alpha@example.com",
+        "monitoringLinks": [{ "label": "Datadog Dashboard", "url": "https://app.datadoghq.com/dashboard/abc" }],
+        "alertingThreshold": "Error rate > 2% over 5 min triggers P2",
+        "maintenanceWindow": "Sundays 02:00–04:00 UTC",
+        "runbookLinks": [],
+        "incidentRefs": [],
+        "knownFragilities": ["Salesforce CRM response degrades >3s during batch sync window (02:00–03:00 UTC)"],
+        "pipelineLink": "",
+        "uptimeSla": "99.9%"
+      }
+    }
+      ]
+}

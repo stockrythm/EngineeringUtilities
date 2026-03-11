@@ -402,10 +402,21 @@ applyTheme(localStorage.getItem('coe-theme') || 'dark');
 
 tryAutoLoad();
 
+const FALLBACK_TRIBES = [
+  { id: "tribe-pmt",       name: "Payments" },
+  { id: "tribe-cust", name: "Customer" },
+  { id: "tribe-cards",     name: "Cards" },
+  { id: "tribe-cdc", name: "Commerical Digital Channel" },
+  { id: "tribe-rdc",  name: "Retail Digital Channel" },
+  { id: "tribe-icoe",  name: "Integration CoE" },
+  { id: "tribe-hb",  name: "Homebuying" }
+];
+
 // ── Sidebar ─────────────────────────────────
 function renderSidebar() {
   const list = document.getElementById('apiList');
   const apis = DATA.apis || [];
+  const tribes = (DATA && DATA.tribes && DATA.tribes.length) ? DATA.tribes : FALLBACK_TRIBES;
   document.getElementById('listCount').textContent = `${apis.length} API${apis.length!==1?'s':''}`;
   list.innerHTML = apis.map(api => {
     const active = api.id === CURRENT_API_ID;
@@ -454,7 +465,7 @@ function createNew() {
 function renderEditor(api) {
   document.getElementById('emptyState').style.display = 'none';
   document.getElementById('editorForm').style.display = 'block';
-  const tribes = DATA.tribes || [];
+  const tribes = (DATA && DATA.tribes && DATA.tribes.length) ? DATA.tribes : FALLBACK_TRIBES;
   const bizCaps = DATA.businessCapabilities || [];
 
   // CoE shorthand — ensure sub-objects always exist
