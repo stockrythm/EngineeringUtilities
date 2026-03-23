@@ -215,6 +215,18 @@
     font-size: 12px; flex: 1; min-width: 80px; outline: none;
   }
 
+  /* Chip select — multi-choice button grid */
+  .chip-select { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .chip-opt {
+    font-size: 11px; font-family: var(--font-mono); font-weight: 500;
+    padding: 4px 11px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all 0.12s; user-select: none;
+  }
+  .chip-opt:hover { border-color: var(--accent); color: var(--text); }
+  .chip-opt.selected { background: rgba(59,130,246,0.14); border-color: var(--accent); color: var(--accent); }
+  .chip-opt.selected::before { content: '✓ '; font-size: 10px; }
+
   /* Link list inputs */
   .link-list { display: flex; flex-direction: column; gap: 8px; }
   .link-row { display: flex; gap: 8px; align-items: center; }
@@ -313,6 +325,7 @@
     </div>
   </div>
   <div class="header-actions">
+    <span id="sessionBadge" style="display:none;font-size:10px;font-family:var(--font-mono);background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:20px;">● session</span>
     <label class="btn btn-ghost" style="cursor:pointer;">
       📂 Load JSON
       <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
@@ -354,6 +367,15 @@ let DATA = null;
 let CURRENT_API_ID = null;
 let UNSAVED = false;
 
+// ── Session persistence ───────────────────────────────────────
+const SESSION_KEY = 'coe-catalog-session';
+function saveToSession(data) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadFromSession() {
+  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+
 // ── File Loading ────────────────────────────
 function setupFileInput(inputId) {
   document.getElementById(inputId).addEventListener('change', e => {
@@ -366,6 +388,7 @@ function setupFileInput(inputId) {
         if (!DATA.apis) DATA.apis = [];
         if (!DATA.tribes) DATA.tribes = [];
         if (!DATA.businessCapabilities) DATA.businessCapabilities = [];
+        saveToSession(DATA);
         renderSidebar();
         showToast('✅ Loaded ' + file.name, 'success');
       } catch(ex) { showToast('❌ Invalid JSON file', 'error'); }
@@ -378,6 +401,17 @@ setupFileInput('jsonFileInput2');
 
 // ── Try auto-load ────────────────────────────
 async function tryAutoLoad() {
+  const cached = loadFromSession();
+  if (cached) {
+    console.log('[editor] Restoring from session');
+    DATA = cached;
+    if (!DATA.apis) DATA.apis = [];
+    if (!DATA.tribes) DATA.tribes = [];
+    if (!DATA.businessCapabilities) DATA.businessCapabilities = [];
+    renderSidebar();
+    showSessionBadge();
+    return;
+  }
   try {
     DATA = await fetch('api-data.json').then(r => r.json());
     if (!DATA.apis) DATA.apis = [];
@@ -387,6 +421,10 @@ async function tryAutoLoad() {
     DATA = { meta: {}, apis: [], tribes: [], businessCapabilities: [] };
     renderSidebar();
   }
+}
+function showSessionBadge() {
+  const el = document.getElementById('sessionBadge');
+  if (el) el.style.display = 'inline';
 }
 // ── Theme ─────────────────────────────────────
 function applyTheme(theme) {
@@ -528,12 +566,6 @@ function renderEditor(api) {
       <div class="form-section-title">Infrastructure & Deployment</div>
       <div class="form-grid cols-3">
         <div class="field">
-          <label>Runtime</label>
-          <select id="f_runtime" onchange="markUnsaved()">
-            ${['MuleSoft 4.3','MuleSoft 4.9','Spring Boot 2','Spring Boot 3','Other'].map(r => `<option ${api.runtime===r?'selected':''}>${r}</option>`).join('')}
-          </select>
-        </div>
-        <div class="field">
           <label>Java Version</label>
           <select id="f_javaVersion" onchange="markUnsaved()">
             ${['Java 8','Java 11','Java 17','Java 21'].map(j => `<option ${api.javaVersion===j?'selected':''}>${j}</option>`).join('')}
@@ -546,6 +578,31 @@ function renderEditor(api) {
           </select>
         </div>
       </div>
+
+      <div class="field" style="margin-top:12px;">
+        <label>Runtime Version</label>
+        <div class="chip-select" id="chips_runtime">
+          ${(DATA.runtimeVersions||['MuleSoft 4.1','MuleSoft 4.2','MuleSoft 4.3','MuleSoft 4.4','MuleSoft 4.5','MuleSoft 4.6','MuleSoft 4.7','MuleSoft 4.8','MuleSoft 4.9','MuleSoft 3.9 (Legacy)']).map(r =>
+            `<button type="button" class="chip-opt${api.runtime===r?' selected':''}"
+              onclick="selectSingleChip('chips_runtime','f_runtime_val','${r.replace(/'/g,"\\'")}',this)">${r}</button>`
+          ).join('')}
+        </div>
+        <input type="hidden" id="f_runtime_val" value="${esc(api.runtime||'')}"/>
+        <span class="field-hint">Select the deployed Mule runtime version</span>
+      </div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Runtime Type <span style="color:var(--muted2);font-weight:400;">(select all that apply)</span></label>
+        <div class="chip-select" id="chips_runtimeType">
+          ${(DATA.runtimeTypes||['AWS Egress Runtime','AWS Ingress Runtime','IGZ Egress','IGZ Ingress','Qsystem','Process','Experience','System']).map(rt => {
+            const sel = (api.runtimeType||[]).includes(rt);
+            return `<button type="button" class="chip-opt${sel?' selected':''}"
+              onclick="toggleMultiChip('chips_runtimeType',this)">${rt}</button>`;
+          }).join('')}
+        </div>
+        <span class="field-hint">AWS Egress/Ingress, IGZ Egress/Ingress, topology classification</span>
+      </div>
+
       <div class="form-grid cols-1" style="margin-top:12px;">
         <div class="field">
           <label>Environments</label>
@@ -1268,7 +1325,8 @@ function saveAPI() {
   api.layer = val('f_layer');
   api.protocol = val('f_protocol');
   api.status = val('f_status');
-  api.runtime = val('f_runtime');
+  api.runtime        = document.getElementById('f_runtime_val')?.value || '';
+  api.runtimeType    = getMultiChipValues('chips_runtimeType');
   api.javaVersion = val('f_javaVersion');
   api.deploymentModel = val('f_deploymentModel');
   api.environments = [...(tagState['environments'] || [])];
@@ -1374,6 +1432,7 @@ function deleteAPI() {
 
 // ── Export ───────────────────────────────────
 function exportJSON() {
+  saveToSession(DATA);
   DATA.meta = DATA.meta || {};
   DATA.meta.lastUpdated = new Date().toISOString().split('T')[0];
   const blob = new Blob([JSON.stringify(DATA, null, 2)], { type: 'application/json' });
@@ -1389,6 +1448,22 @@ function exportJSON() {
 // ── Utilities ────────────────────────────────
 function val(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ── Chip select helpers ───────────────────────────────────
+function selectSingleChip(groupId, hiddenId, value, btn) {
+  document.querySelectorAll('#' + groupId + ' .chip-opt').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById(hiddenId).value = value;
+  markUnsaved();
+}
+function toggleMultiChip(groupId, btn) {
+  btn.classList.toggle('selected');
+  markUnsaved();
+}
+function getMultiChipValues(groupId) {
+  return [...document.querySelectorAll('#' + groupId + ' .chip-opt.selected')]
+    .map(b => b.textContent.replace(/^✓ /,'').trim());
+}
+
 function toggleBlockerFields() {
   const s = document.getElementById('f_migrationStatus')?.value || '';
   const show = s === 'Blocked' || s === 'Decommission Candidate';

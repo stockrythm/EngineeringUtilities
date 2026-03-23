@@ -260,6 +260,12 @@ body { font-family:var(--font-body); background:var(--bg); color:var(--text); fo
 // ══════════════════════════════════════════════
 let DATA = null;
 let TRIBES_MAP = {};
+
+// ── Session persistence ───────────────────────────────────────
+const SESSION_KEY = 'coe-catalog-session';
+function loadFromSession() {
+  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
 let WAVES_MAP  = {};
 let ACTIVE_TAB = 'rag';
 let PLANNER_TRIBE = 'all';
@@ -301,11 +307,21 @@ function loadFile(e) {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => initData(JSON.parse(ev.target.result));
+  reader.onload = ev => {
+    const d = JSON.parse(ev.target.result);
+    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(d)); } catch(e) {}
+    initData(d);
+  };
   reader.readAsText(file);
 }
 
 async function autoLoad() {
+  const cached = loadFromSession();
+  if (cached) {
+    console.log('[migration] Restoring from session');
+    initData(cached);
+    return;
+  }
   try {
     const r = await fetch('api-data.json');
     if (r.ok) initData(await r.json());

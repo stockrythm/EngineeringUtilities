@@ -128,6 +128,7 @@ svg{width:100%;height:100%;}
       </div>
     </div>
     <div class="header-right">
+      <span id="sessionBadge" style="display:none;font-size:10px;font-family:var(--font-mono);background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:20px;">● session</span>
       <label class="btn btn-ghost" style="cursor:pointer;">📂 Load JSON<input type="file" accept=".json" id="jsonFileInput" style="display:none"/></label>
       <button class="btn btn-ghost" id="themeToggle" onclick="toggleTheme()" style="font-size:15px;padding:5px 9px;">🌙</button>
       <a href="index.html" class="btn btn-ghost">← Catalog</a><a href="migration.html" class="btn btn-ghost">📊 Migration</a>
@@ -208,6 +209,19 @@ svg{width:100%;height:100%;}
 // ══════════════════════════════════════════════
 let DATA = null;
 let TRIBES_MAP = {};
+
+// ── Session persistence (tab-scoped, clears when tab closes) ──
+const SESSION_KEY = 'coe-catalog-session';
+function saveToSession(data) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadFromSession() {
+  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
+function showSessionBadge() {
+  const el = document.getElementById('sessionBadge');
+  if (el) el.style.display = 'inline';
+}
 let ACTIVE_TRIBE = 'all';           // icicle tribe filter
 let ICICLE_MODE = 'tribe';          // 'tribe' | 'app'
 let ICICLE_FILTER_VALUE = 'all';    // tribe id, app name, or 'all'
@@ -237,11 +251,25 @@ applyTheme(localStorage.getItem('coe-theme') || 'dark');
 document.getElementById('jsonFileInput').addEventListener('change', e => {
   const f = e.target.files[0]; if (!f) return;
   const r = new FileReader();
-  r.onload = ev => { try { initData(JSON.parse(ev.target.result)); } catch(x) { alert('Invalid JSON'); } };
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      saveToSession(d);
+      initData(d);
+      showSessionBadge();
+    } catch(x) { alert('Invalid JSON'); }
+  };
   r.readAsText(f);
 });
 
 async function autoLoad() {
+  const cached = loadFromSession();
+  if (cached) {
+    console.log('[dependencies] Restoring from session');
+    initData(cached);
+    showSessionBadge();
+    return;
+  }
   try { initData(await fetch('api-data.json').then(r => r.json())); }
   catch(e) { hideLoading(); }
 }

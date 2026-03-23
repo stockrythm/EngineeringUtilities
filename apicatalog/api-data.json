@@ -1,7 +1,7 @@
 {
   "meta": {
-    "version": "1.5.0",
-    "lastUpdated": "2026-03-11",
+    "version": "1.6.0",
+    "lastUpdated": "2026-03-23",
     "organization": "Integration COE",
     "catalogOwner": "Integration COE Lead"
   },
@@ -296,7 +296,8 @@
         "completionDate": "",
         "blockerReason": "",
         "blockerOwner": ""
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-002",
@@ -472,7 +473,8 @@
         "completionDate": "",
         "blockerReason": "",
         "blockerOwner": ""
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-003",
@@ -610,7 +612,8 @@
         "completionDate": "",
         "blockerReason": "",
         "blockerOwner": ""
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-004",
@@ -798,7 +801,8 @@
         "completionDate": "",
         "blockerReason": "Stripe API key rotation must complete before migration \u2014 Q2 deadline. Cert expiry June 2026 also requires resolution.",
         "blockerOwner": "finance-oncall@example.com"
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-005",
@@ -965,7 +969,8 @@
         "completionDate": "",
         "blockerReason": "",
         "blockerOwner": ""
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-006",
@@ -1096,7 +1101,8 @@
         "completionDate": "",
         "blockerReason": "Decommission candidate \u2014 pending Oracle WMS Cloud cutover decision.",
         "blockerOwner": "squad-delta@example.com"
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-007",
@@ -1237,7 +1243,8 @@
         "completionDate": "",
         "blockerReason": "Java 8 Kafka client compatibility with MSK Kafka 3.x must be validated before migration start.",
         "blockerOwner": "platform-team@example.com"
-      }
+      },
+      "runtimeType": []
     },
     {
       "id": "api-008",
@@ -1402,7 +1409,8 @@
         "completionDate": "",
         "blockerReason": "",
         "blockerOwner": ""
-      }
+      },
+      "runtimeType": []
     }
   ],
   "migrationWaves": [
@@ -1438,5 +1446,27 @@
       "endDate": "",
       "color": "#64748b"
     }
+  ],
+  "runtimeVersions": [
+    "MuleSoft 4.1",
+    "MuleSoft 4.2",
+    "MuleSoft 4.3",
+    "MuleSoft 4.4",
+    "MuleSoft 4.5",
+    "MuleSoft 4.6",
+    "MuleSoft 4.7",
+    "MuleSoft 4.8",
+    "MuleSoft 4.9",
+    "MuleSoft 3.9 (Legacy)"
+  ],
+  "runtimeTypes": [
+    "AWS Egress Runtime",
+    "AWS Ingress Runtime",
+    "IGZ Egress",
+    "IGZ Ingress",
+    "Qsystem",
+    "Process",
+    "Experience",
+    "System"
   ]
 }

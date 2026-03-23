@@ -617,6 +617,7 @@
   </div>
   <div class="header-actions">
     <span class="data-source-badge" id="dataSourceBadge">api-data.json</span>
+    <span id="sessionBadge" style="display:none;font-size:10px;font-family:var(--font-mono);background:rgba(16,185,129,0.12);color:#10b981;border:1px solid rgba(16,185,129,0.3);padding:2px 8px;border-radius:20px;">● session</span>
     <label class="btn btn-ghost" style="cursor:pointer;">
       📂 Load JSON
       <input type="file" accept=".json" id="jsonFileInput" style="display:none"/>
@@ -724,6 +725,15 @@
 // ── State ──────────────────────────────────────────────────
 let ALL_DATA = null;
 let TRIBES_MAP = {};
+
+// ── Session persistence (tab-scoped, clears when tab closes) ──
+const SESSION_KEY = 'coe-catalog-session';
+function saveToSession(data) {
+  try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function loadFromSession() {
+  try { const s = sessionStorage.getItem(SESSION_KEY); return s ? JSON.parse(s) : null; } catch(e) { return null; }
+}
 let DISPLAY_MODE = 'card'; // card | table
 let GROUP_BY = 'none';
 let ACTIVE_FILTERS = {
@@ -740,6 +750,7 @@ async function loadData(source) {
   try {
     const raw = typeof source === 'string' ? await fetch(source).then(r => r.json()) : source;
     ALL_DATA = raw;
+    saveToSession(raw);
     TRIBES_MAP = {};
     (raw.tribes || []).forEach(t => { TRIBES_MAP[t.id] = t; });
     document.getElementById('loadingScreen').classList.add('hidden');
@@ -762,6 +773,7 @@ document.getElementById('jsonFileInput').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   document.getElementById('dataSourceBadge').textContent = file.name;
+    document.getElementById('sessionBadge').style.display = 'inline';
   const reader = new FileReader();
   reader.onload = ev => {
     try {
@@ -831,6 +843,7 @@ function getFilteredAPIs() {
       (a.layer||'').toLowerCase().includes(SEARCH) ||
       (a.protocol||'').toLowerCase().includes(SEARCH) ||
       (a.deploymentModel||'').toLowerCase().includes(SEARCH) ||
+      (a.runtimeType||[]).some(t => t.toLowerCase().includes(SEARCH)) ||
       (a.upstreamSystems||[]).some(s => (s.system||s||'').toLowerCase().includes(SEARCH) || (s.notes||'').toLowerCase().includes(SEARCH)) ||
       (a.consumers||[]).some(s => (s.system||s||'').toLowerCase().includes(SEARCH) || (s.notes||'').toLowerCase().includes(SEARCH)) ||
       (a.security?.complianceFlags||[]).some(f => f.toLowerCase().includes(SEARCH)) ||
@@ -1149,10 +1162,11 @@ function openDrawer(apiId) {
     </div>
     <div class="detail-section">
       <div class="detail-section-title">Technical Profile</div>
-      <div class="detail-row"><span class="detail-key">Runtime</span><span class="detail-val">${api.runtime}</span></div>
-      <div class="detail-row"><span class="detail-key">Java</span><span class="detail-val">${api.javaVersion}</span></div>
-      <div class="detail-row"><span class="detail-key">Protocol</span><span class="detail-val">${api.protocol}</span></div>
-      <div class="detail-row"><span class="detail-key">Deployment</span><span class="detail-val">${api.deploymentModel}</span></div>
+      <div class="detail-row"><span class="detail-key">Runtime</span><span class="detail-val">${api.runtime||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Java</span><span class="detail-val">${api.javaVersion||'—'}</span></div>
+      ${(api.runtimeType||[]).length ? `<div class="detail-row"><span class="detail-key">Runtime Type</span><span class="detail-val">${(api.runtimeType||[]).map(t=>'<span style="font-size:10px;font-family:var(--font-mono);background:rgba(59,130,246,0.1);color:var(--accent);padding:2px 7px;border-radius:10px;margin:1px;display:inline-block;">'+t+'</span>').join('')}</span></div>` : ''}
+      <div class="detail-row"><span class="detail-key">Protocol</span><span class="detail-val">${api.protocol||'—'}</span></div>
+      <div class="detail-row"><span class="detail-key">Deployment</span><span class="detail-val">${api.deploymentModel||'—'}</span></div>
       <div class="detail-row"><span class="detail-key">Environments</span><span class="detail-val">${(api.environments||[]).join(', ')}</span></div>
       ${api.ramlSpec ? `<div class="detail-row"><span class="detail-key">RAML / Spec</span><span class="detail-val"><a href="${api.ramlSpec}" target="_blank" style="color:var(--accent)">View Spec →</a></span></div>` : ''}
     </div>
@@ -1280,7 +1294,16 @@ function toggleTheme() {
 applyTheme(localStorage.getItem('coe-theme') || 'dark');
 
 // ── Boot ───────────────────────────────────────────────────
-loadData('api-data.json');
+(async () => {
+  const cached = loadFromSession();
+  if (cached) {
+    console.log('[catalog] Restoring from session');
+    await loadData(cached);
+    document.getElementById('sessionBadge').style.display = 'inline';
+  } else {
+    loadData('api-data.json');
+  }
+})();
 </script>
 </body>
 </html>
