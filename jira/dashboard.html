@@ -4,1312 +4,969 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PR Analytics Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-  :root {
-    --bg: #0a0e1a;
-    --surface: #111827;
-    --surface2: #1a2235;
-    --surface3: #212d42;
-    --border: #2a3a55;
-    --accent: #00d4ff;
-    --accent2: #7c3aed;
-    --accent3: #10b981;
-    --danger: #ef4444;
-    --warning: #f59e0b;
-    --text: #e2e8f0;
-    --text2: #94a3b8;
-    --text3: #64748b;
-    --merged: #10b981;
-    --open: #00d4ff;
-    --declined: #ef4444;
-    --pending: #f59e0b;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'IBM Plex Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-  /* GRID BG */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events: none;
-    z-index: 0;
-  }
+:root {
+  --bg:#070b14;--s1:#0d1220;--s2:#131a2e;--s3:#1a2340;
+  --border:#1f2e4a;--border2:#2a3f63;
+  --cyan:#00e5ff;--violet:#8b5cf6;--green:#00d68f;--red:#ff4d6d;--amber:#ffb703;
+  --text:#dde4f0;--text2:#7a90b8;--text3:#3d5278;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.screen{display:none;min-height:100vh}
+.screen.active{display:flex}
 
-  /* ── LOGIN SCREEN ── */
-  #loginScreen {
-    position: fixed; inset: 0; z-index: 100;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--bg);
-  }
-  .login-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 48px;
-    width: 480px;
-    position: relative;
-    box-shadow: 0 0 80px rgba(0,212,255,0.06);
-  }
-  .login-card::before {
-    content: '';
-    position: absolute;
-    top: -1px; left: 40px; right: 40px; height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    border-radius: 2px;
-  }
-  .login-logo {
-    display: flex; align-items: center; gap: 12px; margin-bottom: 32px;
-  }
-  .login-logo .icon {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px;
-  }
-  .login-logo h1 { font-size: 20px; font-weight: 600; letter-spacing: -0.3px; }
-  .login-logo span { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); display: block; }
-  .login-card h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-  .login-card p { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
-  .form-group { margin-bottom: 20px; }
-  .form-group label { display: block; font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
-  .form-group input {
-    width: 100%; padding: 12px 16px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; color: var(--text); font-family: 'IBM Plex Mono', monospace; font-size: 13px;
-    outline: none; transition: border-color 0.2s;
-  }
-  .form-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,212,255,0.1); }
-  .form-group input::placeholder { color: var(--text3); }
-  .save-creds { display: flex; align-items: center; gap: 8px; margin-bottom: 28px; cursor: pointer; }
-  .save-creds input[type=checkbox] { accent-color: var(--accent); width: 14px; height: 14px; }
-  .save-creds label { font-size: 13px; color: var(--text2); cursor: pointer; }
-  .btn-primary {
-    width: 100%; padding: 14px;
-    background: linear-gradient(135deg, var(--accent), #0099cc);
-    border: none; border-radius: 8px;
-    color: #000; font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: opacity 0.2s, transform 0.1s;
-  }
-  .btn-primary:hover { opacity: 0.9; }
-  .btn-primary:active { transform: scale(0.99); }
-  .login-error { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #fca5a5; margin-bottom: 16px; display: none; }
+/* LOGIN */
+#loginScreen{align-items:center;justify-content:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,229,255,.06) 0%,transparent 70%)}
+.login-wrap{width:460px;padding:20px}
+.login-brand{display:flex;align-items:center;gap:12px;margin-bottom:36px}
+.brand-mark{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:grid;place-items:center;font-size:20px;flex-shrink:0}
+.brand-name{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.brand-tag{font-family:var(--mono);font-size:10px;color:var(--cyan);background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);padding:2px 8px;border-radius:4px;margin-left:6px}
+.login-card{background:var(--s1);border:1px solid var(--border);border-radius:20px;padding:36px;position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.login-card h2{font-size:19px;font-weight:700;margin-bottom:6px}
+.login-card>p{font-size:12px;color:var(--text2);margin-bottom:24px;line-height:1.6}
+.field{margin-bottom:16px}
+.field label{display:block;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.field input{width:100%;padding:10px 13px;background:var(--s2);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,229,255,.07)}
+.field input::placeholder{color:var(--text3)}
+.auth-mode{display:flex;gap:8px;margin-bottom:14px}
+.auth-btn{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.auth-btn.active{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.07)}
+.remember{display:flex;align-items:center;gap:8px;margin-bottom:22px;cursor:pointer}
+.remember input{accent-color:var(--cyan);width:14px;height:14px}
+.remember span{font-size:12px;color:var(--text2)}
+.btn-primary{width:100%;padding:13px;background:linear-gradient(135deg,#00b8d4,var(--cyan));border:none;border-radius:10px;color:#000;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s}
+.btn-primary:hover{opacity:.9}
+.login-err{background:rgba(255,77,109,.08);border:1px solid rgba(255,77,109,.25);border-radius:8px;padding:10px 14px;font-size:12px;font-family:var(--mono);color:#ff8fa3;margin-bottom:14px;display:none;line-height:1.5}
 
-  /* ── APP SHELL ── */
-  #appShell { display: none; flex-direction: column; min-height: 100vh; position: relative; z-index: 1; }
+/* DIAGNOSTICS */
+#diagScreen{flex-direction:column;padding:28px;background:radial-gradient(ellipse 60% 40% at 50% 0%,rgba(0,229,255,.04) 0%,transparent 60%)}
+.diag-wrap{max-width:900px;margin:0 auto;width:100%;padding-bottom:40px}
+.diag-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;gap:16px}
+.diag-hdr h1{font-size:20px;font-weight:800}
+.diag-hdr p{font-size:12px;color:var(--text2);margin-top:3px}
+.diag-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dcard{background:var(--s1);border:1px solid var(--border);border-radius:14px;padding:18px}
+.dcard.full{grid-column:1/-1}
+.dcard-title{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.drow{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);gap:10px}
+.drow:last-child{border-bottom:none}
+.drow-label{font-size:12px;color:var(--text2)}
+.drow-val{font-family:var(--mono);font-size:11px;text-align:right;word-break:break-all;max-width:240px}
+.ds{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;font-weight:700;padding:3px 9px;border-radius:100px}
+.ds-ok{background:rgba(0,214,143,.1);color:var(--green)}
+.ds-fail{background:rgba(255,77,109,.1);color:var(--red)}
+.ds-spin{background:rgba(0,229,255,.1);color:var(--cyan);animation:blink 1s infinite}
+.ds-warn{background:rgba(255,183,3,.1);color:var(--amber)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+.user-card{background:var(--s2);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px}
+.user-ava{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--cyan));display:grid;place-items:center;font-size:15px;font-weight:700;flex-shrink:0}
+.user-name{font-size:13px;font-weight:600}
+.user-slug{font-family:var(--mono);font-size:10px;color:var(--cyan);margin-top:2px}
+.pcheck{display:flex;align-items:center;justify-content:space-between;padding:7px 11px;background:var(--s2);border-radius:8px;margin-bottom:5px;font-size:12px;gap:8px}
+.pkey{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+.pname{font-size:11px;color:var(--text2);flex:1;padding:0 10px}
+.diag-log{font-family:var(--mono);font-size:10px;color:var(--text2);line-height:1.9;max-height:130px;overflow-y:auto;background:var(--s2);border-radius:8px;padding:11px}
+.log-ok{color:var(--green)}.log-err{color:var(--red)}.log-info{color:var(--cyan)}.log-warn{color:var(--amber)}
+.diag-actions{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+.dbtn{padding:11px 22px;border-radius:10px;font-family:var(--sans);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);transition:all .2s}
+.dbtn-p{background:linear-gradient(135deg,#00b8d4,var(--cyan));color:#000;border-color:transparent}
+.dbtn-p:hover{opacity:.9}
+.dbtn-p:disabled{opacity:.35;cursor:not-allowed}
+.dbtn-s{background:transparent;color:var(--text2)}
+.dbtn-s:hover{border-color:var(--border2);color:var(--text)}
 
-  /* HEADER */
-  .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 28px;
-    background: rgba(17,24,39,0.8);
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(12px);
-    position: sticky; top: 0; z-index: 50;
-  }
-  .header-left { display: flex; align-items: center; gap: 16px; }
-  .header-logo { display: flex; align-items: center; gap: 10px; }
-  .header-logo .icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-  .header-logo span { font-size: 15px; font-weight: 600; }
-  .header-logo small { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); background: rgba(0,212,255,0.1); padding: 2px 8px; border-radius: 4px; margin-left: 8px; }
-  .header-right { display: flex; align-items: center; gap: 12px; }
-  .conn-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
-  .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent3); box-shadow: 0 0 6px var(--accent3); animation: pulse 2s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-  .btn-sm {
-    padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
-    cursor: pointer; border: 1px solid var(--border); background: var(--surface2);
-    color: var(--text2); transition: all 0.2s; font-family: 'IBM Plex Sans', sans-serif;
-  }
-  .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
-  .btn-refresh { border-color: rgba(0,212,255,0.3); color: var(--accent); background: rgba(0,212,255,0.05); }
-  .btn-refresh:hover { background: rgba(0,212,255,0.1); }
-  .btn-logout { border-color: rgba(239,68,68,0.3); color: #fca5a5; background: rgba(239,68,68,0.05); }
-  .btn-logout:hover { background: rgba(239,68,68,0.1); }
+/* APP SHELL */
+#appScreen{flex-direction:column}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 26px;background:rgba(13,18,32,.92);border-bottom:1px solid var(--border);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50}
+.tb-left{display:flex;align-items:center;gap:14px}
+.tb-brand{display:flex;align-items:center;gap:9px}
+.tb-mark{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--cyan),var(--violet));display:grid;place-items:center;font-size:12px}
+.tb-name{font-size:13px;font-weight:700}
+.tb-conn{display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;color:var(--text2);background:var(--s2);padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.cdot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.tb-right{display:flex;align-items:center;gap:7px}
+.tbtn{padding:5px 13px;border-radius:7px;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s}
+.tbtn:hover{border-color:var(--border2);color:var(--text)}
+.tbtn-r{border-color:rgba(0,229,255,.2);color:var(--cyan);background:rgba(0,229,255,.04)}
+.tbtn-r:hover{background:rgba(0,229,255,.1)}
+.tbtn-d{border-color:rgba(255,183,3,.2);color:var(--amber);background:rgba(255,183,3,.04)}
+.tbtn-d:hover{background:rgba(255,183,3,.1)}
+.tbtn-l{border-color:rgba(255,77,109,.2);color:#ff8fa3;background:rgba(255,77,109,.04)}
+.tbtn-l:hover{background:rgba(255,77,109,.1)}
 
-  /* TABS */
-  .tabs {
-    display: flex; gap: 2px; padding: 16px 28px 0;
-    border-bottom: 1px solid var(--border);
-    background: var(--surface);
-  }
-  .tab {
-    padding: 10px 20px; font-size: 13px; font-weight: 500;
-    color: var(--text3); cursor: pointer; border-radius: 8px 8px 0 0;
-    transition: all 0.2s; border: 1px solid transparent; border-bottom: none;
-    margin-bottom: -1px;
-  }
-  .tab:hover { color: var(--text2); }
-  .tab.active { color: var(--accent); border-color: var(--border); border-bottom-color: var(--surface); background: var(--bg); }
+.navtabs{display:flex;gap:1px;padding:0 26px;background:var(--s1);border-bottom:1px solid var(--border);overflow-x:auto}
+.navtab{padding:10px 17px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.navtab:hover{color:var(--text2)}
+.navtab.active{color:var(--cyan);border-bottom-color:var(--cyan)}
 
-  /* FILTERS BAR */
-  .filters-bar {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    padding: 16px 28px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-  .filter-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px; }
-  .filter-select {
-    padding: 7px 12px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text); font-size: 12px; cursor: pointer; outline: none;
-    font-family: 'IBM Plex Sans', sans-serif; transition: border-color 0.2s;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2364748b'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
-  }
-  .filter-select:focus { border-color: var(--accent); }
-  .filter-date { display: flex; align-items: center; gap: 6px; }
-  .filter-date input[type=date] {
-    padding: 7px 12px; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text); font-size: 12px; outline: none;
-    font-family: 'IBM Plex Mono', monospace; transition: border-color 0.2s;
-    color-scheme: dark;
-  }
-  .filter-date input[type=date]:focus { border-color: var(--accent); }
-  .filter-sep { color: var(--text3); font-size: 12px; }
-  .btn-apply {
-    padding: 7px 16px; background: rgba(0,212,255,0.1); border: 1px solid rgba(0,212,255,0.3);
-    border-radius: 6px; color: var(--accent); font-size: 12px; font-weight: 600;
-    cursor: pointer; transition: all 0.2s; font-family: 'IBM Plex Sans', sans-serif;
-  }
-  .btn-apply:hover { background: rgba(0,212,255,0.2); }
+.filterbar{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:11px 26px;background:var(--s1);border-bottom:1px solid var(--border)}
+.flbl{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;white-space:nowrap}
+.fsel{padding:5px 26px 5px 9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--sans);font-size:11px;cursor:pointer;outline:none;transition:border-color .2s;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%233d5278'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.fsel:focus{border-color:var(--cyan)}
+.fdate{padding:5px 9px;background:var(--s2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;color-scheme:dark;transition:border-color .2s}
+.fdate:focus{border-color:var(--cyan)}
+.fsep{color:var(--text3);font-size:11px}
+.fbtn-c{padding:5px 11px;background:rgba(255,77,109,.06);border:1px solid rgba(255,77,109,.2);border-radius:7px;color:#ff8fa3;font-family:var(--sans);font-size:11px;font-weight:600;cursor:pointer;transition:all .2s}
+.fbtn-c:hover{background:rgba(255,77,109,.12)}
+.fcnt{font-family:var(--mono);font-size:10px;color:var(--text3);margin-left:auto;white-space:nowrap}
 
-  /* MAIN CONTENT */
-  .main { padding: 24px 28px; flex: 1; }
+.main{padding:22px 26px;flex:1}
 
-  /* LOADING */
-  .loading-overlay {
-    position: fixed; inset: 0; z-index: 200;
-    background: rgba(10,14,26,0.85); backdrop-filter: blur(4px);
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
-  }
-  .spinner {
-    width: 40px; height: 40px; border: 3px solid var(--border);
-    border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .loading-text { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--text2); }
+/* STAT CARDS */
+.srow{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:20px}
+.scard{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:16px 18px;position:relative;overflow:hidden;transition:border-color .2s,transform .15s}
+.scard:hover{border-color:var(--border2);transform:translateY(-1px)}
+.sc-label{font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:9px}
+.sc-val{font-family:var(--mono);font-size:28px;font-weight:600;line-height:1;color:var(--cc,var(--text))}
+.sc-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:6px}
+.sc-bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--cc,var(--border));opacity:.45}
 
-  /* STAT CARDS */
-  .stats-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;
-  }
-  .stat-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 20px; position: relative; overflow: hidden; transition: border-color 0.2s;
-  }
-  .stat-card:hover { border-color: var(--accent); }
-  .stat-card::after {
-    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-    background: var(--card-accent, var(--accent)); opacity: 0.4;
-  }
-  .stat-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-  .stat-value { font-size: 32px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; line-height: 1; }
-  .stat-sub { font-size: 11px; color: var(--text3); margin-top: 6px; font-family: 'IBM Plex Mono', monospace; }
+/* CHARTS */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.ccard{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:18px}
+.ccard.s2{grid-column:1/-1}
+.cc-title{font-size:13px;font-weight:700;margin-bottom:2px}
+.cc-sub{font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:14px}
+.cbox{position:relative;height:210px}
 
-  /* CHARTS GRID */
-  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
-  .chart-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px;
-  }
-  .chart-card.full { grid-column: 1 / -1; }
-  .chart-title { font-size: 13px; font-weight: 600; color: var(--text2); margin-bottom: 4px; }
-  .chart-sub { font-size: 11px; color: var(--text3); margin-bottom: 16px; }
-  .chart-wrap { position: relative; height: 240px; }
-  .chart-wrap canvas { max-height: 240px; }
+/* TABLES */
+.tcard{background:var(--s1);border:1px solid var(--border);border-radius:13px;overflow:hidden;margin-bottom:18px}
+.thead2{display:flex;align-items:center;justify-content:space-between;padding:13px 17px;border-bottom:1px solid var(--border)}
+.thead2-t{font-size:13px;font-weight:700}
+.thead2-c{font-family:var(--mono);font-size:10px;color:var(--text3)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:8px 13px;text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;border-bottom:1px solid var(--border);background:var(--s2);cursor:pointer;user-select:none;white-space:nowrap}
+thead th:hover{color:var(--cyan)}
+tbody td{padding:10px 13px;border-bottom:1px solid rgba(31,46,74,.5);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr{cursor:pointer;transition:background .15s}
+tbody tr:hover td{background:rgba(0,229,255,.02)}
 
-  /* TABLE */
-  .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid var(--border); }
-  .table-title { font-size: 13px; font-weight: 600; color: var(--text2); }
-  .table-count { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text3); }
-  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .data-table th { padding: 10px 16px; text-align: left; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); background: var(--surface2); cursor: pointer; user-select: none; }
-  .data-table th:hover { color: var(--accent); }
-  .data-table td { padding: 12px 16px; border-bottom: 1px solid rgba(42,58,85,0.5); vertical-align: middle; }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover td { background: rgba(0,212,255,0.03); }
-  .data-table tbody tr { animation: fadeRow 0.3s ease both; }
-  @keyframes fadeRow { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform: translateY(0); } }
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-family:var(--mono);font-size:10px;font-weight:600}
+.b-open{background:rgba(0,229,255,.1);color:var(--cyan)}
+.b-merged{background:rgba(0,214,143,.1);color:var(--green)}
+.b-declined{background:rgba(255,77,109,.1);color:var(--red)}
+.b-super{background:rgba(61,82,120,.3);color:var(--text3)}
+.b-tribe{background:rgba(139,92,246,.1);color:var(--violet)}
+.b-squad{background:rgba(0,229,255,.07);color:var(--cyan)}
 
-  .badge {
-    display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 10px; border-radius: 100px; font-size: 11px; font-weight: 500; font-family: 'IBM Plex Mono', monospace;
-  }
-  .badge-open { background: rgba(0,212,255,0.1); color: var(--open); }
-  .badge-merged { background: rgba(16,185,129,0.1); color: var(--merged); }
-  .badge-declined { background: rgba(239,68,68,0.1); color: var(--declined); }
-  .badge-superseded { background: rgba(100,116,139,0.1); color: var(--text3); }
+.ava{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--cyan));display:inline-grid;place-items:center;font-size:9px;font-weight:700;color:#fff;margin-right:6px;vertical-align:middle;flex-shrink:0}
+.mv{font-family:var(--mono);font-size:11px}
+.mv-c{color:var(--cyan)}.mv-g{color:var(--green)}.mv-r{color:var(--red)}.mv-d{color:var(--text3)}
 
-  .avatar {
-    width: 28px; height: 28px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent2), var(--accent));
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 600; color: #fff; margin-right: 8px; vertical-align: middle;
-  }
+.pbar-w{display:flex;align-items:center;gap:7px;min-width:110px}
+.pbar{flex:1;height:3px;background:var(--s3);border-radius:2px;overflow:hidden}
+.pbar-f{height:100%;border-radius:2px;transition:width .6s}
+.pbar-v{font-family:var(--mono);font-size:10px;color:var(--text3);min-width:28px;text-align:right}
 
-  .progress-bar-wrap { display: flex; align-items: center; gap: 8px; }
-  .progress-bar { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
-  .progress-fill { height: 100%; border-radius: 2px; transition: width 0.6s ease; }
-  .progress-val { font-size: 11px; font-family: 'IBM Plex Mono', monospace; color: var(--text3); min-width: 28px; text-align: right; }
+.pgn{display:flex;align-items:center;justify-content:space-between;padding:10px 17px;border-top:1px solid var(--border)}
+.pgn-i{font-family:var(--mono);font-size:10px;color:var(--text3)}
+.pgn-b{display:flex;gap:4px}
+.pb{padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--sans);font-weight:600;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .2s}
+.pb:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan)}
+.pb:disabled{opacity:.3;cursor:not-allowed}
+.pb.cur{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.07)}
 
-  /* PAGINATION */
-  .pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--border); }
-  .page-info { font-size: 12px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; }
-  .page-btns { display: flex; gap: 6px; }
-  .page-btn {
-    padding: 5px 12px; border-radius: 5px; font-size: 12px; cursor: pointer;
-    border: 1px solid var(--border); background: var(--surface2); color: var(--text2);
-    font-family: 'IBM Plex Sans', sans-serif; transition: all 0.2s;
-  }
-  .page-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
-  .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-  .page-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,212,255,0.08); }
+/* MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(7,11,20,.9);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{background:var(--s1);border:1px solid var(--border2);border-radius:17px;width:100%;max-width:680px;max-height:85vh;overflow-y:auto}
+.modal-hd{padding:17px 21px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:14px;position:sticky;top:0;background:var(--s1);border-radius:17px 17px 0 0;z-index:1}
+.modal-x{background:none;border:none;color:var(--text3);cursor:pointer;font-size:22px;line-height:1;padding:0 2px}
+.modal-x:hover{color:var(--text)}
+.modal-bd{padding:18px 21px}
+.mmg{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-bottom:16px}
+.mmi{background:var(--s2);border-radius:9px;padding:11px 13px}
+.mmi-l{font-family:var(--mono);font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.mmi-v{font-family:var(--mono);font-size:11px;font-weight:600}
 
-  /* CONFIG PANEL */
-  .config-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-  .config-panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
-  .config-panel p { font-size: 12px; color: var(--text3); margin-bottom: 20px; }
-  .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .upload-zone {
-    border: 2px dashed var(--border); border-radius: 10px; padding: 32px;
-    text-align: center; cursor: pointer; transition: all 0.2s;
-  }
-  .upload-zone:hover { border-color: var(--accent); background: rgba(0,212,255,0.03); }
-  .upload-zone.loaded { border-color: var(--accent3); background: rgba(16,185,129,0.05); }
-  .upload-zone .upload-icon { font-size: 28px; margin-bottom: 8px; }
-  .upload-zone h4 { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
-  .upload-zone p { font-size: 11px; color: var(--text3); margin: 0; }
-  .upload-zone input[type=file] { display: none; }
-  .mapping-preview { margin-top: 12px; }
-  .mapping-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: var(--surface2); border-radius: 6px; margin-bottom: 4px; font-size: 12px; }
-  .mapping-row .key { font-family: 'IBM Plex Mono', monospace; color: var(--accent); }
-  .mapping-row .val { color: var(--text2); }
+/* CONFIG */
+.cfg{background:var(--s1);border:1px solid var(--border);border-radius:13px;padding:20px;margin-bottom:16px}
+.cfg h3{font-size:14px;font-weight:700;margin-bottom:4px}
+.cfg>p{font-size:12px;color:var(--text2);margin-bottom:18px;line-height:1.6}
+.cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.upbox{border:2px dashed var(--border);border-radius:11px;padding:26px 18px;text-align:center;cursor:pointer;transition:all .2s}
+.upbox:hover{border-color:var(--border2);background:rgba(0,229,255,.02)}
+.upbox.loaded{border-color:rgba(0,214,143,.4);background:rgba(0,214,143,.03)}
+.upbox input{display:none}
+.up-icon{font-size:24px;margin-bottom:7px}
+.upbox h4{font-size:13px;font-weight:700;margin-bottom:4px}
+.upbox p{font-size:11px;color:var(--text3);line-height:1.5;margin:0}
+.mrow{display:flex;justify-content:space-between;align-items:center;padding:5px 9px;background:var(--s2);border-radius:6px;margin-bottom:3px;gap:8px}
+.mk{font-family:var(--mono);font-size:11px;color:var(--cyan)}
+.mv2{font-size:11px;color:var(--text2);text-align:right}
 
-  /* EMPTY STATE */
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--text3); }
-  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state h3 { font-size: 16px; color: var(--text2); margin-bottom: 6px; }
-  .empty-state p { font-size: 13px; }
+.empty{text-align:center;padding:52px 20px}
+.empty-ico{font-size:34px;margin-bottom:11px}
+.empty h3{font-size:15px;font-weight:700;margin-bottom:5px}
+.empty p{font-size:12px;color:var(--text3)}
 
-  /* TOOLTIP */
-  [title] { cursor: help; }
+.lcover{position:fixed;inset:0;z-index:300;background:rgba(7,11,20,.86);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:13px}
+.spin{width:34px;height:34px;border:2px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.lt{font-family:var(--mono);font-size:12px;color:var(--text2)}
+.ls{font-family:var(--mono);font-size:10px;color:var(--text3)}
 
-  /* PR DETAIL MODAL */
-  .modal-overlay {
-    position: fixed; inset: 0; z-index: 300;
-    background: rgba(10,14,26,0.85); backdrop-filter: blur(4px);
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-  }
-  .modal {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    width: 100%; max-width: 720px; max-height: 80vh; overflow-y: auto;
-    position: relative;
-  }
-  .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; position: sticky; top: 0; background: var(--surface); border-radius: 16px 16px 0 0; }
-  .modal-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
-  .modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 20px; padding: 0 4px; line-height: 1; flex-shrink: 0; }
-  .modal-close:hover { color: var(--text); }
-  .modal-body { padding: 20px 24px; }
-  .modal-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
-  .meta-item { background: var(--surface2); border-radius: 8px; padding: 12px 14px; }
-  .meta-item .label { font-size: 10px; text-transform: uppercase; color: var(--text3); letter-spacing: 0.5px; margin-bottom: 4px; }
-  .meta-item .value { font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; }
-  .comments-section h4 { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .comment-item { border-left: 2px solid var(--border); padding: 8px 12px; margin-bottom: 8px; }
-  .comment-item .comment-author { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
-  .comment-item .comment-text { font-size: 12px; color: var(--text2); }
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+code{font-family:var(--mono);font-size:11px;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--cyan)}
+pre{font-family:var(--mono);font-size:11px;background:var(--s2);border:1px solid var(--border);border-radius:9px;padding:13px;overflow-x:auto;color:var(--text2);line-height:1.7}
 
-  /* SCROLLBAR */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
-
-  /* RESPONSIVE */
-  @media (max-width: 900px) {
-    .charts-grid { grid-template-columns: 1fr; }
-    .config-grid { grid-template-columns: 1fr; }
-    .modal-meta { grid-template-columns: 1fr 1fr; }
-  }
-  @media (max-width: 600px) {
-    .filters-bar { padding: 12px 16px; }
-    .main { padding: 16px; }
-    .header { padding: 12px 16px; }
-  }
+@media(max-width:800px){.cgrid,.cfg-grid,.diag-grid,.mmg{grid-template-columns:1fr}}
+@media(max-width:600px){.topbar,.main,.filterbar,.navtabs{padding-left:14px;padding-right:14px}.srow{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
 
 <!-- LOADING -->
-<div class="loading-overlay" id="loadingOverlay" style="display:none">
-  <div class="spinner"></div>
-  <div class="loading-text" id="loadingText">Fetching data...</div>
+<div class="lcover" id="lcover" style="display:none">
+  <div class="spin"></div>
+  <div class="lt" id="ltxt">Working...</div>
+  <div class="ls" id="lsub"></div>
 </div>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-card">
-    <div class="login-logo">
-      <div class="icon">📊</div>
-      <div>
-        <h1>PR Analytics</h1>
-        <span>Bitbucket Server · Dashboard</span>
+<!-- ══ LOGIN ══ -->
+<div class="screen active" id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <div class="brand-mark">📊</div>
+      <div><div class="brand-name">PR Analytics <span class="brand-tag">BITBUCKET</span></div></div>
+    </div>
+    <div class="login-card">
+      <h2>Connect to Bitbucket Server</h2>
+      <p>Enter your server URL and HTTP Access Token. Credentials go directly to your Bitbucket instance — nothing is sent elsewhere.</p>
+      <div id="loginErr" class="login-err"></div>
+      <div class="field">
+        <label>Bitbucket Server URL</label>
+        <input type="url" id="inUrl" placeholder="https://bitbucket.boi.net" autocomplete="off">
       </div>
+      <div class="field">
+        <label>Username</label>
+        <input type="text" id="inUser" placeholder="your.staffid" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Authentication Mode</label>
+        <div class="auth-mode">
+          <button class="auth-btn active" id="modeToken" onclick="setMode('token')">HTTP Access Token</button>
+          <button class="auth-btn" id="modeBasic" onclick="setMode('basic')">Basic / App Password</button>
+        </div>
+        <input type="password" id="inToken" placeholder="Paste your HTTP Access Token" autocomplete="off">
+      </div>
+      <div class="remember"><input type="checkbox" id="cbSave"><span>Remember credentials in this browser</span></div>
+      <button class="btn-primary" onclick="doLogin()">Connect &amp; Run Diagnostics →</button>
     </div>
-    <h2>Connect to Bitbucket</h2>
-    <p>Enter your Bitbucket Server credentials to get started. Your password is never stored on any external server.</p>
-    <div id="loginError" class="login-error"></div>
-    <div class="form-group">
-      <label>Bitbucket Server URL</label>
-      <input type="url" id="bbUrl" placeholder="https://bitbucket.mycompany.com" autocomplete="off">
-    </div>
-    <div class="form-group">
-      <label>Username</label>
-      <input type="text" id="bbUser" placeholder="your.username" autocomplete="username">
-    </div>
-    <div class="form-group">
-      <label>App Password / Personal Access Token</label>
-      <input type="password" id="bbPass" placeholder="••••••••••••" autocomplete="current-password">
-    </div>
-    <div class="save-creds">
-      <input type="checkbox" id="saveCreds">
-      <label for="saveCreds">Remember credentials in this browser (localStorage)</label>
-    </div>
-    <button class="btn-primary" onclick="doLogin()">Connect →</button>
   </div>
 </div>
 
-<!-- APP SHELL -->
-<div id="appShell">
-  <!-- Header -->
-  <div class="header">
-    <div class="header-left">
-      <div class="header-logo">
-        <div class="icon">📊</div>
-        <span>PR Analytics <small>BITBUCKET</small></span>
+<!-- ══ DIAGNOSTICS ══ -->
+<div class="screen" id="diagScreen">
+  <div class="diag-wrap">
+    <div class="diag-hdr">
+      <div><h1>🔍 Connection Diagnostics</h1><p>Validating token and checking project access before loading PR data</p></div>
+      <button class="dbtn dbtn-s" onclick="doLogout()">← Back</button>
+    </div>
+    <div class="diag-grid">
+      <div class="dcard">
+        <div class="dcard-title">Connection</div>
+        <div class="drow"><span class="drow-label">Server URL</span><span class="drow-val" id="dUrl">—</span></div>
+        <div class="drow"><span class="drow-label">Auth mode</span><span class="drow-val" id="dMode">—</span></div>
+        <div class="drow"><span class="drow-label">API reachable</span><span id="dApi"><span class="ds ds-spin">● checking</span></span></div>
+        <div class="drow"><span class="drow-label">Auth valid</span><span id="dAuth"><span class="ds ds-spin">● checking</span></span></div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-title">Your Bitbucket Profile</div>
+        <div id="dUserCard"><div style="font-size:12px;color:var(--text3)">Checking...</div></div>
+        <div class="drow" style="margin-top:10px"><span class="drow-label">Slug (use in mapping)</span><span class="drow-val" style="color:var(--cyan)" id="dSlug">—</span></div>
+        <div class="drow"><span class="drow-label">Email</span><span class="drow-val" id="dEmail">—</span></div>
+      </div>
+      <div class="dcard full">
+        <div class="dcard-title">Project Access — AFA · AFADC · AFCC · AFAOC</div>
+        <div id="dProjects"><span style="font-size:12px;color:var(--text3)">Checking...</span></div>
+      </div>
+      <div class="dcard full">
+        <div class="dcard-title">Diagnostic Log</div>
+        <div class="diag-log" id="dLog"></div>
       </div>
     </div>
-    <div class="header-right">
-      <div class="conn-status"><div class="conn-dot"></div> <span id="connUrl"></span></div>
-      <button class="btn-sm btn-refresh" onclick="refreshData()">↻ Refresh</button>
-      <button class="btn-sm btn-logout" onclick="doLogout()">Logout</button>
+    <div class="diag-actions">
+      <button class="dbtn dbtn-p" id="btnProceed" disabled onclick="startFetch()">Load PR Data →</button>
+      <button class="dbtn dbtn-s" onclick="runDiag()">↻ Re-run</button>
+      <button class="dbtn dbtn-s" onclick="doLogout()">← Back to Login</button>
     </div>
   </div>
+</div>
 
-  <!-- Tabs -->
-  <div class="tabs">
-    <div class="tab active" onclick="switchTab('overview')">Overview</div>
-    <div class="tab" onclick="switchTab('prs')">Pull Requests</div>
-    <div class="tab" onclick="switchTab('leads')">Leads</div>
-    <div class="tab" onclick="switchTab('squads')">Squads</div>
-    <div class="tab" onclick="switchTab('authors')">Authors</div>
-    <div class="tab" onclick="switchTab('config')">⚙ Config</div>
-  </div>
-
-  <!-- Filters -->
-  <div class="filters-bar">
-    <span class="filter-label">Filters</span>
-    <select class="filter-select" id="fProject" onchange="applyFilters()">
-      <option value="">All Projects</option>
-      <option value="AFA">AFA</option>
-      <option value="AFADC">AFADC</option>
-      <option value="AFCC">AFCC</option>
-      <option value="AFAOC">AFAOC</option>
-    </select>
-    <select class="filter-select" id="fRepo" onchange="applyFilters()">
-      <option value="">All Repositories</option>
-    </select>
-    <select class="filter-select" id="fLead" onchange="applyFilters()">
-      <option value="">All Leads</option>
-    </select>
-    <select class="filter-select" id="fSquad" onchange="applyFilters()">
-      <option value="">All Squads</option>
-    </select>
-    <select class="filter-select" id="fStatus" onchange="applyFilters()">
-      <option value="">All Statuses</option>
-      <option value="OPEN">Open</option>
-      <option value="MERGED">Merged</option>
-      <option value="DECLINED">Declined</option>
-      <option value="SUPERSEDED">Superseded</option>
-    </select>
-    <div class="filter-date">
-      <input type="date" id="fFrom" onchange="applyFilters()">
-      <span class="filter-sep">→</span>
-      <input type="date" id="fTo" onchange="applyFilters()">
+<!-- ══ APP ══ -->
+<div class="screen" id="appScreen">
+  <div class="topbar">
+    <div class="tb-left">
+      <div class="tb-brand"><div class="tb-mark">📊</div><span class="tb-name">PR Analytics</span></div>
+      <div class="tb-conn"><div class="cdot"></div><span id="topUrl"></span></div>
     </div>
-    <button class="btn-apply" onclick="clearFilters()">✕ Clear</button>
+    <div class="tb-right">
+      <button class="tbtn tbtn-d" onclick="showScreen('diagScreen');runDiag()">⚡ Diagnostics</button>
+      <button class="tbtn tbtn-r" onclick="refreshData()">↻ Refresh</button>
+      <button class="tbtn tbtn-l" onclick="doLogout()">Logout</button>
+    </div>
   </div>
-
-  <!-- Main -->
+  <div class="navtabs">
+    <div class="navtab active" onclick="switchTab('overview')">Overview</div>
+    <div class="navtab" onclick="switchTab('prs')">Pull Requests</div>
+    <div class="navtab" onclick="switchTab('leads')">Leads</div>
+    <div class="navtab" onclick="switchTab('tribes')">Tribes</div>
+    <div class="navtab" onclick="switchTab('squads')">Squads</div>
+    <div class="navtab" onclick="switchTab('authors')">Authors</div>
+    <div class="navtab" onclick="switchTab('config')">⚙ Config</div>
+  </div>
+  <div class="filterbar">
+    <span class="flbl">Filter</span>
+    <select class="fsel" id="fProject" onchange="applyFilters()"><option value="">All Projects</option><option>AFA</option><option>AFADC</option><option>AFCC</option><option>AFAOC</option></select>
+    <select class="fsel" id="fRepo" onchange="applyFilters()"><option value="">All Repos</option></select>
+    <select class="fsel" id="fTribe" onchange="applyFilters()"><option value="">All Tribes</option></select>
+    <select class="fsel" id="fSquad" onchange="applyFilters()"><option value="">All Squads</option></select>
+    <select class="fsel" id="fLead" onchange="applyFilters()"><option value="">All Leads</option></select>
+    <select class="fsel" id="fStatus" onchange="applyFilters()"><option value="">All Statuses</option><option value="OPEN">Open</option><option value="MERGED">Merged</option><option value="DECLINED">Declined</option></select>
+    <input type="date" class="fdate" id="fFrom" onchange="applyFilters()">
+    <span class="fsep">→</span>
+    <input type="date" class="fdate" id="fTo" onchange="applyFilters()">
+    <button class="fbtn-c" onclick="clearFilters()">✕ Clear</button>
+    <span class="fcnt" id="fcnt"></span>
+  </div>
   <div class="main" id="mainContent"></div>
 </div>
 
-<!-- PR DETAIL MODAL -->
-<div class="modal-overlay" id="prModal" style="display:none" onclick="if(event.target===this)closePRModal()">
-  <div class="modal" id="prModalContent"></div>
+<!-- MODAL -->
+<div class="modal-bg" id="prModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="prModalBody"></div>
 </div>
 
 <script>
-// ─── STATE ───
-const STATE = {
-  url: '', user: '', pass: '',
-  projects: ['AFA','AFADC','AFCC','AFAOC'],
-  allPRs: [],
-  filteredPRs: [],
-  leadsMap: {},   // contractorId → leadName
-  squadsMap: {},  // repoSlug → squadName
-  reposList: [],
-  currentTab: 'overview',
-  page: 1, pageSize: 25,
-  sortCol: '', sortDir: 1,
-  charts: {}
+// ── STATE ──
+const S={
+  url:'',user:'',token:'',mode:'token',
+  projects:['AFA','AFADC','AFCC','AFAOC'],
+  allPRs:[],filteredPRs:[],repos:[],
+  staffMap:{},   // slug → {leadName,squad,tribe}
+  repoTribes:{}, // slug → [tribe,...]
+  tab:'overview',page:1,pageSize:25,
+  sortCol:'createdDate',sortDir:-1,
+  charts:{}
 };
 
-// ─── AUTH ───
-function doLogin() {
-  const url = document.getElementById('bbUrl').value.trim().replace(/\/$/, '');
-  const user = document.getElementById('bbUser').value.trim();
-  const pass = document.getElementById('bbPass').value;
-  const save = document.getElementById('saveCreds').checked;
-  if (!url || !user || !pass) { showLoginError('Please fill in all fields.'); return; }
-  STATE.url = url; STATE.user = user; STATE.pass = pass;
-  if (save) { localStorage.setItem('bb_url', url); localStorage.setItem('bb_user', user); localStorage.setItem('bb_pass', pass); }
-  showApp();
+// ── SCREENS ──
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>{s.classList.remove('active');s.style.display='none';});
+  const el=document.getElementById(id);el.style.display='flex';el.classList.add('active');
 }
 
-function doLogout() {
-  localStorage.removeItem('bb_url'); localStorage.removeItem('bb_user'); localStorage.removeItem('bb_pass');
-  STATE.allPRs = []; STATE.filteredPRs = [];
-  document.getElementById('appShell').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  destroyCharts();
+// ── AUTH ──
+function setMode(m){
+  S.mode=m;
+  g('modeToken').classList.toggle('active',m==='token');
+  g('modeBasic').classList.toggle('active',m==='basic');
+  g('inToken').placeholder=m==='token'?'Paste your HTTP Access Token':'App Password or account password';
 }
 
-function showLoginError(msg) {
-  const el = document.getElementById('loginError');
-  el.textContent = msg; el.style.display = 'block';
+function doLogin(){
+  const url=g('inUrl').value.trim().replace(/\/$/,'');
+  const user=g('inUser').value.trim();
+  const token=g('inToken').value.trim();
+  const err=g('loginErr'); err.style.display='none';
+  if(!url){err.textContent='Please enter your Bitbucket Server URL.';err.style.display='block';return;}
+  if(!user){err.textContent='Please enter your username.';err.style.display='block';return;}
+  if(!token){err.textContent='Please enter your HTTP Access Token or password.';err.style.display='block';return;}
+  S.url=url;S.user=user;S.token=token;
+  if(g('cbSave').checked){lset('bb_url',url);lset('bb_user',user);lset('bb_token',token);lset('bb_mode',S.mode);}
+  showScreen('diagScreen');runDiag();
 }
 
-function showApp() {
-  document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'flex';
-  document.getElementById('connUrl').textContent = STATE.url.replace('https://','').replace('http://','');
-  setDefaultDates();
+function doLogout(){
+  ['bb_url','bb_user','bb_token','bb_mode'].forEach(k=>localStorage.removeItem(k));
+  S.allPRs=[];S.filteredPRs=[];S.repos=[];destroyCharts();showScreen('loginScreen');
+}
+
+// ── DIAGNOSTICS ──
+const DL=[];
+function dlog(msg,t='info'){
+  DL.push({ts:new Date().toLocaleTimeString(),msg,t});
+  const el=g('dLog');
+  el.innerHTML=DL.slice(-30).map(l=>`<div class="log-${l.t}">[${l.ts}] ${l.msg}</div>`).join('');
+  el.scrollTop=el.scrollHeight;
+}
+function ds(id,state,extra=''){
+  const el=g(id);
+  const map={ok:'ds-ok ✓ OK',fail:'ds-fail ✗ Failed',checking:'ds-spin ● Checking',warn:'ds-warn ⚠ Warning'};
+  const parts=map[state].split(' ');const cls=parts[0];const lbl=parts.slice(1).join(' ');
+  el.innerHTML=`<span class="ds ${cls}">${lbl}${extra?' · '+extra:''}</span>`;
+}
+
+async function runDiag(){
+  DL.length=0;
+  g('dUrl').textContent=S.url;
+  g('dMode').textContent=S.mode==='token'?'HTTP Access Token':'Basic / App Password';
+  ds('dApi','checking');ds('dAuth','checking');
+  g('btnProceed').disabled=true;
+  g('dProjects').innerHTML='<span style="font-size:12px;color:var(--text3)">Checking...</span>';
+  g('dUserCard').innerHTML='<div style="font-size:12px;color:var(--text3)">Checking...</div>';
+  dlog('Connecting to '+S.url,'info');
+
+  // 1. API reachable
+  try{
+    const r=await bbFetch('/rest/api/1.0/application-properties');
+    dlog('Server: '+(r.displayName||'Bitbucket')+' v'+(r.version||'?'),'ok');
+    ds('dApi','ok','v'+(r.version||'?'));
+  }catch(e){
+    dlog('API unreachable: '+e.message,'err');
+    ds('dApi','fail',e.message.substring(0,60));
+    ds('dAuth','fail','Cannot reach server');
+    if(e.message.toLowerCase().includes('fetch')||e.message.toLowerCase().includes('cors')||e.message.toLowerCase().includes('network')){
+      dlog('→ CORS or network issue. Serve this file via a local HTTP server:','warn');
+      dlog('  python3 -m http.server 8080  then open http://localhost:8080/dashboard.html','warn');
+    }
+    return;
+  }
+
+  // 2. Auth
+  try{
+    const u=await bbFetch('/rest/api/1.0/users/'+encodeURIComponent(S.user));
+    dlog('Auth OK — '+u.displayName+' ('+u.slug+')','ok');
+    ds('dAuth','ok');
+    g('dSlug').textContent=u.slug||'—';
+    g('dEmail').textContent=u.emailAddress||'—';
+    const ini2=(u.displayName||'?').split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    g('dUserCard').innerHTML=`
+      <div class="user-card">
+        <div class="user-ava">${ini2}</div>
+        <div><div class="user-name">${esc(u.displayName||u.slug)}</div><div class="user-slug">slug: ${esc(u.slug)}</div></div>
+      </div>
+      <div style="margin-top:9px;padding:7px 10px;background:rgba(0,214,143,.07);border-radius:7px;font-family:var(--mono);font-size:10px;color:var(--green)">
+        ✓ Use "<strong>${esc(u.slug)}</strong>" as staffId in staff-mapping.json
+      </div>`;
+  }catch(e){
+    dlog('Auth failed: '+e.message,'err');
+    ds('dAuth','fail',e.message.substring(0,60));
+    if(e.message.includes('401'))dlog('Tip: For HTTP Access Tokens, ensure Repository Read permission is granted','warn');
+    if(e.message.includes('404')){
+      dlog('User not found at /users/'+S.user+' — trying /rest/api/1.0/application-properties only','warn');
+      dlog('Auth may still work for repo access. Click "Load PR Data" to try.','warn');
+      g('btnProceed').disabled=false;
+    }
+    return;
+  }
+
+  // 3. Projects
+  let ok=0;const ph=[];
+  for(const p of S.projects){
+    try{
+      const proj=await bbFetch('/rest/api/1.0/projects/'+p);
+      const repos=await bbFetch('/rest/api/1.0/projects/'+p+'/repos?limit=1');
+      dlog('Project '+p+': OK ('+repos.size+' repos)','ok');
+      ph.push(`<div class="pcheck"><span class="pkey">${p}</span><span class="pname">${esc(proj.name||p)}</span><span class="ds ds-ok">✓ ${repos.size} repos</span></div>`);
+      ok++;
+    }catch(e){
+      const reason=e.message.includes('404')?'Not found':e.message.includes('401')||e.message.includes('403')?'No access':e.message.substring(0,40);
+      dlog('Project '+p+': '+e.message,'err');
+      ph.push(`<div class="pcheck"><span class="pkey">${p}</span><span class="pname">—</span><span class="ds ds-fail">✗ ${reason}</span></div>`);
+    }
+  }
+  g('dProjects').innerHTML=ph.join('');
+  if(ok>0){dlog(ok+'/'+S.projects.length+' projects accessible','ok');g('btnProceed').disabled=false;dlog('Ready! Click "Load PR Data" to continue.','ok');}
+  else dlog('No projects accessible — check token permissions','err');
   loadSavedMappings();
-  fetchAllData();
 }
 
-function setDefaultDates() {
-  const to = new Date(); const from = new Date();
-  from.setDate(from.getDate() - 90);
-  document.getElementById('fTo').value = to.toISOString().split('T')[0];
-  document.getElementById('fFrom').value = from.toISOString().split('T')[0];
+// ── API ──
+function authHdr(){
+  return S.mode==='token'
+    ?{'Authorization':'Bearer '+S.token,'Content-Type':'application/json'}
+    :{'Authorization':'Basic '+btoa(S.user+':'+S.token),'Content-Type':'application/json'};
 }
-
-// ─── API ───
-function bbHeaders() {
-  return { 'Authorization': 'Basic ' + btoa(STATE.user + ':' + STATE.pass), 'Content-Type': 'application/json' };
-}
-
-async function bbFetch(path) {
-  const res = await fetch(STATE.url + path, { headers: bbHeaders() });
-  if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+async function bbFetch(path){
+  const res=await fetch(S.url+path,{headers:authHdr()});
+  if(!res.ok){let m='HTTP '+res.status;try{const j=await res.json();m=j.errors?.[0]?.message||m;}catch(e){}throw new Error(m);}
   return res.json();
 }
-
-async function bbFetchAll(path, key='values') {
-  let start = 0; const limit = 100; const all = [];
-  while (true) {
-    const sep = path.includes('?') ? '&' : '?';
-    const data = await bbFetch(`${path}${sep}start=${start}&limit=${limit}`);
-    all.push(...(data[key] || []));
-    if (data.isLastPage) break;
-    start = data.nextPageStart;
+async function bbAll(path,key='values'){
+  let start=0;const limit=100;const all=[];
+  while(true){
+    const sep=path.includes('?')?'&':'?';
+    const d=await bbFetch(path+sep+'start='+start+'&limit='+limit);
+    all.push(...(d[key]||[]));
+    if(d.isLastPage!==false)break;
+    start=d.nextPageStart||0;if(!start)break;
   }
   return all;
 }
 
-async function fetchAllData() {
-  showLoading('Fetching repositories...');
-  try {
-    STATE.reposList = [];
-    STATE.allPRs = [];
-    for (const proj of STATE.projects) {
-      try {
-        showLoading(`Fetching repos for ${proj}...`);
-        const repos = await bbFetchAll(`/rest/api/1.0/projects/${proj}/repos`);
-        for (const repo of repos) {
-          STATE.reposList.push({ project: proj, slug: repo.slug, name: repo.name });
-        }
-      } catch(e) { console.warn(`Project ${proj} error:`, e); }
+// ── DATA FETCH ──
+async function startFetch(){
+  showScreen('appScreen');
+  g('topUrl').textContent=S.url.replace(/https?:\/\//,'');
+  setDefaultDates();loadSavedMappings();
+  await fetchAll();
+}
+async function fetchAll(){
+  showLoad('Discovering repositories...');
+  S.repos=[];S.allPRs=[];
+  try{
+    for(const proj of S.projects){
+      showLoad('Fetching repos: '+proj);
+      try{const rs=await bbAll('/rest/api/1.0/projects/'+proj+'/repos');rs.forEach(r=>S.repos.push({project:proj,slug:r.slug,name:r.name||r.slug}));}
+      catch(e){console.warn('Project '+proj,e.message);}
     }
-
-    const from = document.getElementById('fFrom').value;
-    const to = document.getElementById('fTo').value;
-    const fromTs = from ? new Date(from).getTime() : 0;
-    const toTs = to ? new Date(to).getTime() + 86400000 : Date.now();
-
-    let done = 0;
-    for (const repo of STATE.reposList) {
-      showLoading(`Fetching PRs (${++done}/${STATE.reposList.length}): ${repo.slug}...`);
-      try {
-        const prs = await bbFetchAll(`/rest/api/1.0/projects/${repo.project}/repos/${repo.slug}/pull-requests?state=ALL`);
-        for (const pr of prs) {
-          const created = pr.createdDate || 0;
-          if (created < fromTs || created > toTs) continue;
-          // Enrich
-          let comments = [];
-          try { comments = await bbFetchAll(`/rest/api/1.0/projects/${repo.project}/repos/${repo.slug}/pull-requests/${pr.id}/activities`,'values'); } catch(e){}
-          const commentItems = comments.filter(a => a.action === 'COMMENTED');
-          pr._project = repo.project;
-          pr._repoSlug = repo.slug;
-          pr._repoName = repo.name;
-          pr._commentCount = commentItems.length;
-          pr._commentDetails = commentItems.slice(0,5);
-          pr._squad = STATE.squadsMap[repo.slug] || STATE.squadsMap[repo.name] || '—';
-          pr._authorLead = getLeadForUser(pr.author?.user?.slug || pr.author?.user?.name || '');
-          pr._reviewerLeads = (pr.reviewers||[]).map(r => getLeadForUser(r.user?.slug || r.user?.name || '')).filter(Boolean);
-          pr._cycleTimeDays = pr.closedDate && pr.createdDate ? ((pr.closedDate - pr.createdDate) / 86400000).toFixed(1) : null;
-          STATE.allPRs.push(pr);
+    const fromTs=dts('fFrom',0),toTs=dts('fTo',1);let done=0;
+    for(const repo of S.repos){
+      showLoad('Fetching PRs ('+( ++done)+'/'+S.repos.length+')',repo.slug);
+      try{
+        const prs=await bbAll('/rest/api/1.0/projects/'+repo.project+'/repos/'+repo.slug+'/pull-requests?state=ALL');
+        for(const pr of prs){
+          if(pr.createdDate<fromTs||pr.createdDate>toTs)continue;
+          let cc=0,cd=[];
+          try{const acts=await bbAll('/rest/api/1.0/projects/'+repo.project+'/repos/'+repo.slug+'/pull-requests/'+pr.id+'/activities');const cms=acts.filter(a=>a.action==='COMMENTED');cc=cms.length;cd=cms.slice(0,5);}catch(e){}
+          enrich(pr,repo,cc,cd);S.allPRs.push(pr);
         }
-      } catch(e) { console.warn(`Repo ${repo.slug} error:`, e); }
+      }catch(e){console.warn('Repo '+repo.slug,e.message);}
     }
-
-    populateFilterDropdowns();
-    applyFilters();
-    hideLoading();
-  } catch(e) {
-    hideLoading();
-    showLoginError('Connection failed: ' + e.message);
-    doLogout();
-  }
+    populateDDs();applyFilters();hideLoad();
+  }catch(e){hideLoad();alert('Fetch error: '+e.message);}
 }
 
-function getLeadForUser(id) {
-  return STATE.leadsMap[id] || null;
+function enrich(pr,repo,cc,cd){
+  const slug=pr.author?.user?.slug||pr.author?.user?.name||'';
+  const si=S.staffMap[slug]||{};
+  pr._project=repo.project;pr._repoSlug=repo.slug;pr._repoName=repo.name;
+  pr._commentCount=cc;pr._commentDetails=cd;pr._authorSlug=slug;
+  pr._lead=si.leadName||null;pr._squad=si.squad||null;pr._tribe=si.tribe||null;
+  pr._repoTribes=S.repoTribes[repo.slug]||[];
+  pr._cycle=pr.closedDate&&pr.createdDate?((pr.closedDate-pr.createdDate)/86400000).toFixed(1):null;
 }
+function reEnrich(){S.allPRs.forEach(pr=>enrich(pr,{project:pr._project,slug:pr._repoSlug,name:pr._repoName},pr._commentCount,pr._commentDetails));}
 
-// ─── FILTERS ───
-function applyFilters() {
-  const proj = document.getElementById('fProject').value;
-  const repo = document.getElementById('fRepo').value;
-  const lead = document.getElementById('fLead').value;
-  const squad = document.getElementById('fSquad').value;
-  const status = document.getElementById('fStatus').value;
-  const from = document.getElementById('fFrom').value;
-  const to = document.getElementById('fTo').value;
-  const fromTs = from ? new Date(from).getTime() : 0;
-  const toTs = to ? new Date(to).getTime() + 86400000 : Infinity;
-
-  STATE.filteredPRs = STATE.allPRs.filter(pr => {
-    if (proj && pr._project !== proj) return false;
-    if (repo && pr._repoSlug !== repo) return false;
-    if (squad && pr._squad !== squad) return false;
-    if (status && pr.state !== status) return false;
-    if (from && pr.createdDate < fromTs) return false;
-    if (to && pr.createdDate > toTs) return false;
-    if (lead) {
-      const isAuthorLead = pr._authorLead === lead;
-      const isReviewerLead = pr._reviewerLeads.includes(lead);
-      if (!isAuthorLead && !isReviewerLead) return false;
-    }
+// ── FILTERS ──
+function applyFilters(){
+  const proj=val('fProject'),repo=val('fRepo'),tribe=val('fTribe'),squad=val('fSquad'),lead=val('fLead'),status=val('fStatus');
+  const ft=dts('fFrom',0),tt=dts('fTo',1);
+  S.filteredPRs=S.allPRs.filter(pr=>{
+    if(proj&&pr._project!==proj)return false;
+    if(repo&&pr._repoSlug!==repo)return false;
+    if(tribe&&pr._tribe!==tribe&&!pr._repoTribes.includes(tribe))return false;
+    if(squad&&pr._squad!==squad)return false;
+    if(lead&&pr._lead!==lead)return false;
+    if(status&&pr.state!==status)return false;
+    if(pr.createdDate<ft||pr.createdDate>tt)return false;
     return true;
   });
-  STATE.page = 1;
-  renderCurrentTab();
+  S.page=1;g('fcnt').textContent=S.filteredPRs.length+' PRs';renderTab();
 }
-
-function clearFilters() {
-  ['fProject','fRepo','fLead','fSquad','fStatus'].forEach(id => document.getElementById(id).value = '');
-  setDefaultDates();
-  applyFilters();
+function clearFilters(){['fProject','fRepo','fTribe','fSquad','fLead','fStatus'].forEach(id=>g(id).value='');setDefaultDates();applyFilters();}
+function populateDDs(){
+  fill('fRepo',S.repos.map(r=>({v:r.slug,l:r.name||r.slug})));
+  const tribes=[...new Set(Object.values(S.staffMap).map(s=>s.tribe).filter(Boolean))].sort();
+  fill('fTribe',tribes.map(t=>({v:t,l:t})));
+  const squads=[...new Set(Object.values(S.staffMap).map(s=>s.squad).filter(Boolean))].sort();
+  fill('fSquad',squads.map(s=>({v:s,l:s})));
+  const leads=[...new Set(Object.values(S.staffMap).map(s=>s.leadName).filter(Boolean))].sort();
+  fill('fLead',leads.map(l=>({v:l,l})));
 }
+function fill(id,opts){const el=g(id);const f=el.options[0].outerHTML;el.innerHTML=f+opts.map(o=>`<option value="${esc(o.v)}">${esc(o.l)}</option>`).join('');}
 
-function populateFilterDropdowns() {
-  const repoSel = document.getElementById('fRepo');
-  repoSel.innerHTML = '<option value="">All Repositories</option>';
-  STATE.reposList.forEach(r => {
-    const o = document.createElement('option'); o.value = r.slug; o.textContent = r.name || r.slug;
-    repoSel.appendChild(o);
-  });
-
-  const leads = [...new Set(Object.values(STATE.leadsMap))].sort();
-  const leadSel = document.getElementById('fLead');
-  leadSel.innerHTML = '<option value="">All Leads</option>';
-  leads.forEach(l => { const o = document.createElement('option'); o.value = l; o.textContent = l; leadSel.appendChild(o); });
-
-  const squads = [...new Set(Object.values(STATE.squadsMap))].sort();
-  const squadSel = document.getElementById('fSquad');
-  squadSel.innerHTML = '<option value="">All Squads</option>';
-  squads.forEach(s => { const o = document.createElement('option'); o.value = s; o.textContent = s; squadSel.appendChild(o); });
+// ── TABS ──
+function switchTab(t){
+  S.tab=t;S.page=1;
+  const tabs=['overview','prs','leads','tribes','squads','authors','config'];
+  document.querySelectorAll('.navtab').forEach((el,i)=>el.classList.toggle('active',tabs[i]===t));
+  renderTab();
 }
-
-// ─── TABS ───
-function switchTab(tab) {
-  STATE.currentTab = tab;
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    const tabs = ['overview','prs','leads','squads','authors','config'];
-    t.classList.toggle('active', tabs[i] === tab);
-  });
-  STATE.page = 1;
-  renderCurrentTab();
-}
-
-function renderCurrentTab() {
+function renderTab(){
   destroyCharts();
-  switch(STATE.currentTab) {
-    case 'overview': renderOverview(); break;
-    case 'prs': renderPRs(); break;
-    case 'leads': renderLeads(); break;
-    case 'squads': renderSquads(); break;
-    case 'authors': renderAuthors(); break;
-    case 'config': renderConfig(); break;
-  }
+  ({overview:renderOverview,prs:renderPRs,leads:renderLeads,tribes:renderTribes,squads:renderSquads,authors:renderAuthors,config:renderConfig}[S.tab]||renderOverview)();
 }
 
-// ─── OVERVIEW ───
-function renderOverview() {
-  const prs = STATE.filteredPRs;
-  const open = prs.filter(p=>p.state==='OPEN').length;
-  const merged = prs.filter(p=>p.state==='MERGED').length;
-  const declined = prs.filter(p=>p.state==='DECLINED').length;
-  const totalComments = prs.reduce((s,p)=>s+p._commentCount,0);
-  const avgCycle = (() => {
-    const closed = prs.filter(p=>p._cycleTimeDays!=null);
-    return closed.length ? (closed.reduce((s,p)=>s+parseFloat(p._cycleTimeDays),0)/closed.length).toFixed(1) : '—';
-  })();
-  const uniqueAuthors = new Set(prs.map(p=>p.author?.user?.slug)).size;
+// ── OVERVIEW ──
+function renderOverview(){
+  const p=S.filteredPRs;
+  const open=p.filter(x=>x.state==='OPEN').length;
+  const merged=p.filter(x=>x.state==='MERGED').length;
+  const declined=p.filter(x=>x.state==='DECLINED').length;
+  const totalC=p.reduce((s,x)=>s+x._commentCount,0);
+  const authors=new Set(p.map(x=>x._authorSlug)).size;
+  const byM={};p.forEach(pr=>{const k=mk(pr.createdDate);if(!byM[k])byM[k]={O:0,M:0,D:0};byM[k][pr.state[0]]=(byM[k][pr.state[0]]||0)+1;});
+  const months=Object.keys(byM).sort();
+  const byRepo={};p.forEach(pr=>{byRepo[pr._repoSlug]=(byRepo[pr._repoSlug]||0)+1;});
+  const topR=Object.entries(byRepo).sort((a,b)=>b[1]-a[1]).slice(0,10);
 
-  // Status by month
-  const byMonth = {};
-  prs.forEach(pr => {
-    const d = new Date(pr.createdDate); const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    if (!byMonth[k]) byMonth[k] = {OPEN:0,MERGED:0,DECLINED:0};
-    byMonth[k][pr.state] = (byMonth[k][pr.state]||0)+1;
-  });
-  const months = Object.keys(byMonth).sort();
-
-  // Repo breakdown
-  const byRepo = {};
-  prs.forEach(pr => { byRepo[pr._repoSlug] = (byRepo[pr._repoSlug]||0)+1; });
-  const topRepos = Object.entries(byRepo).sort((a,b)=>b[1]-a[1]).slice(0,8);
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="stats-grid">
-      <div class="stat-card" style="--card-accent:var(--accent)">
-        <div class="stat-label">Total PRs</div>
-        <div class="stat-value">${prs.length}</div>
-        <div class="stat-sub">${uniqueAuthors} authors</div>
-      </div>
-      <div class="stat-card" style="--card-accent:var(--open)">
-        <div class="stat-label">Open</div>
-        <div class="stat-value" style="color:var(--open)">${open}</div>
-        <div class="stat-sub">${prs.length?((open/prs.length)*100).toFixed(0):0}% of total</div>
-      </div>
-      <div class="stat-card" style="--card-accent:var(--merged)">
-        <div class="stat-label">Merged</div>
-        <div class="stat-value" style="color:var(--merged)">${merged}</div>
-        <div class="stat-sub">${prs.length?((merged/prs.length)*100).toFixed(0):0}% of total</div>
-      </div>
-      <div class="stat-card" style="--card-accent:var(--declined)">
-        <div class="stat-label">Declined</div>
-        <div class="stat-value" style="color:var(--declined)">${declined}</div>
-        <div class="stat-sub">${prs.length?((declined/prs.length)*100).toFixed(0):0}% of total</div>
-      </div>
-      <div class="stat-card" style="--card-accent:var(--accent2)">
-        <div class="stat-label">Total Comments</div>
-        <div class="stat-value">${totalComments}</div>
-        <div class="stat-sub">${prs.length?(totalComments/prs.length).toFixed(1):0} avg/PR</div>
-      </div>
-      <div class="stat-card" style="--card-accent:var(--accent3)">
-        <div class="stat-label">Avg Cycle Time</div>
-        <div class="stat-value">${avgCycle}</div>
-        <div class="stat-sub">days (merged PRs)</div>
-      </div>
+  set('mainContent',`
+    <div class="srow">
+      ${sc('Total PRs',p.length,authors+' authors','var(--cyan)')}
+      ${sc('Open',open,pct(open,p.length),'var(--cyan)')}
+      ${sc('Merged',merged,pct(merged,p.length),'var(--green)')}
+      ${sc('Declined',declined,pct(declined,p.length),'var(--red)')}
+      ${sc('Comments',totalC,(p.length?(totalC/p.length).toFixed(1):0)+' avg/PR','var(--violet)')}
+      ${sc('Avg Cycle',cavg(p),'days (merged PRs)','var(--amber)')}
     </div>
-    <div class="charts-grid">
-      <div class="chart-card">
-        <div class="chart-title">PR Activity by Month</div>
-        <div class="chart-sub">Open · Merged · Declined</div>
-        <div class="chart-wrap"><canvas id="chartMonthly"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Status Distribution</div>
-        <div class="chart-sub">Current filtered set</div>
-        <div class="chart-wrap"><canvas id="chartStatus"></canvas></div>
-      </div>
-      <div class="chart-card full">
-        <div class="chart-title">PRs by Repository</div>
-        <div class="chart-sub">Top repositories by PR count</div>
-        <div class="chart-wrap"><canvas id="chartRepos"></canvas></div>
-      </div>
+    <div class="cgrid">
+      <div class="ccard"><div class="cc-title">PR Activity by Month</div><div class="cc-sub">OPEN · MERGED · DECLINED</div><div class="cbox"><canvas id="chM"></canvas></div></div>
+      <div class="ccard"><div class="cc-title">Status Distribution</div><div class="cc-sub">CURRENT FILTER</div><div class="cbox"><canvas id="chS"></canvas></div></div>
+      <div class="ccard s2"><div class="cc-title">PRs by Repository</div><div class="cc-sub">TOP REPOSITORIES</div><div class="cbox" style="height:250px"><canvas id="chR"></canvas></div></div>
+    </div>`);
+
+  S.charts.m=new Chart(g('chM'),{type:'bar',data:{labels:months.map(ml),datasets:[
+    {label:'Open',data:months.map(m=>byM[m].O||0),backgroundColor:'rgba(0,229,255,.5)',borderColor:'rgba(0,229,255,1)',borderWidth:1},
+    {label:'Merged',data:months.map(m=>byM[m].M||0),backgroundColor:'rgba(0,214,143,.5)',borderColor:'rgba(0,214,143,1)',borderWidth:1},
+    {label:'Declined',data:months.map(m=>byM[m].D||0),backgroundColor:'rgba(255,77,109,.5)',borderColor:'rgba(255,77,109,1)',borderWidth:1},
+  ]},options:co({stacked:true})});
+  S.charts.s=new Chart(g('chS'),{type:'doughnut',data:{labels:['Open','Merged','Declined'],datasets:[{data:[open,merged,declined],backgroundColor:['rgba(0,229,255,.75)','rgba(0,214,143,.75)','rgba(255,77,109,.75)'],borderColor:['#00e5ff','#00d68f','#ff4d6d'],borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{labels:{color:'#7a90b8',font:{size:11}}}}}});
+  S.charts.r=new Chart(g('chR'),{type:'bar',data:{labels:topR.map(r=>r[0]),datasets:[{label:'PRs',data:topR.map(r=>r[1]),backgroundColor:'rgba(139,92,246,.65)',borderColor:'rgba(139,92,246,1)',borderWidth:1,borderRadius:3}]},options:{...co(),indexAxis:'y'}});
+}
+
+// ── PR LIST ──
+function renderPRs(){
+  const sorted=sortPRs([...S.filteredPRs]);
+  const total=sorted.length,pages=Math.ceil(total/S.pageSize);
+  const slice=sorted.slice((S.page-1)*S.pageSize,S.page*S.pageSize);
+  set('mainContent',`
+    <div class="tcard">
+      <div class="thead2"><div class="thead2-t">Pull Requests</div><div class="thead2-c">${total} total</div></div>
+      <table><thead><tr>
+        <th onclick="srt('id')">#</th><th onclick="srt('title')">Title</th><th onclick="srt('_repoSlug')">Repo</th>
+        <th onclick="srt('state')">Status</th><th onclick="srt('_authorSlug')">Author</th>
+        <th onclick="srt('_lead')">Lead</th><th onclick="srt('_squad')">Squad</th><th onclick="srt('_tribe')">Tribe</th>
+        <th onclick="srt('_commentCount')">💬</th><th onclick="srt('createdDate')">Created</th><th onclick="srt('_cycle')">Cycle(d)</th>
+      </tr></thead><tbody>
+        ${slice.map(pr=>`<tr onclick="showPR(${pr.id},'${pr._project}','${pr._repoSlug}')">
+          <td class="mv mv-d">${pr.id}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pr.title)}">${esc(pr.title)}</td>
+          <td><span class="mv mv-c">${pr._repoSlug}</span></td>
+          <td>${bstat(pr.state)}</td>
+          <td><span class="ava">${ini(pr.author?.user?.displayName||'?')}</span>${esc(pr.author?.user?.displayName||pr._authorSlug||'—')}</td>
+          <td>${pr._lead?`<span style="color:var(--green);font-size:11px">${esc(pr._lead)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td>${pr._squad?`<span class="badge b-squad">${esc(pr._squad)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td>${pr._tribe?`<span class="badge b-tribe">${esc(pr._tribe)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td class="mv">${pr._commentCount}</td>
+          <td class="mv mv-d">${fd(pr.createdDate)}</td>
+          <td class="mv">${pr._cycle??'—'}</td>
+        </tr>`).join('')}
+      </tbody></table>
+      ${pgn(total,pages)}
+    </div>`);
+}
+
+// ── LEADS ──
+function renderLeads(){
+  const leads=[...new Set(Object.values(S.staffMap).map(s=>s.leadName).filter(Boolean))].sort();
+  if(!leads.length){set('mainContent',empt('No leads mapped','Go to ⚙ Config and load your staff-mapping.json'));return;}
+  const p=S.filteredPRs;
+  const stats=leads.map(lead=>{
+    const auth=p.filter(x=>x._lead===lead);
+    const rev=p.filter(x=>(x.reviewers||[]).some(r=>S.staffMap[r.user?.slug]?.leadName===lead));
+    return{lead,authored:auth.length,reviewed:rev.length,merged:auth.filter(x=>x.state==='MERGED').length,open:auth.filter(x=>x.state==='OPEN').length,declined:auth.filter(x=>x.state==='DECLINED').length,comments:auth.reduce((s,x)=>s+x._commentCount,0),avgCycle:cavg(auth)};
+  });
+  const maxA=Math.max(...stats.map(s=>s.authored),1);
+  const months=[...new Set(p.map(pr=>mk(pr.createdDate)))].sort();
+  const blm={};leads.forEach(l=>{blm[l]={};});
+  p.forEach(pr=>{if(pr._lead&&blm[pr._lead]){const k=mk(pr.createdDate);blm[pr._lead][k]=(blm[pr._lead][k]||0)+1;}});
+  const cols=['rgba(0,229,255,.85)','rgba(0,214,143,.85)','rgba(139,92,246,.85)','rgba(255,183,3,.85)','rgba(255,77,109,.85)','rgba(236,72,153,.85)'];
+
+  set('mainContent',`
+    <div class="cgrid" style="margin-bottom:18px"><div class="ccard s2"><div class="cc-title">Lead Activity Over Time</div><div class="cc-sub">PRs AUTHORED PER LEAD · MONTHLY</div><div class="cbox"><canvas id="chLT"></canvas></div></div></div>
+    <div class="tcard">
+      <div class="thead2"><div class="thead2-t">Lead Breakdown</div><div class="thead2-c">${leads.length} leads</div></div>
+      <table><thead><tr><th>Lead</th><th>Authored</th><th>Volume</th><th>Reviewed</th><th>Merged</th><th>Open</th><th>Declined</th><th>Avg Comments</th><th>Avg Cycle(d)</th></tr></thead>
+      <tbody>${stats.map(s=>`<tr>
+        <td><strong>${esc(s.lead)}</strong></td>
+        <td class="mv">${s.authored}</td>
+        <td><div class="pbar-w"><div class="pbar"><div class="pbar-f" style="width:${(s.authored/maxA*100).toFixed(0)}%;background:var(--cyan)"></div></div><span class="pbar-v">${(s.authored/maxA*100).toFixed(0)}%</span></div></td>
+        <td class="mv">${s.reviewed}</td>
+        <td class="mv mv-g">${s.merged}</td>
+        <td class="mv mv-c">${s.open}</td>
+        <td class="mv mv-r">${s.declined}</td>
+        <td class="mv">${s.authored?(s.comments/s.authored).toFixed(1):'—'}</td>
+        <td class="mv">${s.avgCycle}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`);
+
+  S.charts.lt=new Chart(g('chLT'),{type:'line',data:{labels:months.map(ml),datasets:leads.map((l,i)=>({label:l,data:months.map(m=>blm[l][m]||0),borderColor:cols[i%cols.length],backgroundColor:cols[i%cols.length].replace('.85','.1'),tension:.4,fill:false,pointRadius:3}))},options:co()});
+}
+
+// ── TRIBES ──
+function renderTribes(){
+  const tribes=[...new Set(Object.values(S.staffMap).map(s=>s.tribe).filter(Boolean))].sort();
+  if(!tribes.length){set('mainContent',empt('No tribe mappings loaded','Go to ⚙ Config and load your staff-mapping.json'));return;}
+  const p=S.filteredPRs;
+  const stats=tribes.map(tribe=>{
+    const tp=p.filter(x=>x._tribe===tribe);
+    return{tribe,total:tp.length,merged:tp.filter(x=>x.state==='MERGED').length,open:tp.filter(x=>x.state==='OPEN').length,declined:tp.filter(x=>x.state==='DECLINED').length,comments:tp.reduce((s,x)=>s+x._commentCount,0),squads:[...new Set(tp.map(x=>x._squad).filter(Boolean))],repos:[...new Set(tp.map(x=>x._repoSlug))],avgCycle:cavg(tp)};
+  });
+
+  set('mainContent',`
+    <div class="cgrid" style="margin-bottom:18px">
+      <div class="ccard"><div class="cc-title">PRs by Tribe</div><div class="cc-sub">OPEN · MERGED · DECLINED</div><div class="cbox"><canvas id="chTP"></canvas></div></div>
+      <div class="ccard"><div class="cc-title">Merge Rate by Tribe</div><div class="cc-sub">% PRs MERGED</div><div class="cbox"><canvas id="chTM"></canvas></div></div>
     </div>
-  `;
+    <div class="tcard">
+      <div class="thead2"><div class="thead2-t">Tribe Breakdown</div><div class="thead2-c">${tribes.length} tribes</div></div>
+      <table><thead><tr><th>Tribe</th><th>Total PRs</th><th>Open</th><th>Merged</th><th>Declined</th><th>Comments</th><th>Avg Cycle(d)</th><th>Squads</th><th>Repos</th></tr></thead>
+      <tbody>${stats.map(s=>`<tr>
+        <td><strong style="color:var(--violet)">${esc(s.tribe)}</strong></td>
+        <td class="mv">${s.total}</td>
+        <td class="mv mv-c">${s.open}</td>
+        <td class="mv mv-g">${s.merged}</td>
+        <td class="mv mv-r">${s.declined}</td>
+        <td class="mv">${s.comments}</td>
+        <td class="mv">${s.avgCycle}</td>
+        <td style="font-size:11px;color:var(--text2)">${s.squads.join(', ')||'—'}</td>
+        <td class="mv mv-d">${s.repos.length}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`);
 
-  // Monthly chart
-  STATE.charts.monthly = new Chart(document.getElementById('chartMonthly'), {
-    type: 'bar',
-    data: {
-      labels: months.map(m => { const [y,mo]=m.split('-'); return new Date(y,mo-1).toLocaleString('default',{month:'short',year:'2-digit'}); }),
-      datasets: [
-        { label:'Open', data: months.map(m=>byMonth[m].OPEN||0), backgroundColor:'rgba(0,212,255,0.6)', borderColor:'rgba(0,212,255,1)', borderWidth:1 },
-        { label:'Merged', data: months.map(m=>byMonth[m].MERGED||0), backgroundColor:'rgba(16,185,129,0.6)', borderColor:'rgba(16,185,129,1)', borderWidth:1 },
-        { label:'Declined', data: months.map(m=>byMonth[m].DECLINED||0), backgroundColor:'rgba(239,68,68,0.6)', borderColor:'rgba(239,68,68,1)', borderWidth:1 },
-      ]
-    },
-    options: chartOpts({ stacked: true })
-  });
-
-  // Status doughnut
-  STATE.charts.status = new Chart(document.getElementById('chartStatus'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Open','Merged','Declined'],
-      datasets: [{ data:[open,merged,declined], backgroundColor:['rgba(0,212,255,0.8)','rgba(16,185,129,0.8)','rgba(239,68,68,0.8)'], borderColor:['rgba(0,212,255,1)','rgba(16,185,129,1)','rgba(239,68,68,1)'], borderWidth:2 }]
-    },
-    options: { ...chartOpts(), plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:12} } } }, cutout:'65%' }
-  });
-
-  // Repos bar
-  STATE.charts.repos = new Chart(document.getElementById('chartRepos'), {
-    type: 'bar',
-    data: {
-      labels: topRepos.map(r=>r[0]),
-      datasets: [{ label:'PRs', data: topRepos.map(r=>r[1]), backgroundColor:'rgba(124,58,237,0.6)', borderColor:'rgba(124,58,237,1)', borderWidth:1, borderRadius:4 }]
-    },
-    options: { ...chartOpts(), indexAxis:'y' }
-  });
+  S.charts.tp=new Chart(g('chTP'),{type:'bar',data:{labels:stats.map(s=>s.tribe),datasets:[
+    {label:'Open',data:stats.map(s=>s.open),backgroundColor:'rgba(0,229,255,.6)',borderRadius:3},
+    {label:'Merged',data:stats.map(s=>s.merged),backgroundColor:'rgba(0,214,143,.6)',borderRadius:3},
+    {label:'Declined',data:stats.map(s=>s.declined),backgroundColor:'rgba(255,77,109,.6)',borderRadius:3},
+  ]},options:co({stacked:true})});
+  S.charts.tm=new Chart(g('chTM'),{type:'bar',data:{labels:stats.map(s=>s.tribe),datasets:[{label:'Merge %',data:stats.map(s=>s.total?(s.merged/s.total*100).toFixed(1):0),backgroundColor:'rgba(0,214,143,.65)',borderColor:'rgba(0,214,143,1)',borderWidth:1,borderRadius:4}]},options:{...co(),scales:{...co().scales,y:{...co().scales.y,max:100,ticks:{...co().scales.y.ticks,callback:v=>v+'%'}}}}});
 }
 
-// ─── PR LIST ───
-function renderPRs() {
-  const sorted = sortPRs([...STATE.filteredPRs]);
-  const total = sorted.length;
-  const pages = Math.ceil(total / STATE.pageSize);
-  const slice = sorted.slice((STATE.page-1)*STATE.pageSize, STATE.page*STATE.pageSize);
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="table-card">
-      <div class="table-header">
-        <div class="table-title">Pull Requests</div>
-        <div class="table-count">${total} PRs</div>
-      </div>
-      <table class="data-table">
-        <thead><tr>
-          <th onclick="sortBy('id')">#</th>
-          <th onclick="sortBy('title')">Title</th>
-          <th onclick="sortBy('_repoSlug')">Repository</th>
-          <th onclick="sortBy('_project')">Project</th>
-          <th onclick="sortBy('state')">Status</th>
-          <th onclick="sortBy('author')">Author</th>
-          <th onclick="sortBy('_authorLead')">Lead</th>
-          <th onclick="sortBy('_squad')">Squad</th>
-          <th onclick="sortBy('_commentCount')">Comments</th>
-          <th onclick="sortBy('createdDate')">Created</th>
-          <th onclick="sortBy('_cycleTimeDays')">Cycle (d)</th>
-        </tr></thead>
-        <tbody>
-          ${slice.map(pr => `
-            <tr style="cursor:pointer" onclick="showPRDetail(${pr.id},'${pr._project}','${pr._repoSlug}')">
-              <td style="font-family:'IBM Plex Mono',monospace;color:var(--text3);font-size:11px">${pr.id}</td>
-              <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(pr.title)}">${esc(pr.title)}</td>
-              <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--accent)">${pr._repoSlug}</span></td>
-              <td><span style="font-family:'IBM Plex Mono',monospace;font-size:11px">${pr._project}</span></td>
-              <td>${statusBadge(pr.state)}</td>
-              <td><span class="avatar">${initials(pr.author?.user?.displayName||'?')}</span>${esc(pr.author?.user?.displayName||pr.author?.user?.slug||'—')}</td>
-              <td>${pr._authorLead ? `<span style="color:var(--accent3);font-size:12px">${esc(pr._authorLead)}</span>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
-              <td>${pr._squad !== '—' ? `<span style="color:var(--accent2);font-size:12px">${esc(pr._squad)}</span>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
-              <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${pr._commentCount}</td>
-              <td style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text3)">${fmtDate(pr.createdDate)}</td>
-              <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${pr._cycleTimeDays ?? '—'}</td>
-            </tr>`).join('')}
-        </tbody>
-      </table>
-      ${renderPagination(total, pages)}
-    </div>`;
+// ── SQUADS ──
+function renderSquads(){
+  const squads=[...new Set(Object.values(S.staffMap).map(s=>s.squad).filter(Boolean))].sort();
+  if(!squads.length){set('mainContent',empt('No squad mappings loaded','Go to ⚙ Config and load your staff-mapping.json'));return;}
+  const p=S.filteredPRs;
+  const stats=squads.map(squad=>{
+    const sp=p.filter(x=>x._squad===squad);
+    const tribe=[...new Set(sp.map(x=>x._tribe).filter(Boolean))][0]||'—';
+    return{squad,tribe,total:sp.length,merged:sp.filter(x=>x.state==='MERGED').length,open:sp.filter(x=>x.state==='OPEN').length,declined:sp.filter(x=>x.state==='DECLINED').length,comments:sp.reduce((s,x)=>s+x._commentCount,0),repos:[...new Set(sp.map(x=>x._repoSlug))],avgCycle:cavg(sp)};
+  }).sort((a,b)=>b.total-a.total);
+  set('mainContent',`
+    <div class="tcard">
+      <div class="thead2"><div class="thead2-t">Squad Breakdown</div><div class="thead2-c">${squads.length} squads</div></div>
+      <table><thead><tr><th>Squad</th><th>Tribe</th><th>Total</th><th>Open</th><th>Merged</th><th>Declined</th><th>Comments</th><th>Avg Cycle(d)</th><th>Repos</th></tr></thead>
+      <tbody>${stats.map(s=>`<tr>
+        <td><span class="badge b-squad">${esc(s.squad)}</span></td>
+        <td><span class="badge b-tribe">${esc(s.tribe)}</span></td>
+        <td class="mv">${s.total}</td>
+        <td class="mv mv-c">${s.open}</td>
+        <td class="mv mv-g">${s.merged}</td>
+        <td class="mv mv-r">${s.declined}</td>
+        <td class="mv">${s.comments}</td>
+        <td class="mv">${s.avgCycle}</td>
+        <td style="font-size:11px;color:var(--text3)">${s.repos.slice(0,3).join(', ')}${s.repos.length>3?' +'+( s.repos.length-3):''}</td>
+      </tr>`).join('')}</tbody></table>
+    </div>`);
 }
 
-// ─── LEADS ───
-function renderLeads() {
-  const leads = [...new Set(Object.values(STATE.leadsMap))].sort();
-  if (!leads.length) { document.getElementById('mainContent').innerHTML = emptyState('No lead mappings loaded','Go to Config tab to load your leads mapping file.'); return; }
-
-  const prs = STATE.filteredPRs;
-  const leadStats = leads.map(lead => {
-    const authored = prs.filter(p => p._authorLead === lead);
-    const reviewed = prs.filter(p => p._reviewerLeads.includes(lead));
-    const merged = authored.filter(p => p.state === 'MERGED');
-    const open = authored.filter(p => p.state === 'OPEN');
-    const totalComments = authored.reduce((s,p)=>s+p._commentCount,0);
-    const avgCycle = (() => {
-      const closed = authored.filter(p=>p._cycleTimeDays!=null);
-      return closed.length ? (closed.reduce((s,p)=>s+parseFloat(p._cycleTimeDays),0)/closed.length).toFixed(1) : '—';
-    })();
-    const approvals = reviewed.filter(p => (p.reviewers||[]).some(r => (STATE.leadsMap[r.user?.slug]===lead) && r.approved)).length;
-    return { lead, authored: authored.length, reviewed: reviewed.length, merged: merged.length, open: open.length, totalComments, avgCycle, approvals };
-  });
-
-  const maxAuthored = Math.max(...leadStats.map(l=>l.authored),1);
-
-  const byLeadMonthly = {};
-  leads.forEach(l => { byLeadMonthly[l] = {}; });
-  prs.forEach(pr => {
-    const d = new Date(pr.createdDate); const k = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    if (pr._authorLead && byLeadMonthly[pr._authorLead]) {
-      byLeadMonthly[pr._authorLead][k] = (byLeadMonthly[pr._authorLead][k]||0)+1;
-    }
-  });
-  const allMonths = [...new Set(prs.map(pr => { const d=new Date(pr.createdDate); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }))].sort();
-
-  const colors = ['rgba(0,212,255,0.7)','rgba(124,58,237,0.7)','rgba(16,185,129,0.7)','rgba(245,158,11,0.7)','rgba(239,68,68,0.7)','rgba(236,72,153,0.7)'];
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="charts-grid" style="margin-bottom:20px">
-      <div class="chart-card full">
-        <div class="chart-title">Lead PR Activity Over Time</div>
-        <div class="chart-sub">PRs authored per lead per month</div>
-        <div class="chart-wrap"><canvas id="chartLeadTime"></canvas></div>
-      </div>
-    </div>
-    <div class="table-card">
-      <div class="table-header"><div class="table-title">Lead Breakdown</div><div class="table-count">${leads.length} leads</div></div>
-      <table class="data-table">
-        <thead><tr>
-          <th>Lead</th><th>PRs Authored</th><th>Volume</th><th>Reviewed</th><th>Merged</th><th>Open</th><th>Approvals</th><th>Avg Comments</th><th>Avg Cycle (d)</th>
-        </tr></thead>
-        <tbody>
-          ${leadStats.map(l => `<tr>
-            <td><strong>${esc(l.lead)}</strong></td>
-            <td style="font-family:'IBM Plex Mono',monospace">${l.authored}</td>
-            <td style="min-width:140px">
-              <div class="progress-bar-wrap">
-                <div class="progress-bar"><div class="progress-fill" style="width:${(l.authored/maxAuthored*100).toFixed(0)}%;background:var(--accent)"></div></div>
-                <span class="progress-val">${(l.authored/maxAuthored*100).toFixed(0)}%</span>
-              </div>
-            </td>
-            <td style="font-family:'IBM Plex Mono',monospace">${l.reviewed}</td>
-            <td style="color:var(--merged);font-family:'IBM Plex Mono',monospace">${l.merged}</td>
-            <td style="color:var(--open);font-family:'IBM Plex Mono',monospace">${l.open}</td>
-            <td style="color:var(--accent3);font-family:'IBM Plex Mono',monospace">${l.approvals}</td>
-            <td style="font-family:'IBM Plex Mono',monospace">${l.authored ? (l.totalComments/l.authored).toFixed(1) : '—'}</td>
-            <td style="font-family:'IBM Plex Mono',monospace">${l.avgCycle}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-
-  STATE.charts.leadTime = new Chart(document.getElementById('chartLeadTime'), {
-    type: 'line',
-    data: {
-      labels: allMonths.map(m => { const [y,mo]=m.split('-'); return new Date(y,mo-1).toLocaleString('default',{month:'short',year:'2-digit'}); }),
-      datasets: leads.map((lead,i) => ({
-        label: lead, data: allMonths.map(m=>byLeadMonthly[lead][m]||0),
-        borderColor: colors[i%colors.length], backgroundColor: colors[i%colors.length].replace('0.7','0.1'),
-        tension: 0.4, fill: false, pointRadius: 3
-      }))
-    },
-    options: chartOpts()
-  });
+// ── AUTHORS ──
+function renderAuthors(){
+  const p=S.filteredPRs;const am={};
+  p.forEach(pr=>{const id=pr._authorSlug||'?';if(!am[id])am[id]={name:pr.author?.user?.displayName||id,id,prs:[],lead:pr._lead,squad:pr._squad,tribe:pr._tribe};am[id].prs.push(pr);});
+  const authors=Object.values(am).sort((a,b)=>b.prs.length-a.prs.length);
+  const total=authors.length,pages=Math.ceil(total/S.pageSize);
+  const slice=authors.slice((S.page-1)*S.pageSize,S.page*S.pageSize);
+  set('mainContent',`
+    <div class="tcard">
+      <div class="thead2"><div class="thead2-t">Author Activity</div><div class="thead2-c">${total} authors</div></div>
+      <table><thead><tr><th>Author</th><th>Lead</th><th>Squad</th><th>Tribe</th><th>Total</th><th>Open</th><th>Merged</th><th>Declined</th><th>Comments</th><th>Avg/PR</th><th>Avg Cycle(d)</th></tr></thead>
+      <tbody>${slice.map(a=>{
+        const m=a.prs.filter(x=>x.state==='MERGED').length,o=a.prs.filter(x=>x.state==='OPEN').length,d=a.prs.filter(x=>x.state==='DECLINED').length,c=a.prs.reduce((s,x)=>s+x._commentCount,0);
+        return`<tr>
+          <td><span class="ava">${ini(a.name)}</span>${esc(a.name)}</td>
+          <td>${a.lead?`<span style="color:var(--green);font-size:11px">${esc(a.lead)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td>${a.squad?`<span class="badge b-squad">${esc(a.squad)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td>${a.tribe?`<span class="badge b-tribe">${esc(a.tribe)}</span>`:'<span class="mv-d">—</span>'}</td>
+          <td class="mv" style="font-weight:600">${a.prs.length}</td>
+          <td class="mv mv-c">${o}</td><td class="mv mv-g">${m}</td><td class="mv mv-r">${d}</td>
+          <td class="mv">${c}</td>
+          <td class="mv">${a.prs.length?(c/a.prs.length).toFixed(1):'—'}</td>
+          <td class="mv">${cavg(a.prs)}</td>
+        </tr>`;
+      }).join('')}</tbody></table>
+      ${pgn(total,pages)}
+    </div>`);
 }
 
-// ─── SQUADS ───
-function renderSquads() {
-  const squads = [...new Set(Object.values(STATE.squadsMap))].filter(Boolean).sort();
-  if (!squads.length) { document.getElementById('mainContent').innerHTML = emptyState('No squad mappings loaded','Go to Config tab to load your squads mapping file.'); return; }
-
-  const prs = STATE.filteredPRs;
-  const squadStats = squads.map(squad => {
-    const squadPRs = prs.filter(p => p._squad === squad);
-    const merged = squadPRs.filter(p=>p.state==='MERGED').length;
-    const open = squadPRs.filter(p=>p.state==='OPEN').length;
-    const declined = squadPRs.filter(p=>p.state==='DECLINED').length;
-    const comments = squadPRs.reduce((s,p)=>s+p._commentCount,0);
-    const repos = [...new Set(squadPRs.map(p=>p._repoSlug))];
-    const avgCycle = (() => {
-      const closed = squadPRs.filter(p=>p._cycleTimeDays!=null);
-      return closed.length ? (closed.reduce((s,p)=>s+parseFloat(p._cycleTimeDays),0)/closed.length).toFixed(1) : '—';
-    })();
-    return { squad, total: squadPRs.length, merged, open, declined, comments, repos, avgCycle };
-  });
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="charts-grid" style="margin-bottom:20px">
-      <div class="chart-card">
-        <div class="chart-title">PRs by Squad</div>
-        <div class="chart-sub">Total pull requests per squad</div>
-        <div class="chart-wrap"><canvas id="chartSquadPRs"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Merge Rate by Squad</div>
-        <div class="chart-sub">% of PRs merged</div>
-        <div class="chart-wrap"><canvas id="chartSquadMerge"></canvas></div>
-      </div>
-    </div>
-    <div class="table-card">
-      <div class="table-header"><div class="table-title">Squad Breakdown</div><div class="table-count">${squads.length} squads</div></div>
-      <table class="data-table">
-        <thead><tr><th>Squad</th><th>Total PRs</th><th>Open</th><th>Merged</th><th>Declined</th><th>Comments</th><th>Avg Cycle (d)</th><th>Repos</th></tr></thead>
-        <tbody>
-          ${squadStats.map(s=>`<tr>
-            <td><strong style="color:var(--accent2)">${esc(s.squad)}</strong></td>
-            <td style="font-family:'IBM Plex Mono',monospace">${s.total}</td>
-            <td style="color:var(--open);font-family:'IBM Plex Mono',monospace">${s.open}</td>
-            <td style="color:var(--merged);font-family:'IBM Plex Mono',monospace">${s.merged}</td>
-            <td style="color:var(--declined);font-family:'IBM Plex Mono',monospace">${s.declined}</td>
-            <td style="font-family:'IBM Plex Mono',monospace">${s.comments}</td>
-            <td style="font-family:'IBM Plex Mono',monospace">${s.avgCycle}</td>
-            <td style="font-size:11px;color:var(--text3)">${s.repos.slice(0,3).join(', ')}${s.repos.length>3?` +${s.repos.length-3}`:''}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>`;
-
-  STATE.charts.squadPRs = new Chart(document.getElementById('chartSquadPRs'), {
-    type:'bar',
-    data:{ labels:squadStats.map(s=>s.squad), datasets:[
-      {label:'Open',data:squadStats.map(s=>s.open),backgroundColor:'rgba(0,212,255,0.7)',borderRadius:3},
-      {label:'Merged',data:squadStats.map(s=>s.merged),backgroundColor:'rgba(16,185,129,0.7)',borderRadius:3},
-      {label:'Declined',data:squadStats.map(s=>s.declined),backgroundColor:'rgba(239,68,68,0.7)',borderRadius:3},
-    ]}, options: chartOpts({stacked:true})
-  });
-
-  STATE.charts.squadMerge = new Chart(document.getElementById('chartSquadMerge'), {
-    type:'bar',
-    data:{ labels:squadStats.map(s=>s.squad), datasets:[
-      {label:'Merge Rate %',data:squadStats.map(s=>s.total?(s.merged/s.total*100).toFixed(1):0),backgroundColor:'rgba(16,185,129,0.6)',borderColor:'rgba(16,185,129,1)',borderWidth:1,borderRadius:4}
-    ]}, options: { ...chartOpts(), scales:{ ...chartOpts().scales, y:{...chartOpts().scales?.y, max:100, ticks:{...chartOpts().scales?.y?.ticks, callback:v=>v+'%'}} } }
-  });
-}
-
-// ─── AUTHORS ───
-function renderAuthors() {
-  const prs = STATE.filteredPRs;
-  const authorMap = {};
-  prs.forEach(pr => {
-    const id = pr.author?.user?.slug || pr.author?.user?.name || '?';
-    const name = pr.author?.user?.displayName || id;
-    if (!authorMap[id]) authorMap[id] = { name, id, prs:[], lead: pr._authorLead };
-    authorMap[id].prs.push(pr);
-  });
-
-  const authors = Object.values(authorMap).sort((a,b)=>b.prs.length-a.prs.length);
-  const sorted = sortArray(authors, STATE.sortCol, STATE.sortDir);
-  const total = sorted.length;
-  const pages = Math.ceil(total/STATE.pageSize);
-  const slice = sorted.slice((STATE.page-1)*STATE.pageSize, STATE.page*STATE.pageSize);
-
-  document.getElementById('mainContent').innerHTML = `
-    <div class="table-card">
-      <div class="table-header"><div class="table-title">Author Activity</div><div class="table-count">${total} authors</div></div>
-      <table class="data-table">
-        <thead><tr>
-          <th>Author</th><th>Lead</th><th>Total PRs</th><th>Open</th><th>Merged</th><th>Declined</th><th>Total Comments</th><th>Avg Comments/PR</th><th>Avg Cycle (d)</th>
-        </tr></thead>
-        <tbody>
-          ${slice.map(a => {
-            const merged = a.prs.filter(p=>p.state==='MERGED').length;
-            const open = a.prs.filter(p=>p.state==='OPEN').length;
-            const declined = a.prs.filter(p=>p.state==='DECLINED').length;
-            const comments = a.prs.reduce((s,p)=>s+p._commentCount,0);
-            const closed = a.prs.filter(p=>p._cycleTimeDays!=null);
-            const avgCycle = closed.length ? (closed.reduce((s,p)=>s+parseFloat(p._cycleTimeDays),0)/closed.length).toFixed(1) : '—';
-            return `<tr>
-              <td><span class="avatar">${initials(a.name)}</span>${esc(a.name)}</td>
-              <td>${a.lead ? `<span style="color:var(--accent3);font-size:12px">${esc(a.lead)}</span>` : '<span style="color:var(--text3);font-size:11px">—</span>'}</td>
-              <td style="font-family:'IBM Plex Mono',monospace;font-weight:600">${a.prs.length}</td>
-              <td style="color:var(--open);font-family:'IBM Plex Mono',monospace">${open}</td>
-              <td style="color:var(--merged);font-family:'IBM Plex Mono',monospace">${merged}</td>
-              <td style="color:var(--declined);font-family:'IBM Plex Mono',monospace">${declined}</td>
-              <td style="font-family:'IBM Plex Mono',monospace">${comments}</td>
-              <td style="font-family:'IBM Plex Mono',monospace">${a.prs.length?(comments/a.prs.length).toFixed(1):'—'}</td>
-              <td style="font-family:'IBM Plex Mono',monospace">${avgCycle}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-      ${renderPagination(total, pages)}
-    </div>`;
-}
-
-// ─── CONFIG ───
-function renderConfig() {
-  const leadsCount = Object.keys(STATE.leadsMap).length;
-  const squadsCount = Object.keys(STATE.squadsMap).length;
-  document.getElementById('mainContent').innerHTML = `
-    <div class="config-panel">
+// ── CONFIG ──
+function renderConfig(){
+  const sc=Object.keys(S.staffMap).length,rc=Object.keys(S.repoTribes).length;
+  set('mainContent',`
+    <div class="cfg">
       <h3>Mapping Configuration</h3>
-      <p>Load JSON or CSV files to map contractor IDs to lead names, and repository slugs to squad names. These files can be updated anytime — just reload them here.</p>
-      <div class="config-grid">
-
+      <p>Load your JSON files to map staff IDs to leads, squads and tribes. The <strong>staffId</strong> must match the Bitbucket user slug — check the Diagnostics screen to see your slug. Files are saved to localStorage and persist across sessions.</p>
+      <div class="cfg-grid">
         <div>
-          <div class="upload-zone ${leadsCount?'loaded':''}" onclick="document.getElementById('leadsFile').click()">
-            <input type="file" id="leadsFile" accept=".json,.csv" onchange="loadLeadsFile(event)">
-            <div class="upload-icon">${leadsCount ? '✅' : '👤'}</div>
-            <h4>Leads Mapping</h4>
-            <p>${leadsCount ? `${leadsCount} contractors mapped` : 'contractor-id → lead name'}<br>JSON or CSV</p>
+          <div class="upbox ${sc?'loaded':''}" onclick="document.getElementById('fileStaff').click()">
+            <input type="file" id="fileStaff" accept=".json,.csv" onchange="loadStaffFile(event)">
+            <div class="up-icon">${sc?'✅':'👤'}</div>
+            <h4>staff-mapping.json</h4>
+            <p>${sc?sc+' staff members mapped':'staffId → leadName · squad · tribe'}<br>JSON or CSV</p>
           </div>
-          ${leadsCount ? `<div class="mapping-preview">${Object.entries(STATE.leadsMap).slice(0,5).map(([k,v])=>`<div class="mapping-row"><span class="key">${esc(k)}</span><span class="val">${esc(v)}</span></div>`).join('')}${Object.keys(STATE.leadsMap).length>5?`<div style="font-size:11px;color:var(--text3);padding:4px 10px">…and ${Object.keys(STATE.leadsMap).length-5} more</div>`:''}</div>` : ''}
+          ${sc?`<div style="margin-top:8px">${Object.entries(S.staffMap).slice(0,5).map(([k,v])=>`<div class="mrow"><span class="mk">${esc(k)}</span><span class="mv2">${esc(v.leadName||'?')} · ${esc(v.squad||'?')} · ${esc(v.tribe||'?')}</span></div>`).join('')}${sc>5?`<div style="font-size:10px;color:var(--text3);padding:3px 9px">…and ${sc-5} more</div>`:''}</div>`:''}
         </div>
-
         <div>
-          <div class="upload-zone ${squadsCount?'loaded':''}" onclick="document.getElementById('squadsFile').click()">
-            <input type="file" id="squadsFile" accept=".json,.csv" onchange="loadSquadsFile(event)">
-            <div class="upload-icon">${squadsCount ? '✅' : '🏷️'}</div>
-            <h4>Squads Mapping</h4>
-            <p>${squadsCount ? `${squadsCount} repos mapped` : 'repo-slug → squad name'}<br>JSON or CSV</p>
+          <div class="upbox ${rc?'loaded':''}" onclick="document.getElementById('fileRepo').click()">
+            <input type="file" id="fileRepo" accept=".json,.csv" onchange="loadRepoFile(event)">
+            <div class="up-icon">${rc?'✅':'🏷️'}</div>
+            <h4>repo-tribes.json</h4>
+            <p>${rc?rc+' repos mapped':'repoSlug → [tribe1, tribe2, …]'}<br>Multiple tribes per repo supported</p>
           </div>
-          ${squadsCount ? `<div class="mapping-preview">${Object.entries(STATE.squadsMap).slice(0,5).map(([k,v])=>`<div class="mapping-row"><span class="key">${esc(k)}</span><span class="val">${esc(v)}</span></div>`).join('')}${Object.keys(STATE.squadsMap).length>5?`<div style="font-size:11px;color:var(--text3);padding:4px 10px">…and ${Object.keys(STATE.squadsMap).length-5} more</div>`:''}</div>` : ''}
+          ${rc?`<div style="margin-top:8px">${Object.entries(S.repoTribes).slice(0,5).map(([k,v])=>`<div class="mrow"><span class="mk">${esc(k)}</span><span class="mv2">${esc(Array.isArray(v)?v.join(', '):v)}</span></div>`).join('')}${rc>5?`<div style="font-size:10px;color:var(--text3);padding:3px 9px">…and ${rc-5} more</div>`:''}</div>`:''}
         </div>
       </div>
     </div>
-
-    <div class="config-panel">
-      <h3>Expected File Formats</h3>
-      <p>Your mapping files should follow one of these formats:</p>
-      <div class="config-grid">
+    <div class="cfg">
+      <h3>File Formats</h3>
+      <p>The <strong>staffId</strong> must match the Bitbucket user <strong>slug</strong> exactly (shown in Diagnostics after login). CSV is also accepted.</p>
+      <div class="cfg-grid">
         <div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">leads-mapping.json</div>
-          <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);overflow-x:auto">[
-  { "contractorId": "C1001", "leadName": "Alice" },
-  { "contractorId": "C1002", "leadName": "Bob" },
-  { "contractorId": "C1003", "leadName": "Carol" }
-]</pre>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">Or CSV: <code style="color:var(--accent)">contractorId,leadName</code></div>
-        </div>
-        <div>
-          <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-weight:600">squads-mapping.json</div>
-          <pre style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text2);overflow-x:auto">[
-  { "repoSlug": "payments-api", "squad": "Payments" },
-  { "repoSlug": "orders-api",   "squad": "Orders"   },
-  { "repoSlug": "auth-service", "squad": "Platform" }
-]</pre>
-          <div style="font-size:11px;color:var(--text3);margin-top:8px">Or CSV: <code style="color:var(--accent)">repoSlug,squad</code></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="config-panel">
-      <h3>Session</h3>
-      <p>Connected as <strong style="color:var(--accent)">${esc(STATE.user)}</strong> to <strong style="color:var(--accent)">${esc(STATE.url)}</strong> · ${STATE.allPRs.length} PRs loaded across ${STATE.reposList.length} repos</p>
-      <button class="btn-sm btn-refresh" onclick="refreshData()" style="margin-right:8px">↻ Re-fetch all data</button>
-      <button class="btn-sm btn-logout" onclick="doLogout()">Logout & clear credentials</button>
-    </div>`;
-}
-
-// ─── FILE LOADING ───
-function loadLeadsFile(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const text = e.target.result;
-      let rows = [];
-      if (file.name.endsWith('.csv')) {
-        rows = parseCSV(text).map(r => ({ contractorId: r.contractorId || r[0], leadName: r.leadName || r[1] }));
-      } else {
-        rows = JSON.parse(text);
-      }
-      STATE.leadsMap = {};
-      rows.forEach(r => { if (r.contractorId && r.leadName) STATE.leadsMap[r.contractorId] = r.leadName; });
-      localStorage.setItem('bb_leads', JSON.stringify(STATE.leadsMap));
-      // Re-enrich
-      STATE.allPRs.forEach(pr => {
-        pr._authorLead = getLeadForUser(pr.author?.user?.slug || pr.author?.user?.name || '');
-        pr._reviewerLeads = (pr.reviewers||[]).map(r => getLeadForUser(r.user?.slug || r.user?.name || '')).filter(Boolean);
-      });
-      populateFilterDropdowns(); applyFilters(); renderConfig();
-    } catch(e) { alert('Error loading leads file: ' + e.message); }
-  };
-  reader.readAsText(file);
-}
-
-function loadSquadsFile(event) {
-  const file = event.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const text = e.target.result;
-      let rows = [];
-      if (file.name.endsWith('.csv')) {
-        rows = parseCSV(text).map(r => ({ repoSlug: r.repoSlug || r[0], squad: r.squad || r[1] }));
-      } else {
-        rows = JSON.parse(text);
-      }
-      STATE.squadsMap = {};
-      rows.forEach(r => { if (r.repoSlug && r.squad) STATE.squadsMap[r.repoSlug] = r.squad; });
-      localStorage.setItem('bb_squads', JSON.stringify(STATE.squadsMap));
-      STATE.allPRs.forEach(pr => { pr._squad = STATE.squadsMap[pr._repoSlug] || STATE.squadsMap[pr._repoName] || '—'; });
-      populateFilterDropdowns(); applyFilters(); renderConfig();
-    } catch(e) { alert('Error loading squads file: ' + e.message); }
-  };
-  reader.readAsText(file);
-}
-
-function loadSavedMappings() {
-  try { const l = localStorage.getItem('bb_leads'); if (l) STATE.leadsMap = JSON.parse(l); } catch(e){}
-  try { const s = localStorage.getItem('bb_squads'); if (s) STATE.squadsMap = JSON.parse(s); } catch(e){}
-}
-
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
-  return lines.slice(1).map(line => {
-    const vals = line.split(',').map(v=>v.trim().replace(/"/g,''));
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = vals[i]||'');
-    return obj;
-  });
-}
-
-// ─── PR DETAIL MODAL ───
-async function showPRDetail(id, project, repo) {
-  document.getElementById('prModal').style.display = 'flex';
-  document.getElementById('prModalContent').innerHTML = `<div style="padding:40px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>`;
-  const pr = STATE.allPRs.find(p=>p.id===id && p._project===project && p._repoSlug===repo);
-  if (!pr) return;
-  const reviewers = (pr.reviewers||[]).map(r => {
-    const status = r.approved ? '✅ Approved' : r.status === 'NEEDS_WORK' ? '🔴 Needs Work' : '⏳ Pending';
-    return `<div class="mapping-row"><span class="key">${esc(r.user?.displayName||r.user?.slug||'?')}</span><span class="val">${status}</span></div>`;
-  }).join('');
-
-  document.getElementById('prModalContent').innerHTML = `
-    <div class="modal-header">
-      <div>
-        <div style="font-size:11px;font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:6px">${pr._project} / ${pr._repoSlug} #${pr.id}</div>
-        <div class="modal-title">${esc(pr.title)}</div>
-      </div>
-      <button class="modal-close" onclick="closePRModal()">×</button>
-    </div>
-    <div class="modal-body">
-      <div class="modal-meta">
-        <div class="meta-item"><div class="label">Status</div><div class="value">${statusBadge(pr.state)}</div></div>
-        <div class="meta-item"><div class="label">Author</div><div class="value" style="font-size:12px">${esc(pr.author?.user?.displayName||'—')}</div></div>
-        <div class="meta-item"><div class="label">Lead</div><div class="value" style="color:var(--accent3);font-size:12px">${pr._authorLead || '—'}</div></div>
-        <div class="meta-item"><div class="label">Squad</div><div class="value" style="color:var(--accent2);font-size:12px">${pr._squad}</div></div>
-        <div class="meta-item"><div class="label">Comments</div><div class="value">${pr._commentCount}</div></div>
-        <div class="meta-item"><div class="label">Cycle Time</div><div class="value">${pr._cycleTimeDays ? pr._cycleTimeDays+'d' : '—'}</div></div>
-        <div class="meta-item"><div class="label">Created</div><div class="value" style="font-size:12px">${fmtDate(pr.createdDate)}</div></div>
-        <div class="meta-item"><div class="label">Target Branch</div><div class="value" style="font-size:11px">${esc(pr.toRef?.displayId||'—')}</div></div>
-        <div class="meta-item"><div class="label">Source Branch</div><div class="value" style="font-size:11px">${esc(pr.fromRef?.displayId||'—')}</div></div>
-      </div>
-      ${pr.description ? `<div style="background:var(--surface2);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px;color:var(--text2);line-height:1.5">${esc(pr.description).substring(0,500)}${pr.description.length>500?'…':''}</div>` : ''}
-      ${reviewers ? `<div class="comments-section" style="margin-bottom:16px"><h4>Reviewers</h4>${reviewers}</div>` : ''}
-      ${pr._commentDetails.length ? `<div class="comments-section"><h4>Recent Comments</h4>${pr._commentDetails.map(c=>`<div class="comment-item"><div class="comment-author">${esc(c.user?.displayName||c.comment?.author?.displayName||'?')}</div><div class="comment-text">${esc((c.comment?.text||'').substring(0,200))}</div></div>`).join('')}</div>` : ''}
-    </div>`;
-}
-
-function closePRModal() { document.getElementById('prModal').style.display = 'none'; }
-
-// ─── HELPERS ───
-function showLoading(msg) { document.getElementById('loadingOverlay').style.display='flex'; document.getElementById('loadingText').textContent=msg; }
-function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
-
-function refreshData() { STATE.allPRs=[]; fetchAllData(); }
-
-function statusBadge(state) {
-  const map = { OPEN:'badge-open', MERGED:'badge-merged', DECLINED:'badge-declined', SUPERSEDED:'badge-superseded' };
-  return `<span class="badge ${map[state]||'badge-superseded'}">${state}</span>`;
-}
-
-function initials(name) {
-  return name.split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase() || '?';
-}
-
-function fmtDate(ts) {
-  if (!ts) return '—';
-  return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});
-}
-
-function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function emptyState(title, msg) {
-  return `<div class="empty-state"><div class="icon">📭</div><h3>${title}</h3><p>${msg}</p></div>`;
-}
-
-function renderPagination(total, pages) {
-  const p = STATE.page;
-  const start = (p-1)*STATE.pageSize+1; const end = Math.min(p*STATE.pageSize, total);
-  const pageNums = [];
-  for (let i = Math.max(1,p-2); i <= Math.min(pages,p+2); i++) pageNums.push(i);
-  return `<div class="pagination">
-    <div class="page-info">${start}–${end} of ${total}</div>
-    <div class="page-btns">
-      <button class="page-btn" onclick="goPage(${p-1})" ${p<=1?'disabled':''}>‹</button>
-      ${pageNums.map(n=>`<button class="page-btn ${n===p?'active':''}" onclick="goPage(${n})">${n}</button>`).join('')}
-      <button class="page-btn" onclick="goPage(${p+1})" ${p>=pages?'disabled':''}>›</button>
-    </div>
-  </div>`;
-}
-
-function goPage(n) { STATE.page = n; renderCurrentTab(); }
-
-function sortBy(col) {
-  if (STATE.sortCol === col) STATE.sortDir *= -1; else { STATE.sortCol = col; STATE.sortDir = -1; }
-  renderCurrentTab();
-}
-
-function sortPRs(arr) {
-  if (!STATE.sortCol) return arr.sort((a,b) => b.createdDate - a.createdDate);
-  return sortArray(arr, STATE.sortCol, STATE.sortDir);
-}
-
-function sortArray(arr, col, dir) {
-  return [...arr].sort((a,b) => {
-    let av = a[col], bv = b[col];
-    if (col === 'author') { av = a.author?.user?.displayName||''; bv = b.author?.user?.displayName||''; }
-    if (typeof av === 'string' && typeof bv === 'string') return dir * av.localeCompare(bv);
-    return dir * ((av||0) - (bv||0));
-  });
-}
-
-function destroyCharts() {
-  Object.values(STATE.charts).forEach(c => { try { c.destroy(); } catch(e){} });
-  STATE.charts = {};
-}
-
-function chartOpts(extra={}) {
-  return {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
-    scales: {
-      x: { stacked: extra.stacked||false, ticks: { color: '#64748b', font:{size:11} }, grid: { color: 'rgba(42,58,85,0.5)' } },
-      y: { stacked: extra.stacked||false, ticks: { color: '#64748b', font:{size:11} }, grid: { color: 'rgba(42,58,85,0.5)' } }
-    }
-  };
-}
-
-// ─── INIT ───
-window.addEventListener('keydown', e => { if (e.key === 'Escape') closePRModal(); });
-document.getElementById('bbPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-
-// Auto-restore saved credentials
-(function() {
-  const url = localStorage.getItem('bb_url');
-  const user = localStorage.getItem('bb_user');
-  const pass = localStorage.getItem('bb_pass');
-  if (url && user && pass) {
-    document.getElementById('bbUrl').value = url;
-    document.getElementById('bbUser').value = user;
-    document.getElementById('bbPass').value = pass;
-    document.getElementById('saveCreds').checked = true;
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px">STAFF-MAPPING.JSON</div>
+          <pre>[
+  {
+    "staffId":  "jsmith",
+    "leadName": "Jane Smith",
+    "squad":    "Payments Squad",
+    "tribe":    "Payments Tribe"
   }
+]</pre>
+          <div style="font-size:11px;color:var(--text3);margin-top:7px">CSV: <code>staffId,leadName,squad,tribe</code></div>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:6px">REPO-TRIBES.JSON</div>
+          <pre>[
+  {
+    "repoSlug": "account-process-api",
+    "tribes": [
+      "Accounts Tribe",
+      "Core Banking"
+    ]
+  }
+]</pre>
+          <div style="font-size:11px;color:var(--text3);margin-top:7px">Pipe-separated CSV: <code>repoSlug,tribes</code><br>e.g. <code>account-api,Accounts|Core Banking</code></div>
+        </div>
+      </div>
+    </div>
+    <div class="cfg">
+      <h3>Session</h3>
+      <p>Connected as <strong style="color:var(--cyan)">${esc(S.user)}</strong> · ${S.allPRs.length} PRs · ${S.repos.length} repos · ${S.projects.length} projects</p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
+        <button class="tbtn tbtn-r" onclick="refreshData()">↻ Re-fetch all data</button>
+        <button class="tbtn tbtn-d" onclick="showScreen('diagScreen');runDiag()">⚡ Diagnostics</button>
+        <button class="tbtn tbtn-l" onclick="doLogout()">Logout</button>
+      </div>
+    </div>`);
+}
+
+// ── FILE LOADING ──
+function loadStaffFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const txt=ev.target.result;
+      const rows=f.name.endsWith('.csv')?parseCSV(txt):JSON.parse(txt);
+      S.staffMap={};
+      rows.forEach(r=>{const id=r.staffId||r.contractorId||r[0];if(id)S.staffMap[id]={leadName:r.leadName||r[1]||'',squad:r.squad||r[2]||'',tribe:r.tribe||r[3]||''};});
+      lset('bb_staff',JSON.stringify(S.staffMap));
+      reEnrich();populateDDs();applyFilters();renderConfig();
+    }catch(e){alert('Error loading file: '+e.message);}
+  };r.readAsText(f);
+}
+function loadRepoFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const txt=ev.target.result;
+      const rows=f.name.endsWith('.csv')?parseCSV(txt):JSON.parse(txt);
+      S.repoTribes={};
+      rows.forEach(r=>{const slug=r.repoSlug||r[0];if(slug)S.repoTribes[slug]=Array.isArray(r.tribes)?r.tribes:(r.tribes||r[1]||'').split('|').map(t=>t.trim()).filter(Boolean);});
+      lset('bb_repoTribes',JSON.stringify(S.repoTribes));
+      reEnrich();applyFilters();renderConfig();
+    }catch(e){alert('Error loading file: '+e.message);}
+  };r.readAsText(f);
+}
+function loadSavedMappings(){
+  try{const v=localStorage.getItem('bb_staff');if(v)S.staffMap=JSON.parse(v);}catch(e){}
+  try{const v=localStorage.getItem('bb_repoTribes');if(v)S.repoTribes=JSON.parse(v);}catch(e){}
+}
+function parseCSV(txt){
+  const lines=txt.trim().split('\n');
+  const hdrs=lines[0].split(',').map(h=>h.trim().replace(/"/g,''));
+  return lines.slice(1).map(l=>{const vals=l.split(',').map(v=>v.trim().replace(/"/g,''));const o={};hdrs.forEach((h,i)=>o[h]=vals[i]||'');return o;});
+}
+
+// ── PR MODAL ──
+function showPR(id,project,repo){
+  const pr=S.allPRs.find(p=>p.id===id&&p._project===project&&p._repoSlug===repo);if(!pr)return;
+  const revs=(pr.reviewers||[]).map(r=>{const st=r.approved?'✅ Approved':r.status==='NEEDS_WORK'?'🔴 Needs Work':'⏳ Pending';return`<div class="mrow"><span class="mk">${esc(r.user?.displayName||r.user?.slug||'?')}</span><span class="mv2">${st}</span></div>`;}).join('');
+  g('prModalBody').innerHTML=`
+    <div class="modal-hd">
+      <div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:4px">${pr._project} / ${pr._repoSlug} #${pr.id}</div>
+        <div style="font-size:14px;font-weight:700;line-height:1.4">${esc(pr.title)}</div>
+      </div>
+      <button class="modal-x" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-bd">
+      <div class="mmg">
+        <div class="mmi"><div class="mmi-l">Status</div><div class="mmi-v">${bstat(pr.state)}</div></div>
+        <div class="mmi"><div class="mmi-l">Author</div><div class="mmi-v" style="font-size:11px">${esc(pr.author?.user?.displayName||'—')}</div></div>
+        <div class="mmi"><div class="mmi-l">Lead</div><div class="mmi-v" style="color:var(--green)">${pr._lead||'—'}</div></div>
+        <div class="mmi"><div class="mmi-l">Squad</div><div class="mmi-v">${pr._squad?`<span class="badge b-squad">${esc(pr._squad)}</span>`:'—'}</div></div>
+        <div class="mmi"><div class="mmi-l">Tribe</div><div class="mmi-v">${pr._tribe?`<span class="badge b-tribe">${esc(pr._tribe)}</span>`:'—'}</div></div>
+        <div class="mmi"><div class="mmi-l">Comments</div><div class="mmi-v">${pr._commentCount}</div></div>
+        <div class="mmi"><div class="mmi-l">Cycle Time</div><div class="mmi-v">${pr._cycle?pr._cycle+'d':'—'}</div></div>
+        <div class="mmi"><div class="mmi-l">Created</div><div class="mmi-v" style="font-size:10px">${fd(pr.createdDate)}</div></div>
+        <div class="mmi"><div class="mmi-l">Target Branch</div><div class="mmi-v" style="font-size:10px">${esc(pr.toRef?.displayId||'—')}</div></div>
+      </div>
+      ${pr._repoTribes.length?`<div style="margin-bottom:12px"><span style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px">Repo tribes: </span>${pr._repoTribes.map(t=>`<span class="badge b-tribe" style="margin-left:4px">${esc(t)}</span>`).join('')}</div>`:''}
+      ${pr.description?`<div style="background:var(--s2);border-radius:9px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.6">${esc(pr.description).substring(0,500)}${pr.description.length>500?'…':''}</div>`:''}
+      ${revs?`<div style="margin-bottom:12px"><div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">Reviewers</div>${revs}</div>`:''}
+      ${pr._commentDetails.length?`<div><div style="font-family:var(--mono);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:7px">Recent Comments</div>${pr._commentDetails.map(c=>`<div style="border-left:2px solid var(--border2);padding:5px 11px;margin-bottom:5px"><div style="font-family:var(--mono);font-size:10px;color:var(--cyan);margin-bottom:3px">${esc(c.comment?.author?.displayName||c.user?.displayName||'?')}</div><div style="font-size:11px;color:var(--text2)">${esc((c.comment?.text||'').substring(0,200))}</div></div>`).join('')}</div>`:''}
+    </div>`;
+  g('prModal').style.display='flex';
+}
+function closeModal(){g('prModal').style.display='none';}
+
+// ── HELPERS ──
+function showLoad(txt,sub=''){g('lcover').style.display='flex';g('ltxt').textContent=txt;g('lsub').textContent=sub;}
+function hideLoad(){g('lcover').style.display='none';}
+function refreshData(){S.allPRs=[];fetchAll();}
+function setDefaultDates(){const to=new Date(),from=new Date();from.setDate(from.getDate()-90);g('fTo').value=to.toISOString().split('T')[0];g('fFrom').value=from.toISOString().split('T')[0];}
+function val(id){return g(id).value;}
+function set(id,html){g(id).innerHTML=html;}
+function g(id){return document.getElementById(id);}
+function lset(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function ini(n){return String(n||'?').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase()||'?';}
+function fd(ts){if(!ts)return'—';return new Date(ts).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'});}
+function mk(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function ml(m){const[y,mo]=m.split('-');return new Date(y,mo-1).toLocaleString('default',{month:'short',year:'2-digit'});}
+function pct(n,t){return t?((n/t)*100).toFixed(0)+'% of total':'0%';}
+function cavg(prs){const c=prs.filter(p=>p._cycle!=null);return c.length?(c.reduce((s,p)=>s+parseFloat(p._cycle),0)/c.length).toFixed(1):'—';}
+function dts(id,eod){const v=g(id).value;if(!v)return eod?Infinity:0;return eod?new Date(v).getTime()+86400000:new Date(v).getTime();}
+function sc(label,val2,sub,color){return`<div class="scard" style="--cc:${color}"><div class="sc-label">${label}</div><div class="sc-val">${val2}</div><div class="sc-sub">${sub}</div><div class="sc-bar"></div></div>`;}
+function bstat(state){const m={OPEN:'b-open',MERGED:'b-merged',DECLINED:'b-declined',SUPERSEDED:'b-super'};return`<span class="badge ${m[state]||'b-super'}">${state}</span>`;}
+function empt(h,p){return`<div class="empty"><div class="empty-ico">📭</div><h3>${h}</h3><p>${p}</p></div>`;}
+function srt(col){if(S.sortCol===col)S.sortDir*=-1;else{S.sortCol=col;S.sortDir=-1;}renderTab();}
+function sortPRs(arr){return arr.sort((a,b)=>{let av=a[S.sortCol],bv=b[S.sortCol];if(S.sortCol==='_authorSlug'){av=a.author?.user?.displayName||'';bv=b.author?.user?.displayName||'';}if(typeof av==='string'&&typeof bv==='string')return S.sortDir*av.localeCompare(bv);return S.sortDir*((av||0)-(bv||0));});}
+function pgn(total,pages){const p=S.page,s=(p-1)*S.pageSize+1,e=Math.min(p*S.pageSize,total);const nums=[];for(let i=Math.max(1,p-2);i<=Math.min(pages,p+2);i++)nums.push(i);return`<div class="pgn"><div class="pgn-i">${s}–${e} of ${total}</div><div class="pgn-b"><button class="pb" onclick="goP(${p-1})" ${p<=1?'disabled':''}>‹</button>${nums.map(n=>`<button class="pb ${n===p?'cur':''}" onclick="goP(${n})">${n}</button>`).join('')}<button class="pb" onclick="goP(${p+1})" ${p>=pages?'disabled':''}>›</button></div></div>`;}
+function goP(n){S.page=n;renderTab();}
+function destroyCharts(){Object.values(S.charts).forEach(c=>{try{c.destroy();}catch(e){}});S.charts={};}
+function co(extra={}){return{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#7a90b8',font:{size:11}}}},scales:{x:{stacked:extra.stacked||false,ticks:{color:'#3d5278',font:{size:10}},grid:{color:'rgba(31,46,74,.5)'}},y:{stacked:extra.stacked||false,ticks:{color:'#3d5278',font:{size:10}},grid:{color:'rgba(31,46,74,.5)'}}}};}
+
+// ── INIT ──
+window.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+g('inToken').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+(()=>{
+  const url=localStorage.getItem('bb_url'),user=localStorage.getItem('bb_user'),token=localStorage.getItem('bb_token'),mode=localStorage.getItem('bb_mode')||'token';
+  if(url&&user&&token){g('inUrl').value=url;g('inUser').value=user;g('inToken').value=token;g('cbSave').checked=true;setMode(mode);}
 })();
 </script>
 </body>

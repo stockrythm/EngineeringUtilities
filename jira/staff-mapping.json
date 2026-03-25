@@ -1,0 +1,6 @@
+[
+  { "staffId": "jsmith",   "leadName": "Jane Smith",  "squad": "Payments Squad",  "tribe": "Payments Tribe"  },
+  { "staffId": "bjones",   "leadName": "Bob Jones",   "squad": "Orders Squad",    "tribe": "Fulfilment Tribe" },
+  { "staffId": "clee",     "leadName": "Carol Lee",   "squad": "Accounts Squad",  "tribe": "Core Banking Tribe" },
+  { "staffId": "dkhan",    "leadName": "David Khan",  "squad": "Platform Squad",  "tribe": "Core Banking Tribe" }
+]

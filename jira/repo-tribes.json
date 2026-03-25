@@ -1,0 +1,7 @@
+[
+  { "repoSlug": "account-process-api",  "tribes": ["Accounts Tribe", "Core Banking Tribe"] },
+  { "repoSlug": "payments-api",         "tribes": ["Payments Tribe"] },
+  { "repoSlug": "orders-api",           "tribes": ["Fulfilment Tribe"] },
+  { "repoSlug": "auth-service",         "tribes": ["Core Banking Tribe", "Platform Tribe"] },
+  { "repoSlug": "notification-api",     "tribes": ["Platform Tribe"] }
+]
