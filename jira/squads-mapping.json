@@ -1,0 +1,9 @@
+[
+  { "repoSlug": "payments-api",      "squad": "Payments"   },
+  { "repoSlug": "orders-api",        "squad": "Orders"     },
+  { "repoSlug": "auth-service",      "squad": "Platform"   },
+  { "repoSlug": "notification-api",  "squad": "Platform"   },
+  { "repoSlug": "inventory-api",     "squad": "Inventory"  },
+  { "repoSlug": "customer-api",      "squad": "CRM"        },
+  { "repoSlug": "reporting-service", "squad": "Analytics"  }
+]
