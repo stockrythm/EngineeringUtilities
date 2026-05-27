@@ -1,0 +1,21 @@
+{
+  "_comment": "POST /payments — initiate a card payment",
+  "_headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "Content-Type": "application/json",
+    "X-Trace-Id": "7d3f9a1b2c4e5f6a8b9c0d1e2f3a4b5c"
+  },
+
+  "amount": {
+    "amount": 4999,
+    "currency": "GBP"
+  },
+  "method": "CARD",
+  "cardId": "card_9kQ2mNpX",
+  "reference": "Order #ORD-20241115-001",
+  "metadata": {
+    "orderId": "ORD-20241115-001",
+    "customerId": "cust_7hJ3kLmP",
+    "channel": "web"
+  }
+}

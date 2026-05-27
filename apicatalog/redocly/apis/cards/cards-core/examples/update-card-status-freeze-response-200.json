@@ -1,0 +1,18 @@
+{
+  "_comment": "200 OK — PATCH /cards/card_9kQ2mNpX/status (frozen)",
+
+  "id": "card_9kQ2mNpX",
+  "type": "VIRTUAL",
+  "status": "FROZEN",
+  "accountId": "acc_4mKzPqRx",
+  "last4": "4242",
+  "expiryMonth": 11,
+  "expiryYear": 2027,
+  "label": "Marketing expenses Q4",
+  "spendLimit": {
+    "amount": 50000,
+    "currency": "GBP"
+  },
+  "createdAt": "2024-11-15T09:30:00Z",
+  "updatedAt": "2024-11-15T11:22:00Z"
+}

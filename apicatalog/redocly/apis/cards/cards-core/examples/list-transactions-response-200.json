@@ -1,0 +1,52 @@
+{
+  "_comment": "200 OK — GET /cards/card_9kQ2mNpX/transactions?page=1&pageSize=3",
+  "_note": "paymentStatus is enriched from Payments Core API. null means Payments API was unreachable.",
+
+  "data": [
+    {
+      "id": "txn_5hJ8wVkZ",
+      "cardId": "card_9kQ2mNpX",
+      "amount": { "amount": 4999, "currency": "GBP" },
+      "merchantName": "Acme Supplies Ltd",
+      "merchantCategory": "Business Services",
+      "status": "SETTLED",
+      "paymentId": "pay_9kQ2mNpX",
+      "paymentStatus": "COMPLETED",
+      "transactedAt": "2024-11-15T14:22:00Z",
+      "settledAt": "2024-11-16T02:00:00Z"
+    },
+    {
+      "id": "txn_6kL9xMnP",
+      "cardId": "card_9kQ2mNpX",
+      "amount": { "amount": 1250, "currency": "GBP" },
+      "merchantName": "City Parking Ltd",
+      "merchantCategory": "Parking",
+      "status": "SETTLED",
+      "paymentId": "pay_4tU6vWxZ",
+      "paymentStatus": "COMPLETED",
+      "transactedAt": "2024-11-14T08:10:00Z",
+      "settledAt": "2024-11-15T02:00:00Z"
+    },
+    {
+      "id": "txn_7mN0yOpQ",
+      "cardId": "card_9kQ2mNpX",
+      "amount": { "amount": 8750, "currency": "GBP" },
+      "merchantName": "Tech Conference Ltd",
+      "merchantCategory": "Events",
+      "status": "AUTHORISED",
+      "paymentId": "pay_5uV7wXyA",
+      "paymentStatus": null,
+      "_note": "paymentStatus is null — Payments API was temporarily unreachable at query time",
+      "transactedAt": "2024-11-15T16:45:00Z",
+      "settledAt": null
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 3,
+    "totalCount": 28,
+    "totalPages": 10,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}

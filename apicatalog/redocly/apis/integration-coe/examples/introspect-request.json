@@ -1,0 +1,9 @@
+{
+  "_comment": "POST /token/introspect — validate a token received from another service",
+  "_content_type": "application/x-www-form-urlencoded",
+  "_headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...your-own-token"
+  },
+
+  "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNvZS1wcm9kLTIwMjQifQ.eyJzdWIiOiJzdmNfY2FyZHNfY29yZV9wcm9kIn0.signature"
+}

@@ -1,0 +1,225 @@
+openapi: 3.1.0
+
+info:
+  title: OAuth Token Service
+  version: 1.0.0
+  description: |
+    Issues and validates OAuth 2.0 client credentials tokens for all internal
+    service-to-service calls across the platform.
+
+    ## How to integrate
+
+    1. Register your service in the Integration CoE service registry to receive
+       a `client_id` and `client_secret`.
+    2. Call `POST /token` with your credentials to obtain a short-lived JWT.
+    3. Pass the JWT as `Authorization: Bearer <token>` on every downstream call.
+    4. Tokens expire after **15 minutes** — cache and refresh proactively.
+
+    ## Scope catalogue
+
+    | Scope | Grants access to |
+    |---|---|
+    | `payments:read` | Read payment resources (Payments tribe) |
+    | `payments:write` | Mutate payment resources (Payments tribe) |
+    | `cards:read` | Read card resources (Cards tribe) |
+    | `cards:write` | Mutate card resources (Cards tribe) |
+    | `internal:service` | Internal service-to-service calls only |
+
+  contact:
+    name: Integration CoE
+    email: integration-coe@company.com
+    url: https://wiki.company.com/integration-coe
+
+  # ── Operational Metadata ──────────────────────────────────────────────────
+  x-owning-team: Integration CoE
+  x-owning-tribe: integration-coe
+  x-slack-channel: "#integration-coe-support"
+  x-runbook: https://wiki.company.com/integration-coe/oauth-runbook
+  x-on-call: https://pagerduty.company.com/service/integration-coe-oauth
+
+  x-service-tier: 1
+  x-sla:
+    availability: "99.99%"
+    response-time-p99: "150ms"
+  x-rpo-minutes: 5
+  x-rto-minutes: 10
+
+  x-downstream-consumers:
+    - name: Payments Core API
+      tribe: payments
+      contact: payments-tribe@company.com
+    - name: Cards Core API
+      tribe: cards
+      contact: cards-tribe@company.com
+
+  x-metadata-enabled: true
+
+servers:
+  - url: https://api.internal.company.com/integration-coe/oauth/v1
+    description: Production (internal network only)
+  - url: https://api.sandbox.company.com/integration-coe/oauth/v1
+    description: Sandbox
+
+tags:
+  - name: Tokens
+    description: Issue and introspect OAuth 2.0 tokens
+
+paths:
+
+  /token:
+    post:
+      operationId: issueToken
+      tags: [Tokens]
+      summary: Issue a client credentials token
+      description: |
+        Issues a signed JWT using the OAuth 2.0 Client Credentials grant.
+        Authenticate with HTTP Basic (`client_id:client_secret`).
+
+        Tokens are valid for **900 seconds (15 min)**. Clients should cache the
+        token and refresh when `expires_in` drops below 60 seconds.
+      security: []   # Public endpoint — authenticated via HTTP Basic in body
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [grant_type, client_id, client_secret]
+              properties:
+                grant_type:
+                  type: string
+                  enum: [client_credentials]
+                  example: client_credentials
+                client_id:
+                  type: string
+                  description: Service client ID issued during registration
+                  example: svc_payments_core_prod
+                client_secret:
+                  type: string
+                  description: Service client secret (treat as a password)
+                  example: "••••••••"
+                scope:
+                  type: string
+                  description: >
+                    Space-separated list of requested scopes. Must be a subset
+                    of the scopes granted to this client during registration.
+                  example: "payments:read payments:write cards:read"
+      responses:
+        '200':
+          description: Token issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+              example:
+                access_token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+                token_type: Bearer
+                expires_in: 900
+                scope: "payments:read payments:write cards:read"
+        '400':
+          description: Invalid request (missing fields or unsupported grant type)
+          content:
+            application/json:
+              schema:
+                $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid client credentials
+          content:
+            application/json:
+              schema:
+                $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+        '403':
+          description: Requested scope not permitted for this client
+          content:
+            application/json:
+              schema:
+                $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+  /token/introspect:
+    post:
+      operationId: introspectToken
+      tags: [Tokens]
+      summary: Introspect a token (RFC 7662)
+      description: |
+        Allows services to verify a token they received and inspect its claims,
+        including active state, scopes, and expiry. Requires the caller's own
+        valid token with scope `internal:service`.
+      security:
+        - BearerToken: [internal:service]
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: The JWT to introspect
+      responses:
+        '200':
+          description: Introspection result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntrospectionResponse'
+        '401':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Unauthorized'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+components:
+
+  securitySchemes:
+    BearerToken:
+      $ref: '../../catalog/shared/components.yaml#/components/securitySchemes/BearerToken'
+
+  schemas:
+
+    TokenResponse:
+      type: object
+      required: [access_token, token_type, expires_in]
+      properties:
+        access_token:
+          type: string
+          description: Signed JWT
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          description: Seconds until the token expires
+          example: 900
+        scope:
+          type: string
+          description: Space-separated list of granted scopes
+
+    IntrospectionResponse:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+          description: Whether the token is currently valid
+        sub:
+          type: string
+          description: Subject — the client_id that was issued this token
+          example: svc_payments_core_prod
+        scope:
+          type: string
+          description: Space-separated granted scopes
+          example: "payments:read cards:read"
+        exp:
+          type: integer
+          description: Unix timestamp of expiry
+          example: 1731664200
+        iat:
+          type: integer
+          description: Unix timestamp of issuance
+          example: 1731663300
+        client_id:
+          type: string
+          example: svc_payments_core_prod

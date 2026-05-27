@@ -1,0 +1,7 @@
+{
+  "_comment": "200 OK — POST /token",
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImNvZS1wcm9kLTIwMjQifQ.eyJzdWIiOiJzdmNfcGF5bWVudHNfY29yZV9wcm9kIiwiY2xpZW50X2lkIjoic3ZjX3BheW1lbnRzX2NvcmVfcHJvZCIsInNjb3BlIjoicGF5bWVudHM6cmVhZCBwYXltZW50czp3cml0ZSBjYXJkczpyZWFkIiwiaWF0IjoxNzMxNjYzMzAwLCJleHAiOjE3MzE2NjQyMDB9.signature",
+  "token_type": "Bearer",
+  "expires_in": 900,
+  "scope": "payments:read payments:write cards:read"
+}

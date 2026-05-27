@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPDD Prompt Builder — Integration COE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f1117;
+  --surface: #171b26;
+  --surface2: #1e2334;
+  --border: #2a3045;
+  --border2: #374060;
+  --text: #e8ecf4;
+  --muted: #7a86a4;
+  --accent: #4f8ef7;
+  --accent2: #2d6be4;
+  --green: #34d399;
+  --amber: #fbbf24;
+  --red: #f87171;
+  --core-bg: #1a2540;
+  --core-text: #4f8ef7;
+  --opt-bg: #1a2e28;
+  --opt-text: #34d399;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Sora', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  padding: 1.25rem 2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--surface);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-mark {
+  width: 32px; height: 32px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono);
+  font-size: 11px; font-weight: 500;
+  color: #fff;
+  letter-spacing: -0.5px;
+}
+.logo-text { font-size: 14px; font-weight: 500; color: var(--text); }
+.logo-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+/* API key bar */
+.api-bar {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  flex: 0 0 auto; max-width: 360px;
+}
+.api-bar label { font-size: 11px; color: var(--muted); white-space: nowrap; font-family: var(--mono); }
+.api-bar input {
+  background: none; border: none; outline: none;
+  font-family: var(--mono); font-size: 12px;
+  color: var(--text); width: 220px;
+}
+.api-bar input::placeholder { color: var(--border2); }
+.api-status { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.api-status.ok { background: var(--green); }
+.api-status.no { background: var(--border2); }
+.api-status.err { background: var(--red); }
+
+/* ── Layout ── */
+.shell { display: flex; flex: 1; overflow: hidden; }
+.sidebar {
+  width: 260px; flex-shrink: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* ── Sidebar ── */
+.sidebar-section { padding: 1.25rem 1rem 0.5rem; }
+.sidebar-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  padding: 0 0.25rem 0.5rem;
+}
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; font-family: var(--mono); }
+.field select, .field input {
+  width: 100%; background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: var(--sans); font-size: 12px;
+  padding: 7px 10px; outline: none;
+  appearance: none;
+  transition: border-color .15s;
+}
+.field select:focus, .field input:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--border2); }
+
+.cmd-list { padding: 0 0.75rem 1rem; display: flex; flex-direction: column; gap: 4px; }
+.cmd-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 10px; border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer; transition: all .15s;
+}
+.cmd-item:hover { background: var(--surface2); border-color: var(--border); }
+.cmd-item.active { background: var(--core-bg); border-color: var(--accent); }
+.cmd-item.active.opt { background: var(--opt-bg); border-color: var(--green); }
+.cmd-icon { flex-shrink: 0; margin-top: 1px; }
+.cmd-icon svg { width: 14px; height: 14px; }
+.cmd-item-name { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text); }
+.cmd-item-desc { font-size: 10px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+.badge {
+  font-size: 9px; font-weight: 600; letter-spacing: .04em;
+  padding: 2px 5px; border-radius: 4px; flex-shrink: 0;
+  text-transform: uppercase; margin-top: 1px;
+}
+.badge.core { background: var(--core-bg); color: var(--core-text); }
+.badge.opt { background: var(--opt-bg); color: var(--opt-text); }
+
+.sidebar-divider { height: 1px; background: var(--border); margin: 0.5rem 1rem; }
+
+/* Master button */
+.master-btn {
+  margin: 0.5rem 0.75rem 1rem;
+  padding: 9px 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text); font-family: var(--sans); font-size: 12px;
+  cursor: pointer; text-align: left; width: calc(100% - 1.5rem);
+  transition: all .15s;
+}
+.master-btn:hover { border-color: var(--accent); background: var(--core-bg); }
+.master-btn.active { border-color: var(--accent); background: var(--core-bg); }
+
+/* ── Main area ── */
+.pane { flex: 1; padding: 1.75rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+.pane-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.pane-title { font-size: 17px; font-weight: 600; color: var(--text); }
+.pane-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; max-width: 520px; }
+
+/* AI prompt row */
+.ai-row {
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.ai-input {
+  flex: 1; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-family: var(--sans); font-size: 13px;
+  padding: 10px 14px; outline: none; resize: none; min-height: 42px; max-height: 120px;
+  transition: border-color .15s; line-height: 1.5;
+}
+.ai-input:focus { border-color: var(--accent); }
+.ai-input::placeholder { color: var(--border2); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 16px; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  cursor: pointer; border: 1px solid transparent;
+  transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; border-color: var(--accent2); }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: var(--surface2); color: var(--text); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--border2); }
+.btn-ghost:disabled { opacity: .45; cursor: not-allowed; }
+
+/* Output box */
+.output-wrap {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  min-height: 400px;
+}
+.output-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border-bottom: 1px solid var(--border);
+  gap: 8px; flex-wrap: wrap;
+}
+.output-meta { display: flex; align-items: center; gap: 10px; }
+.char-meter { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.meter-track { width: 100px; height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+.meter-bar { height: 100%; border-radius: 3px; transition: width .3s, background .3s; }
+.output-actions { display: flex; gap: 6px; }
+
+.output-content {
+  flex: 1; overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  font-family: var(--mono); font-size: 12px; line-height: 1.75;
+  color: var(--text); white-space: pre-wrap; word-break: break-word;
+}
+.output-content.empty { font-family: var(--sans); display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--muted); gap: 10px; }
+.output-content.streaming { color: var(--text); }
+
+/* Streaming cursor */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor { display: inline-block; width: 2px; height: 13px; background: var(--accent); vertical-align: middle; margin-left: 2px; animation: blink 1s infinite; }
+
+/* Status bar */
+.status-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 14px; border-top: 1px solid var(--border);
+  font-size: 11px; color: var(--muted); font-family: var(--mono);
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.idle { background: var(--border2); }
+.status-dot.working { background: var(--amber); animation: pulse 1s infinite; }
+.status-dot.done { background: var(--green); }
+.status-dot.err { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem;
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 10px 16px;
+  font-size: 12px; color: var(--text);
+  opacity: 0; transform: translateY(8px);
+  transition: all .2s; pointer-events: none; z-index: 100;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* Info box */
+.infobox {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius); padding: 10px 14px;
+  font-size: 12px; color: var(--muted); line-height: 1.6;
+}
+.infobox strong { color: var(--text); }
+.infobox a { color: var(--accent); text-decoration: none; }
+.infobox a:hover { text-decoration: underline; }
+
+@media (max-width: 700px) {
+  .sidebar { width: 200px; }
+  .pane { padding: 1.25rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-mark">SP</div>
+    <div>
+      <div class="logo-text">SPDD Prompt Builder</div>
+      <div class="logo-sub">Integration COE — Copilot Agent</div>
+    </div>
+  </div>
+  <div class="api-bar">
+    <label>API KEY</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." oninput="onApiKeyChange()" autocomplete="off">
+    <div class="api-status no" id="api-status" title="No API key entered"></div>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Context</div>
+      <div class="field">
+        <label>Project type</label>
+        <select id="proj-type">
+          <option value="Integration/middleware">Integration / middleware</option>
+          <option value="Data/system migration">Data / system migration</option>
+          <option value="Change request (CR)">Change request (CR)</option>
+          <option value="API design & governance">API design &amp; governance</option>
+          <option value="Innovation / improvement">Innovation / improvement</option>
+          <option value="Incident & RCA">Incident &amp; RCA</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>SDLC phase</label>
+        <select id="phase">
+          <option value="Discovery / requirements">Discovery / requirements</option>
+          <option value="Solution design">Solution design</option>
+          <option value="Build / development">Build / development</option>
+          <option value="Testing / QA">Testing / QA</option>
+          <option value="Deployment / go-live">Deployment / go-live</option>
+          <option value="Hypercare / post-go-live">Hypercare / post-go-live</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Tech stack (optional)</label>
+        <input type="text" id="tech" placeholder="MuleSoft, Azure APIM, SAP…">
+      </div>
+      <div class="field">
+        <label>Team norms (optional)</label>
+        <input type="text" id="norms" placeholder="OpenAPI 3.0, JIRA, semantic versioning…">
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Commands</div>
+    </div>
+    <div class="cmd-list" id="cmd-list"></div>
+
+    <div class="sidebar-divider"></div>
+    <button class="master-btn" id="master-btn" onclick="selectMaster()">
+      <div style="font-family:var(--mono);font-size:11px;font-weight:500;margin-bottom:2px">Master agent prompt</div>
+      <div style="font-size:10px;color:var(--muted)">Full system prompt for Copilot agent config</div>
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="pane">
+
+      <div class="pane-header">
+        <div>
+          <div class="pane-title" id="pane-title">Select a command</div>
+          <div class="pane-desc" id="pane-desc">Choose a command from the left sidebar to generate a Copilot agent prompt. Optionally describe specific requirements and let the AI customise it.</div>
+        </div>
+      </div>
+
+      <div class="infobox" id="api-notice">
+        <strong>API key required</strong> — Enter your Anthropic API key above to enable AI-powered prompt generation.
+        Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>. Your key stays in this browser tab only and is never sent anywhere except directly to Anthropic's API.
+        Without a key, you can still copy the template prompts using the button below.
+      </div>
+
+      <div class="ai-row">
+        <textarea class="ai-input" id="ai-input" rows="1"
+          placeholder="Describe your specific scenario, constraints, or requirements — AI will tailor the prompt…"
+          oninput="autoResize(this)"></textarea>
+        <button class="btn btn-primary" id="gen-btn" onclick="generatePrompt()" disabled>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Generate
+        </button>
+      </div>
+
+      <div class="output-wrap">
+        <div class="output-toolbar">
+          <div class="output-meta">
+            <span style="font-size:11px;color:var(--muted);font-family:var(--mono)" id="mode-label">—</span>
+            <div class="char-meter">
+              <div class="meter-track"><div class="meter-bar" id="meter-bar" style="width:0%;background:var(--border2)"></div></div>
+              <span id="char-count">0 / 8000</span>
+            </div>
+          </div>
+          <div class="output-actions">
+            <button class="btn btn-ghost" id="copy-btn" onclick="copyOutput()" disabled>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+              Copy
+            </button>
+            <button class="btn btn-ghost" id="clear-btn" onclick="clearOutput()" disabled>Clear</button>
+          </div>
+        </div>
+        <div class="output-content empty" id="output">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Your generated prompt will appear here</span>
+        </div>
+        <div class="status-bar">
+          <div class="status-dot idle" id="status-dot"></div>
+          <span id="status-text">Ready</span>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COMMANDS = [
+  {
+    id:'story', name:'/spdd-story', type:'opt',
+    desc:'INVEST user stories',
+    title:'/spdd-story — User story decomposition',
+    about:'Decompose requirements into independent, testable user stories with acceptance criteria and Definition of Done.',
+    template: c => `# /spdd-story — User Story Decomposition
+## Role
+You are an Integration COE business analyst. When the user invokes /spdd-story, decompose the provided requirement into independent user stories following the INVEST principle (Independent, Negotiable, Valuable, Estimable, Small, Testable).
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}${c.norms ? '\n- Team standards: ' + c.norms : ''}
+
+## Output format (repeat for each story)
+**Story [N]: [Short title]**
+- As a [role], I want [capability], so that [benefit]
+- Acceptance criteria:
+  1. Given [context], when [action], then [outcome]
+  2. [additional criterion]
+- Definition of Done: [measurable completion state]
+- Dependencies: [none / list story IDs]
+- Estimate: S / M / L
+
+## Rules
+- Each story must be independently deliverable within one sprint
+- No story should span systems or teams without explicit integration story
+- Surface dependency chains before generating stories
+- For ${c.proj} work in phase [${c.phase}], flag any stories that require prerequisite CR or approval gates
+- If requirement is ambiguous, ask one clarifying question before generating`
+  },
+  {
+    id:'analysis', name:'/spdd-analysis', type:'core',
+    desc:'Domain analysis + risk register',
+    title:'/spdd-analysis — Strategic analysis',
+    about:'Extract domain keywords, map integration touchpoints, identify risks, and produce a design direction before any build begins.',
+    template: c => `# /spdd-analysis — Strategic Analysis
+## Role
+You are an Integration COE architect. When the user invokes /spdd-analysis, produce a structured analysis before any design or build activity begins. Abstraction first — no implementation detail at this stage.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}${c.norms ? '\n- Standards: ' + c.norms : ''}
+
+## Output structure
+
+### 1. Domain concepts
+List key entities, systems, data objects, and business processes involved.
+
+### 2. Integration touchpoints
+| Source system | Target system | Protocol | Data | Frequency |
+|---|---|---|---|---|
+
+### 3. Risk register
+| Risk | Likelihood | Impact | Mitigation |
+|---|---|---|---|
+
+### 4. Design direction
+Recommended approach with rationale. State the architectural pattern and why it fits.
+
+### 5. Open questions
+Questions that must be resolved before design proceeds. Number each one.
+
+## Rules
+- Surface hidden dependencies (shared DBs, batch jobs, legacy contracts)
+- Flag regulatory or compliance risks (GDPR, data residency, audit trails)
+- Do not recommend a specific implementation until questions are resolved
+- If requirement is vague, produce a partial analysis and list the gaps`
+  },
+  {
+    id:'canvas', name:'/spdd-reasons-canvas', type:'core',
+    desc:'Full 7-part REASONS canvas',
+    title:'/spdd-reasons-canvas — REASONS canvas',
+    about:'Generate the complete REASONS canvas — the executable blueprint from rationale to method-level operations that governs all subsequent generation.',
+    template: c => `# /spdd-reasons-canvas — REASONS Canvas
+## Role
+You are an Integration COE solution architect. When invoked, generate the full REASONS canvas as the authoritative design blueprint. This canvas is the single source of truth — all subsequent /spdd-generate steps must reference it.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}${c.norms ? '\n- Standards: ' + c.norms : ''}
+
+## Canvas structure
+
+**Canvas version:** v1.0 [date]
+
+**R — Requirements**
+Problem statement, business justification, success metrics, Definition of Done.
+
+**E — Entities**
+Domain model: source/target systems, APIs, events, data objects, schemas.
+
+**A — Approach**
+Architectural strategy and pattern selection with rationale. State trade-offs considered.
+
+**S — Structure**
+Component breakdown: services, connectors, schemas, pipelines, queues, config.
+
+**O — Operations**
+Step-by-step implementation plan. For each step:
+- Task name | Input | Output | Owner | Dependencies
+
+**N — Norms**
+${c.norms || 'Engineering standards: naming conventions, versioning, logging, error handling, documentation, code review gates.'}
+
+**S — Safeguards**
+Non-negotiable constraints: security controls, data privacy, SLA requirements, rollback plan, compliance checkpoints. No step in Operations may contradict a Safeguard.
+
+## Rules
+- Canvas must be approved before /spdd-generate is invoked
+- Version the canvas header on every update
+- If any canvas section cannot be completed, state what information is missing`
+  },
+  {
+    id:'generate', name:'/spdd-generate', type:'core',
+    desc:'Canvas-driven artefact generation',
+    title:'/spdd-generate — Artefact generation',
+    about:'Read the approved REASONS canvas and generate configuration, code, or documentation one operation at a time — strictly following norms and safeguards.',
+    template: c => `# /spdd-generate — Canvas-Driven Generation
+## Role
+You are an Integration COE engineer. When invoked, generate implementation artefacts strictly from the approved REASONS canvas. Never deviate from canvas Safeguards. Never skip an Operations step.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}${c.norms ? '\n- Standards: ' + c.norms : ''}
+
+## Process
+1. Confirm: ask the user to confirm the canvas version before proceeding
+2. List all Operations tasks extracted from the canvas
+3. Generate one task at a time — pause after each for user review
+4. After each task output:
+   - Artefact produced (with code/config block)
+   - Assumptions made (list explicitly)
+   - Review checklist: [ ] each item the user must verify
+5. Do not proceed to next task until user confirms current one
+
+## Rules
+- Follow Norms section exactly${c.tech ? '\n- Apply ' + c.tech + ' conventions and patterns' : ''}
+- A Safeguard is never optional — if it cannot be met, stop and escalate
+- Flag any canvas ambiguity immediately; do not guess
+- End the full session with a completion summary: tasks done, items deferred, open actions`
+  },
+  {
+    id:'apitest', name:'/spdd-api-test', type:'opt',
+    desc:'Structured API test cases',
+    title:'/spdd-api-test — API test generation',
+    about:'Generate structured API test cases covering normal, boundary, error, and security scenarios for any endpoint defined in the canvas or spec.',
+    template: c => `# /spdd-api-test — API Test Generation
+## Role
+You are an Integration COE QA engineer. When invoked, generate structured API test cases from the endpoint specification or REASONS canvas provided. Every test must be independently runnable.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}${c.norms ? '\n- Standards: ' + c.norms : ''}
+
+## Test structure (repeat for each endpoint)
+
+### [METHOD] /endpoint — [Scenario]
+- **Category**: Normal | Boundary | Error | Security
+- **Preconditions**: [auth state, test data, env]
+- **Request**: [headers, params, body]
+- **Expected status**: [HTTP code]
+- **Expected response**: [body structure or field assertions]
+- **Assertions**: [what to verify programmatically]
+- **Cleanup**: [if test creates data]
+
+## Mandatory scenario coverage per endpoint
+- Happy path (200/201/204)
+- Validation failure — missing required fields (400)
+- Validation failure — wrong data type (400)
+- Unauthorised — missing/invalid token (401)
+- Forbidden — valid token, insufficient scope (403)
+- Not found (404)
+- Downstream unavailable / timeout (503)
+- Payload at max permitted size
+- Payload with special characters / injection attempt
+
+## Rules
+- Include all required auth headers in each test
+- Flag tests that need pre-created test data
+- Note any tests that cannot run in isolation`
+  },
+  {
+    id:'update', name:'/spdd-prompt-update', type:'core',
+    desc:'Propagate requirement changes',
+    title:'/spdd-prompt-update — Canvas change propagation',
+    about:'When requirements change, incrementally update the REASONS canvas and identify which generated artefacts need to be regenerated — keeping intent and implementation in sync.',
+    template: c => `# /spdd-prompt-update — Canvas Change Propagation
+## Role
+You are an Integration COE architect managing SPDD canvas versioning. When invoked, apply the stated change to the REASONS canvas and determine downstream impact. All changes must be traceable.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}
+
+## Process
+1. Accept inputs: [current canvas version] + [change description] + [source: CR / story ID]
+2. Identify affected canvas sections (R / E / A / S / O / N / S)
+3. Produce a structured diff:
+   CHANGED [Section — Element]: [previous value] → [new value]
+   REASON: [why this changed]
+   UNCHANGED: [sections with no impact]
+4. List artefacts requiring regeneration:
+   - [ ] [artefact] — [reason regeneration is needed]
+5. Increment canvas version (v1.0 → v1.1) and update change log
+6. If change contradicts a Safeguard: STOP — escalate to architect, do not auto-resolve
+
+## Change log format (append to canvas footer)
+| Version | Date | Change | Source | Author |
+|---|---|---|---|---|
+
+## Rules
+- Silent canvas mutation is not permitted — every change must be auditable
+- Backward compatibility notes required where interface contracts change`
+  },
+  {
+    id:'sync', name:'/spdd-sync', type:'core',
+    desc:'Sync code changes back to canvas',
+    title:'/spdd-sync — Code-to-canvas synchronisation',
+    about:'When implementation diverges from the canvas (refactors, hotfixes, discoveries), update the canvas to remain an accurate record of actual implementation.',
+    template: c => `# /spdd-sync — Code-to-Canvas Synchronisation
+## Role
+You are an Integration COE engineer ensuring the REASONS canvas reflects actual implementation. When invoked, update the canvas to match the described change. The canvas may never lag more than one sprint behind implementation.
+
+## Context
+- Project type: ${c.proj}
+- SDLC phase: ${c.phase}${c.tech ? '\n- Tech stack: ' + c.tech : ''}
+
+## Process
+1. Accept inputs: [change description] + [affected module or artefact] + [reason for deviation]
+2. Map the change to affected canvas sections
+3. Produce sync entries:
+   SYNC [Section > Element]: ~~old value~~ → new value
+   REASON: [why deviation occurred — do not delete old value, strike it through]
+4. Flag Safeguard implications (if any)
+5. Determine if a /spdd-prompt-update is also needed (requirements drift vs implementation detail)
+6. Increment canvas version and update change log
+7. Confirm: "Canvas v[X.Y] now matches implementation ✓"
+
+## Rules
+- Sync entries form a permanent audit trail — old values are struck through, never deleted
+- If sync reveals the implementation broke a Safeguard, escalate immediately
+- If deviation was driven by a new requirement (not a refactor), raise /spdd-prompt-update first`
+  }
+];
+
+const MASTER_PROMPT = `# Integration COE — SPDD Copilot Agent
+## Identity
+You are the Integration COE SPDD Assistant. You guide delivery teams through structured, AI-assisted development using SPDD (Structured Prompt-Driven Development). Every response applies the REASONS canvas discipline: design before build, alignment before action, governance at every step.
+
+## Commands
+Respond to these slash commands:
+
+**/spdd-story** — Decompose a requirement into INVEST user stories with acceptance criteria and DoD. Ask one clarifying question if the requirement is ambiguous.
+
+**/spdd-analysis** — Extract domain entities, map integration touchpoints, produce a risk register and recommended design direction. Do not suggest implementation until open questions are resolved.
+
+**/spdd-reasons-canvas** — Generate the full REASONS canvas as the authoritative blueprint:
+- R: Requirements (problem, success metrics, DoD)
+- E: Entities (systems, data objects, APIs, events)
+- A: Approach (architectural strategy + rationale)
+- S: Structure (components, services, schemas, pipelines)
+- O: Operations (step-by-step plan; each step: task, input, output, owner)
+- N: Norms (naming, versioning, logging, error handling, docs)
+- S: Safeguards (security, SLA, rollback, compliance — inviolable)
+Version header: v1.0 [date]. Canvas is single source of truth.
+
+**/spdd-generate** — Generate artefacts task by task from the approved canvas. Confirm canvas version first. Pause after each task for user review. Never contradict a Safeguard.
+
+**/spdd-api-test** — Generate API test cases: normal, boundary, error (400/401/403/404/503), security. Each test independently runnable.
+
+**/spdd-prompt-update** — Apply a requirement change to the canvas. Produce a diff, list artefacts to regenerate, increment version, update change log. Escalate Safeguard conflicts — never auto-resolve.
+
+**/spdd-sync** — Synchronise canvas when implementation diverges. Strike through old values (never delete). Flag Safeguard implications. Raise /spdd-prompt-update if deviation is requirement-driven.
+
+## Principles
+- Abstraction first: no build artefacts until analysis and canvas are approved
+- Alignment: confirm intent before generating anything
+- Traceability: every artefact references its canvas version and CR/story ID
+- No silent assumptions: flag ambiguity, do not resolve unilaterally
+- Safeguards are inviolable: escalate conflicts, never bypass
+
+## Integration COE standards
+- APIs: OpenAPI 3.0 spec before build
+- Error envelope: {status, code, message, traceId}
+- Logging: structured JSON, correlation IDs mandatory
+- Versioning: semantic (MAJOR.MINOR.PATCH)
+- Change control: all changes reference a CR or story ID
+- Security: OAuth 2.0 / API keys; no credentials in payloads or logs
+- Rollback: every deployment must have a tested rollback procedure
+
+## Behaviour
+- If no command is given, identify what the user needs and suggest the right command
+- Ask one clarifying question at a time — never interrogate
+- Always state which canvas version you are working from
+- Use tables and structured headings for all analytical output
+- Depth over breadth — complete one step fully before moving to the next`;
+
+// State
+let currentCmd = null;
+let isMaster = false;
+let isGenerating = false;
+let currentOutput = '';
+let apiKey = '';
+
+// Init
+renderSidebar();
+updateApiStatus();
+
+function renderSidebar() {
+  const list = document.getElementById('cmd-list');
+  list.innerHTML = COMMANDS.map(c => `
+    <div class="cmd-item${currentCmd===c.id&&!isMaster?' active'+( c.type==='opt'?' opt':''): ''}" onclick="selectCmd('${c.id}')">
+      <div class="cmd-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="${c.type==='core'?'#4f8ef7':'#34d399'}" stroke-width="2">
+          <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+        </svg>
+      </div>
+      <div>
+        <div class="cmd-item-name">${c.name}</div>
+        <div class="cmd-item-desc">${c.desc}</div>
+      </div>
+      <span class="badge ${c.type}">${c.type}</span>
+    </div>`).join('');
+  document.getElementById('master-btn').className = 'master-btn' + (isMaster ? ' active' : '');
+}
+
+function getCtx() {
+  return {
+    proj: document.getElementById('proj-type').value,
+    phase: document.getElementById('phase').value,
+    tech: document.getElementById('tech').value.trim(),
+    norms: document.getElementById('norms').value.trim()
+  };
+}
+
+function selectCmd(id) {
+  currentCmd = id; isMaster = false;
+  const cmd = COMMANDS.find(c => c.id === id);
+  document.getElementById('pane-title').textContent = cmd.title;
+  document.getElementById('pane-desc').textContent = cmd.about;
+  document.getElementById('ai-input').placeholder = `Describe your specific scenario for ${cmd.name} — AI will tailor the prompt to your context…`;
+  renderSidebar();
+  setOutput(cmd.template(getCtx()), 'template');
+}
+
+function selectMaster() {
+  currentCmd = null; isMaster = true;
+  document.getElementById('pane-title').textContent = 'Master agent prompt';
+  document.getElementById('pane-desc').textContent = 'The complete system prompt to paste into Copilot Studio → Agent → Instructions. Encodes all 7 commands, REASONS canvas, and Integration COE norms.';
+  document.getElementById('ai-input').placeholder = 'Describe any customisations — e.g. specific compliance requirements, extra project types, team norms — and AI will update the master prompt…';
+  renderSidebar();
+  setOutput(MASTER_PROMPT, 'master');
+}
+
+function setOutput(text, mode) {
+  currentOutput = text;
+  const el = document.getElementById('output');
+  el.className = 'output-content';
+  el.textContent = text;
+  document.getElementById('copy-btn').disabled = false;
+  document.getElementById('clear-btn').disabled = false;
+  document.getElementById('mode-label').textContent = mode === 'master' ? 'master prompt' : mode === 'ai' ? 'ai-generated' : 'template';
+  updateMeter(text);
+  setStatus('idle', 'Ready');
+}
+
+function updateMeter(text) {
+  const len = text.length;
+  const pct = Math.min(len / 8000 * 100, 100);
+  const bar = document.getElementById('meter-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = pct > 90 ? '#f87171' : pct > 75 ? '#fbbf24' : '#34d399';
+  document.getElementById('char-count').textContent = len.toLocaleString() + ' / 8,000';
+}
+
+function setStatus(state, text) {
+  const dot = document.getElementById('status-dot');
+  dot.className = 'status-dot ' + state;
+  document.getElementById('status-text').textContent = text;
+}
+
+function onApiKeyChange() {
+  apiKey = document.getElementById('api-key-input').value.trim();
+  updateApiStatus();
+}
+
+function updateApiStatus() {
+  const el = document.getElementById('api-status');
+  const notice = document.getElementById('api-notice');
+  const genBtn = document.getElementById('gen-btn');
+  if (apiKey.startsWith('sk-ant-')) {
+    el.className = 'api-status ok'; el.title = 'API key looks valid';
+    notice.style.display = 'none';
+    genBtn.disabled = false;
+  } else if (apiKey.length > 0) {
+    el.className = 'api-status err'; el.title = 'Key should start with sk-ant-';
+    notice.style.display = 'block';
+    genBtn.disabled = true;
+  } else {
+    el.className = 'api-status no'; el.title = 'No API key entered';
+    notice.style.display = 'block';
+    genBtn.disabled = true;
+  }
+}
+
+async function generatePrompt() {
+  if (!apiKey || isGenerating) return;
+  if (!currentCmd && !isMaster) { toast('Select a command or Master prompt first'); return; }
+
+  const userRequest = document.getElementById('ai-input').value.trim();
+  const ctx = getCtx();
+  const cmd = currentCmd ? COMMANDS.find(c => c.id === currentCmd) : null;
+  const baseTemplate = isMaster ? MASTER_PROMPT : cmd.template(ctx);
+
+  const systemMsg = `You are an expert prompt engineer specialising in SPDD (Structured Prompt-Driven Development) and Microsoft Copilot agent configuration for Integration Centre of Excellence teams.
+
+Your task: Generate or refine a Copilot agent prompt based on the user's context and request.
+
+CRITICAL CONSTRAINTS:
+- Output must be ≤ 8000 characters (this is a hard Copilot Studio limit)
+- Output must be ONLY the prompt text — no explanations, no markdown code fences, no preamble
+- Maintain the SPDD structure: REASONS canvas awareness, slash commands, Integration COE norms
+- Be specific and actionable — vague instructions produce vague AI output
+
+Current context:
+- Project type: ${ctx.proj}
+- SDLC phase: ${ctx.phase}
+${ctx.tech ? '- Tech stack: ' + ctx.tech : ''}
+${ctx.norms ? '- Team norms: ' + ctx.norms : ''}
+${isMaster ? '- Generating: master agent system prompt (all 7 commands)' : '- Generating: prompt for command ' + cmd.name}
+
+Base template to refine:
+${baseTemplate}`;
+
+  const userMsg = userRequest
+    ? `Refine this prompt based on my specific requirements: ${userRequest}`
+    : `Generate an optimised version of this prompt tailored to the context provided.`;
+
+  isGenerating = true;
+  document.getElementById('gen-btn').disabled = true;
+  document.getElementById('gen-btn').textContent = 'Generating…';
+  setStatus('working', 'Calling Anthropic API…');
+
+  const el = document.getElementById('output');
+  el.className = 'output-content streaming';
+  el.textContent = '';
+  currentOutput = '';
+  document.getElementById('copy-btn').disabled = true;
+  document.getElementById('clear-btn').disabled = false;
+  document.getElementById('mode-label').textContent = 'ai-generating…';
+
+  const cursor = document.createElement('span');
+  cursor.className = 'cursor';
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-beta': 'prompt-caching-2024-07-31'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2048,
+        stream: true,
+        system: systemMsg,
+        messages: [{ role: 'user', content: userMsg }]
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            currentOutput += evt.delta.text;
+            el.textContent = currentOutput;
+            el.appendChild(cursor);
+            updateMeter(currentOutput);
+            el.scrollTop = el.scrollHeight;
+          }
+        } catch {}
+      }
+    }
+
+    cursor.remove();
+    document.getElementById('api-status').className = 'api-status ok';
+    setStatus('done', `Generated — ${currentOutput.length.toLocaleString()} chars`);
+    document.getElementById('mode-label').textContent = 'ai-generated';
+    document.getElementById('copy-btn').disabled = false;
+
+  } catch (err) {
+    cursor.remove();
+    document.getElementById('api-status').className = 'api-status err';
+    el.textContent = `Error: ${err.message}\n\nCheck your API key and try again. If on a corporate network, the API endpoint may be blocked.`;
+    setStatus('err', 'API error — see output for details');
+    document.getElementById('mode-label').textContent = 'error';
+  } finally {
+    isGenerating = false;
+    document.getElementById('gen-btn').disabled = false;
+    document.getElementById('gen-btn').innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg> Generate`;
+  }
+}
+
+function copyOutput() {
+  if (!currentOutput) return;
+  navigator.clipboard.writeText(currentOutput)
+    .then(() => toast('Prompt copied to clipboard ✓'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = currentOutput;
+      document.body.appendChild(ta);
+      ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+      toast('Copied ✓');
+    });
+}
+
+function clearOutput() {
+  currentOutput = '';
+  const el = document.getElementById('output');
+  el.className = 'output-content empty';
+  el.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Your generated prompt will appear here</span>';
+  document.getElementById('copy-btn').disabled = true;
+  document.getElementById('clear-btn').disabled = true;
+  document.getElementById('mode-label').textContent = '—';
+  updateMeter('');
+  setStatus('idle', 'Ready');
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// Keyboard shortcut: Ctrl/Cmd+Enter to generate
+document.getElementById('ai-input').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') generatePrompt();
+});
+</script>
+</body>
+</html>

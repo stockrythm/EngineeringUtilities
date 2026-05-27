@@ -1,0 +1,5 @@
+{
+  "_comment": "200 OK — POST /token/introspect (expired or revoked token)",
+  "_note": "RFC 7662: expired tokens return active=false, not a 401",
+  "active": false
+}

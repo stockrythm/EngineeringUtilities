@@ -1,0 +1,40 @@
+{
+  "_comment": "200 OK — GET /cards?status=ACTIVE&accountId=acc_4mKzPqRx&page=1&pageSize=2",
+
+  "data": [
+    {
+      "id": "card_9kQ2mNpX",
+      "type": "VIRTUAL",
+      "status": "ACTIVE",
+      "accountId": "acc_4mKzPqRx",
+      "last4": "4242",
+      "expiryMonth": 11,
+      "expiryYear": 2027,
+      "label": "Marketing expenses Q4",
+      "spendLimit": { "amount": 50000, "currency": "GBP" },
+      "createdAt": "2024-11-15T09:30:00Z",
+      "updatedAt": "2024-11-15T09:30:00Z"
+    },
+    {
+      "id": "card_2pR8sUwV",
+      "type": "PHYSICAL",
+      "status": "ACTIVE",
+      "accountId": "acc_4mKzPqRx",
+      "last4": "8765",
+      "expiryMonth": 3,
+      "expiryYear": 2026,
+      "label": "Company travel card",
+      "spendLimit": { "amount": 200000, "currency": "GBP" },
+      "createdAt": "2024-09-01T10:00:00Z",
+      "updatedAt": "2024-09-01T10:00:00Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 2,
+    "totalCount": 5,
+    "totalPages": 3,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}

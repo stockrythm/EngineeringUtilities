@@ -1,0 +1,214 @@
+openapi: 3.1.0
+info:
+  title: Shared Component Library
+  version: 1.0.0
+
+# ─────────────────────────────────────────────────────────────────────────────
+# COE-OWNED: Do not edit without raising a PR against the api-catalog repo.
+# All shared schemas, responses, parameters, and security schemes live here.
+# Tribe specs reference these via:
+#   $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+# ─────────────────────────────────────────────────────────────────────────────
+
+components:
+
+  # ── Security Schemes ──────────────────────────────────────────────────────
+  securitySchemes:
+
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: >
+        Machine-to-machine OAuth 2.0 client credentials flow, issued by the
+        Integration CoE OAuth Token Service. All tribe APIs MUST use this
+        scheme for service-to-service calls.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.internal.company.com/integration-coe/oauth/v1/token
+          scopes:
+            payments:read:    Read access to payment resources
+            payments:write:   Write access to payment resources
+            cards:read:       Read access to card resources
+            cards:write:      Write access to card resources
+            internal:service: Internal service-to-service scope
+
+    BearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT bearer token obtained from the Integration CoE OAuth Token Service.
+        Include as Authorization: Bearer <token> on every protected request.
+
+  # ── Common Schemas ─────────────────────────────────────────────────────────
+  schemas:
+
+    # Standard error envelope used by ALL tribe APIs
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, traceId]
+          properties:
+            code:
+              type: string
+              description: Machine-readable error code
+              example: PAYMENT_NOT_FOUND
+            message:
+              type: string
+              description: Human-readable explanation
+              example: Payment with id pay_abc123 was not found
+            traceId:
+              type: string
+              description: Distributed trace ID for log correlation
+              example: 4bf92f3577b34da6a3ce929d0e0e4736
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  reason:
+                    type: string
+
+    # Pagination envelope for list responses
+    PaginationMeta:
+      type: object
+      required: [page, pageSize, totalCount, totalPages]
+      properties:
+        page:
+          type: integer
+          minimum: 1
+          example: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalCount:
+          type: integer
+          example: 142
+        totalPages:
+          type: integer
+          example: 8
+        hasNextPage:
+          type: boolean
+          example: true
+        hasPreviousPage:
+          type: boolean
+          example: false
+
+    # Money type - always amount + currency together
+    Money:
+      type: object
+      required: [amount, currency]
+      properties:
+        amount:
+          type: integer
+          description: Amount in minor currency units (e.g. pence, cents)
+          example: 1999
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          minLength: 3
+          maxLength: 3
+          example: GBP
+
+    # ISO 8601 timestamps
+    Timestamps:
+      type: object
+      properties:
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-11-15T09:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-11-15T10:45:00Z"
+
+  # ── Common Parameters ──────────────────────────────────────────────────────
+  parameters:
+
+    PathId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Resource identifier
+
+    QueryPage:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number (1-indexed)
+
+    QueryPageSize:
+      name: pageSize
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Number of items per page
+
+    HeaderTraceId:
+      name: X-Trace-Id
+      in: header
+      schema:
+        type: string
+      description: >
+        Optional caller-supplied trace ID. If omitted the service generates one.
+        Returned in error responses as traceId.
+
+  # ── Common Responses ───────────────────────────────────────────────────────
+  responses:
+
+    BadRequest:
+      description: Invalid request — validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Missing or invalid bearer token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Token valid but insufficient scopes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    UnprocessableEntity:
+      description: Business rule violation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalServerError:
+      description: Unexpected server error — please include traceId when reporting
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

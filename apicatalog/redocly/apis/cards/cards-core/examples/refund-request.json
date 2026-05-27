@@ -1,0 +1,15 @@
+{
+  "_comment": "POST /payments/pay_9kQ2mNpX/refunds — partial refund",
+  "_headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "Content-Type": "application/json",
+    "X-Trace-Id": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b"
+  },
+
+  "amount": {
+    "amount": 1000,
+    "currency": "GBP"
+  },
+  "reason": "CUSTOMER_REQUEST",
+  "note": "Customer returned item — partial refund for shipping cost"
+}

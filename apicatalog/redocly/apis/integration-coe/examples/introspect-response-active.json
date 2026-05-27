@@ -1,0 +1,9 @@
+{
+  "_comment": "200 OK — POST /token/introspect (active token)",
+  "active": true,
+  "sub": "svc_cards_core_prod",
+  "client_id": "svc_cards_core_prod",
+  "scope": "payments:read cards:read cards:write",
+  "iat": 1731663300,
+  "exp": 1731664200
+}

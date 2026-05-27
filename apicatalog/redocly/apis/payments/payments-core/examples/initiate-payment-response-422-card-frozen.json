@@ -1,0 +1,15 @@
+{
+  "_comment": "422 Unprocessable Entity — POST /payments when card is FROZEN",
+
+  "error": {
+    "code": "CARD_NOT_ACTIVE",
+    "message": "Card card_9kQ2mNpX is not active. Current status: FROZEN.",
+    "traceId": "2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f",
+    "details": [
+      {
+        "field": "cardId",
+        "reason": "Card must be in ACTIVE status to process a payment"
+      }
+    ]
+  }
+}

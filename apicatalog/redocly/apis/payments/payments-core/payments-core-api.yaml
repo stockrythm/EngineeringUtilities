@@ -1,0 +1,419 @@
+openapi: 3.1.0
+
+info:
+  title: Payments Core API
+  version: 2.1.0
+  description: |
+    Core payments processing service for the Payments Tribe. Handles payment
+    initiation, status tracking, and refund management.
+
+    ## Authentication
+
+    All endpoints require a valid OAuth 2.0 bearer token issued by the
+    **Integration CoE OAuth Token Service**. See that spec for how to obtain one.
+
+    ```
+    Authorization: Bearer <token from Integration CoE>
+    ```
+
+    Required scopes per operation are documented on each endpoint.
+
+    ## Service dependencies
+
+    ```
+    Integration CoE OAuth Token Service  →  token validation (all requests)
+    Cards Core API                       →  card verification on payment initiation
+    ```
+
+    ## Cards integration
+
+    When initiating a card payment (`POST /payments`), this service calls
+    **Cards Core API** (`GET /cards/{cardId}/status`) to verify the card is
+    active before processing. If Cards API is unavailable, card payments
+    are queued and retried — cash/bank payments are unaffected.
+
+  contact:
+    name: Payments Tribe
+    email: payments-tribe@company.com
+    url: https://wiki.company.com/payments-tribe
+
+  # ── Operational Metadata ──────────────────────────────────────────────────
+  x-owning-team: Payments Tribe
+  x-owning-tribe: payments
+  x-slack-channel: "#payments-api-support"
+  x-runbook: https://wiki.company.com/payments-tribe/payments-core-runbook
+  x-on-call: https://pagerduty.company.com/service/payments-tribe
+
+  x-service-tier: 1
+  x-sla:
+    availability: "99.95%"
+    response-time-p99: "300ms"
+  x-rpo-minutes: 15
+  x-rto-minutes: 30
+
+  x-upstream-services:
+    - name: Integration CoE OAuth Token Service
+      tribe: integration-coe
+      spec: ../../../apis/integration-coe/oauth-token/openapi.yaml
+      criticality: required
+      purpose: Token validation on every inbound request
+    - name: Cards Core API
+      tribe: cards
+      spec: ../../../apis/cards/cards-core/openapi.yaml
+      criticality: degraded-without
+      purpose: Card status check during payment initiation
+
+  x-downstream-consumers:
+    - name: Cards Core API
+      tribe: cards
+      contact: cards-tribe@company.com
+      purpose: Verifies payment eligibility before issuing a card transaction
+
+  x-metadata-enabled: true
+
+servers:
+  - url: https://api.internal.company.com/payments/v2
+    description: Production
+  - url: https://api.sandbox.company.com/payments/v2
+    description: Sandbox
+
+security:
+  - OAuth2ClientCredentials: []
+
+tags:
+  - name: Payments
+    description: Initiate and track payments
+  - name: Refunds
+    description: Refund issued payments
+
+paths:
+
+  /payments:
+    post:
+      operationId: initiatePayment
+      tags: [Payments]
+      summary: Initiate a payment
+      description: |
+        Creates a new payment. For card payments, the Cards Core API is called
+        synchronously to verify card status. The payment is returned in state
+        `PENDING` — poll `GET /payments/{id}` or subscribe to webhooks for
+        final status.
+
+        **Required scope:** `payments:write`
+      security:
+        - OAuth2ClientCredentials: [payments:write]
+      parameters:
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/HeaderTraceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiatePaymentRequest'
+            examples:
+              cardPayment:
+                summary: Card payment
+                value:
+                  amount: { amount: 4999, currency: GBP }
+                  method: CARD
+                  cardId: card_9kQ2mNpX
+                  reference: "Order #ORD-20241115-001"
+                  metadata: { orderId: "ORD-20241115-001" }
+              bankTransfer:
+                summary: Bank transfer
+                value:
+                  amount: { amount: 150000, currency: GBP }
+                  method: BANK_TRANSFER
+                  reference: "Invoice INV-2024-0042"
+      responses:
+        '201':
+          description: Payment accepted and queued for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Forbidden'
+        '422':
+          description: Business rule violation (e.g. card declined, insufficient funds)
+          content:
+            application/json:
+              schema:
+                $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+    get:
+      operationId: listPayments
+      tags: [Payments]
+      summary: List payments
+      description: |
+        Returns a paginated list of payments. Filterable by status and date range.
+
+        **Required scope:** `payments:read`
+      security:
+        - OAuth2ClientCredentials: [payments:read]
+      parameters:
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/QueryPage'
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/QueryPageSize'
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/HeaderTraceId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+          description: Filter by payment status
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter payments created on or after this date (ISO 8601)
+          example: "2024-11-01"
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter payments created on or before this date (ISO 8601)
+          example: "2024-11-30"
+      responses:
+        '200':
+          description: Paginated list of payments
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data, meta]
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+                  meta:
+                    $ref: '../../catalog/shared/components.yaml#/components/schemas/PaginationMeta'
+        '400':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Forbidden'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+  /payments/{id}:
+    get:
+      operationId: getPayment
+      tags: [Payments]
+      summary: Get a payment by ID
+      description: |
+        Returns the current state of a single payment.
+
+        **Required scope:** `payments:read`
+      security:
+        - OAuth2ClientCredentials: [payments:read]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Payment ID
+          example: pay_9kQ2mNpX
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/HeaderTraceId'
+      responses:
+        '200':
+          description: Payment found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '401':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/NotFound'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+  /payments/{id}/refunds:
+    post:
+      operationId: issueRefund
+      tags: [Refunds]
+      summary: Issue a refund against a payment
+      description: |
+        Issues a partial or full refund against a completed payment.
+        Multiple partial refunds are allowed until the full payment amount
+        is refunded. Refunds cannot exceed the original payment amount.
+
+        **Required scope:** `payments:write`
+      security:
+        - OAuth2ClientCredentials: [payments:write]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Payment ID to refund against
+          example: pay_9kQ2mNpX
+        - $ref: '../../catalog/shared/components.yaml#/components/parameters/HeaderTraceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRefundRequest'
+            example:
+              amount: { amount: 1000, currency: GBP }
+              reason: CUSTOMER_REQUEST
+              note: Customer changed their mind
+      responses:
+        '201':
+          description: Refund initiated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/BadRequest'
+        '401':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/Forbidden'
+        '404':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/NotFound'
+        '422':
+          description: Refund exceeds original payment or payment not refundable
+          content:
+            application/json:
+              schema:
+                $ref: '../../catalog/shared/components.yaml#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '../../catalog/shared/components.yaml#/components/responses/InternalServerError'
+
+components:
+
+  securitySchemes:
+    OAuth2ClientCredentials:
+      $ref: '../../catalog/shared/components.yaml#/components/securitySchemes/OAuth2ClientCredentials'
+
+  schemas:
+
+    PaymentStatus:
+      type: string
+      enum: [PENDING, PROCESSING, COMPLETED, FAILED, REFUNDED, PARTIALLY_REFUNDED]
+      description: |
+        - `PENDING` — accepted, awaiting processing
+        - `PROCESSING` — in flight with payment provider
+        - `COMPLETED` — settled successfully
+        - `FAILED` — rejected or timed out
+        - `REFUNDED` — fully refunded
+        - `PARTIALLY_REFUNDED` — one or more partial refunds issued
+
+    PaymentMethod:
+      type: string
+      enum: [CARD, BANK_TRANSFER, DIRECT_DEBIT]
+
+    Payment:
+      type: object
+      required: [id, amount, method, status, reference]
+      properties:
+        id:
+          type: string
+          example: pay_9kQ2mNpX
+        amount:
+          $ref: '../../catalog/shared/components.yaml#/components/schemas/Money'
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        reference:
+          type: string
+          description: Caller-supplied reference
+          example: "Order #ORD-20241115-001"
+        cardId:
+          type: string
+          description: Card ID (only for CARD method payments)
+          example: card_9kQ2mNpX
+        refundedAmount:
+          $ref: '../../catalog/shared/components.yaml#/components/schemas/Money'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Caller-supplied key-value metadata (max 10 keys)
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-11-15T09:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-11-15T09:31:12Z"
+
+    InitiatePaymentRequest:
+      type: object
+      required: [amount, method, reference]
+      properties:
+        amount:
+          $ref: '../../catalog/shared/components.yaml#/components/schemas/Money'
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        cardId:
+          type: string
+          description: Required when method is CARD
+          example: card_9kQ2mNpX
+        reference:
+          type: string
+          maxLength: 255
+          description: Caller-supplied idempotency reference
+          example: "Order #ORD-20241115-001"
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Up to 10 key-value pairs stored against the payment
+
+    Refund:
+      type: object
+      required: [id, paymentId, amount, reason, status]
+      properties:
+        id:
+          type: string
+          example: ref_7pL3xKmN
+        paymentId:
+          type: string
+          example: pay_9kQ2mNpX
+        amount:
+          $ref: '../../catalog/shared/components.yaml#/components/schemas/Money'
+        reason:
+          $ref: '#/components/schemas/RefundReason'
+        status:
+          type: string
+          enum: [PENDING, COMPLETED, FAILED]
+        note:
+          type: string
+          description: Free-text reason visible in reporting
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-11-15T14:00:00Z"
+
+    IssueRefundRequest:
+      type: object
+      required: [amount, reason]
+      properties:
+        amount:
+          $ref: '../../catalog/shared/components.yaml#/components/schemas/Money'
+        reason:
+          $ref: '#/components/schemas/RefundReason'
+        note:
+          type: string
+          maxLength: 500
+
+    RefundReason:
+      type: string
+      enum: [CUSTOMER_REQUEST, DUPLICATE, FRAUDULENT, PRODUCT_NOT_RECEIVED, OTHER]

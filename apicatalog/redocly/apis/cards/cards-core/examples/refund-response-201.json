@@ -1,0 +1,14 @@
+{
+  "_comment": "201 Created — POST /payments/pay_9kQ2mNpX/refunds",
+
+  "id": "ref_7pL3xKmN",
+  "paymentId": "pay_9kQ2mNpX",
+  "amount": {
+    "amount": 1000,
+    "currency": "GBP"
+  },
+  "reason": "CUSTOMER_REQUEST",
+  "status": "PENDING",
+  "note": "Customer returned item — partial refund for shipping cost",
+  "createdAt": "2024-11-15T14:00:00Z"
+}

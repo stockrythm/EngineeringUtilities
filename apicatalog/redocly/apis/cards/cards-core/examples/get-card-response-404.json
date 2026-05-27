@@ -1,0 +1,9 @@
+{
+  "_comment": "404 Not Found — GET /cards/card_doesnotexist",
+
+  "error": {
+    "code": "CARD_NOT_FOUND",
+    "message": "Card with id card_doesnotexist was not found.",
+    "traceId": "d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9"
+  }
+}

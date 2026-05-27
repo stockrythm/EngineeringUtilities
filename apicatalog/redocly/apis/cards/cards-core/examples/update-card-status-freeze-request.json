@@ -1,0 +1,11 @@
+{
+  "_comment": "PATCH /cards/card_9kQ2mNpX/status — freeze a card",
+  "_headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "Content-Type": "application/json",
+    "X-Trace-Id": "c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8"
+  },
+
+  "status": "FROZEN",
+  "reason": "Suspicious transaction reported by cardholder"
+}

@@ -1,0 +1,38 @@
+{
+  "_comment": "200 OK — GET /payments?status=COMPLETED&page=1&pageSize=2",
+
+  "data": [
+    {
+      "id": "pay_9kQ2mNpX",
+      "amount": { "amount": 4999, "currency": "GBP" },
+      "method": "CARD",
+      "status": "COMPLETED",
+      "reference": "Order #ORD-20241115-001",
+      "cardId": "card_9kQ2mNpX",
+      "refundedAmount": null,
+      "metadata": { "orderId": "ORD-20241115-001" },
+      "createdAt": "2024-11-15T09:30:00Z",
+      "updatedAt": "2024-11-15T09:31:12Z"
+    },
+    {
+      "id": "pay_3rT5vWxY",
+      "amount": { "amount": 150000, "currency": "GBP" },
+      "method": "BANK_TRANSFER",
+      "status": "COMPLETED",
+      "reference": "Invoice INV-2024-0042",
+      "cardId": null,
+      "refundedAmount": null,
+      "metadata": { "invoiceId": "INV-2024-0042" },
+      "createdAt": "2024-11-14T14:00:00Z",
+      "updatedAt": "2024-11-14T14:05:33Z"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "pageSize": 2,
+    "totalCount": 47,
+    "totalPages": 24,
+    "hasNextPage": true,
+    "hasPreviousPage": false
+  }
+}

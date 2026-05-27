@@ -1,0 +1,21 @@
+{
+  "_comment": "201 Created — POST /payments",
+
+  "id": "pay_9kQ2mNpX",
+  "amount": {
+    "amount": 4999,
+    "currency": "GBP"
+  },
+  "method": "CARD",
+  "status": "PENDING",
+  "reference": "Order #ORD-20241115-001",
+  "cardId": "card_9kQ2mNpX",
+  "refundedAmount": null,
+  "metadata": {
+    "orderId": "ORD-20241115-001",
+    "customerId": "cust_7hJ3kLmP",
+    "channel": "web"
+  },
+  "createdAt": "2024-11-15T09:30:00Z",
+  "updatedAt": "2024-11-15T09:30:00Z"
+}

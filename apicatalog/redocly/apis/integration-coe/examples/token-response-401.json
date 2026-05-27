@@ -1,0 +1,8 @@
+{
+  "_comment": "401 Unauthorized — POST /token with bad client_id or client_secret",
+  "error": {
+    "code": "INVALID_CLIENT",
+    "message": "Client authentication failed. Check your client_id and client_secret.",
+    "traceId": "4bf92f3577b34da6a3ce929d0e0e4736"
+  }
+}

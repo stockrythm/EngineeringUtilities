@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Integration COE — 5-Agent Prompt Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--s1:#0c0f1a;--s2:#111520;--s3:#171c2e;
+  --border:#1c2238;--border2:#263050;--text:#cdd8f0;--muted:#4a5880;--dim:#232d48;
+  --amber:#f59e0b;--amber-d:#7c4f05;--amber-g:rgba(245,158,11,.1);
+  --cyan:#22d3ee;--cyan-d:#064e63;--cyan-g:rgba(34,211,238,.1);
+  --violet:#a78bfa;--violet-d:#3b2570;--violet-g:rgba(167,139,250,.1);
+  --green:#34d399;--green-d:#064e32;--green-g:rgba(52,211,153,.1);
+  --rose:#fb7185;--rose-d:#5a1628;--rose-g:rgba(251,113,133,.1);
+  --mono:'Geist Mono',monospace;--sans:'Instrument Sans',sans-serif;
+  --r:7px;--rl:11px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;overflow:hidden}
+
+/* NAV */
+nav{
+  height:50px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 1.25rem;border-bottom:1px solid var(--border);background:var(--s1);
+  position:relative;z-index:60;gap:1rem;flex-shrink:0;
+}
+.brand{display:flex;align-items:center;gap:9px}
+.brand-chip{
+  padding:3px 8px;border-radius:5px;font-family:var(--mono);font-size:9px;font-weight:500;
+  background:linear-gradient(135deg,var(--amber),var(--cyan));color:#000;letter-spacing:.02em
+}
+.brand-name{font-size:13px;font-weight:600;letter-spacing:-.2px}
+.brand-ver{font-size:10px;color:var(--muted);margin-left:6px;font-family:var(--mono)}
+
+.key-wrap{
+  display:flex;align-items:center;gap:7px;background:var(--s2);
+  border:1px solid var(--border);border-radius:var(--r);padding:5px 9px;max-width:320px;flex:1
+}
+.key-wrap label{font-size:9px;color:var(--muted);font-family:var(--mono);white-space:nowrap;letter-spacing:.06em}
+.key-wrap input{background:none;border:none;outline:none;font-family:var(--mono);font-size:11px;color:var(--text);flex:1;min-width:0}
+.key-wrap input::placeholder{color:var(--dim)}
+.kdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.kdot.ok{background:var(--green)}.kdot.no{background:var(--dim)}.kdot.bad{background:var(--rose)}
+
+/* PIPELINE ROW */
+.pipe{
+  height:48px;display:flex;align-items:center;gap:0;padding:0 1.25rem;
+  border-bottom:1px solid var(--border);background:var(--s1);
+  overflow-x:auto;flex-shrink:0;
+}
+.pipe::-webkit-scrollbar{height:0}
+.pipe-lbl{font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;margin-right:8px}
+.ps{
+  display:flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--r);
+  font-size:11px;font-weight:500;cursor:pointer;border:1px solid transparent;
+  transition:all .18s;white-space:nowrap;flex-shrink:0
+}
+.ps:hover{background:var(--s3)}
+.ps.ov{color:var(--muted)}
+.ps.ov.active{background:var(--s3);border-color:var(--border2);color:var(--text)}
+.ps.amber{color:var(--amber)}.ps.amber.active{background:var(--amber-g);border-color:var(--amber)}
+.ps.cyan{color:var(--cyan)}.ps.cyan.active{background:var(--cyan-g);border-color:var(--cyan)}
+.ps.violet{color:var(--violet)}.ps.violet.active{background:var(--violet-g);border-color:var(--violet)}
+.ps.green{color:var(--green)}.ps.green.active{background:var(--green-g);border-color:var(--green)}
+.ps.rose{color:var(--rose)}.ps.rose.active{background:var(--rose-g);border-color:var(--rose)}
+.pa{color:var(--dim);padding:0 3px;flex-shrink:0}
+
+/* SHELL */
+.shell{display:flex;height:calc(100vh - 98px);overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{
+  width:268px;flex-shrink:0;border-right:1px solid var(--border);
+  background:var(--s1);display:flex;flex-direction:column;overflow:hidden
+}
+.sb-agents{flex-shrink:0}
+.ag-tab{
+  display:flex;align-items:center;gap:9px;padding:.7rem 1rem;
+  border-left:3px solid transparent;cursor:pointer;transition:all .15s;
+  border-bottom:1px solid var(--border)
+}
+.ag-tab:hover{background:var(--s2)}
+.ag-tab.active.amber{background:var(--amber-g);border-left-color:var(--amber)}
+.ag-tab.active.cyan{background:var(--cyan-g);border-left-color:var(--cyan)}
+.ag-tab.active.violet{background:var(--violet-g);border-left-color:var(--violet)}
+.ag-tab.active.green{background:var(--green-g);border-left-color:var(--green)}
+.ag-tab.active.rose{background:var(--rose-g);border-left-color:var(--rose)}
+.ag-icon{font-size:16px;flex-shrink:0;width:20px;text-align:center}
+.ag-info{flex:1;min-width:0}
+.ag-name{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ag-sub{font-size:9px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+.ag-num{
+  width:18px;height:18px;border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:9px;font-weight:500
+}
+.amber .ag-num{background:var(--amber-d);color:var(--amber)}
+.cyan .ag-num{background:var(--cyan-d);color:var(--cyan)}
+.violet .ag-num{background:var(--violet-d);color:var(--violet)}
+.green .ag-num{background:var(--green-d);color:var(--green)}
+.rose .ag-num{background:var(--rose-d);color:var(--rose)}
+
+.sb-detail{flex:1;overflow-y:auto;display:none}
+.sb-detail.show{display:block}
+.sb-sec{padding:.6rem .9rem .2rem}
+.sb-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);padding-bottom:.35rem}
+.field{margin-bottom:.65rem;padding:0 .1rem}
+.field label{display:block;font-size:9px;color:var(--muted);margin-bottom:3px;font-family:var(--mono)}
+.field select,.field input{
+  width:100%;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);
+  color:var(--text);font-family:var(--sans);font-size:11px;padding:5px 7px;outline:none;appearance:none;
+  transition:border-color .15s
+}
+.field select:focus,.field input:focus{border-color:currentColor}
+.field input::placeholder{color:var(--dim)}
+.cmd-sec{padding:.2rem .6rem .8rem}
+.cmd-item{
+  padding:7px 9px;border-radius:var(--r);border:1px solid transparent;
+  cursor:pointer;transition:all .13s;margin-bottom:2px
+}
+.cmd-item:hover{background:var(--s2);border-color:var(--border)}
+.cmd-item.sel.amber{background:var(--amber-g);border-color:var(--amber)}
+.cmd-item.sel.cyan{background:var(--cyan-g);border-color:var(--cyan)}
+.cmd-item.sel.violet{background:var(--violet-g);border-color:var(--violet)}
+.cmd-item.sel.green{background:var(--green-g);border-color:var(--green)}
+.cmd-item.sel.rose{background:var(--rose-g);border-color:var(--rose)}
+.cmd-name{font-family:var(--mono);font-size:10px;font-weight:500;margin-bottom:2px}
+.cmd-name.amber{color:var(--amber)}.cmd-name.cyan{color:var(--cyan)}
+.cmd-name.violet{color:var(--violet)}.cmd-name.green{color:var(--green)}.cmd-name.rose{color:var(--rose)}
+.cmd-desc{font-size:10px;color:var(--muted);line-height:1.4}
+.sdiv{height:1px;background:var(--border);margin:.3rem .6rem}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.pane{padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:.9rem;flex:1}
+
+/* OVERVIEW */
+.ov-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.75rem}
+.ov-card{
+  background:var(--s2);border:1px solid var(--border);border-radius:var(--rl);
+  padding:.9rem;cursor:pointer;transition:all .18s;
+}
+.ov-card:hover{background:var(--s3);transform:translateY(-1px)}
+.ov-card.amber:hover{border-color:var(--amber)}
+.ov-card.cyan:hover{border-color:var(--cyan)}
+.ov-card.violet:hover{border-color:var(--violet)}
+.ov-card.green:hover{border-color:var(--green)}
+.ov-card.rose:hover{border-color:var(--rose)}
+.ov-icon{font-size:22px;margin-bottom:.5rem}
+.ov-num{font-family:var(--mono);font-size:9px;margin-bottom:3px}
+.ov-num.amber{color:var(--amber)}.ov-num.cyan{color:var(--cyan)}
+.ov-num.violet{color:var(--violet)}.ov-num.green{color:var(--green)}.ov-num.rose{color:var(--rose)}
+.ov-name{font-size:12px;font-weight:600;margin-bottom:3px}
+.ov-sub{font-size:10px;color:var(--muted);line-height:1.4}
+.flow-row{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--s2);border:1px solid var(--border);border-radius:var(--rl);
+  overflow:hidden;
+}
+.flow-ag{flex:1;padding:.75rem .9rem;border-right:1px solid var(--border)}
+.flow-ag:last-child{border-right:none}
+.flow-ag-name{font-size:10px;font-weight:600;margin-bottom:5px}
+.flow-ag-name.amber{color:var(--amber)}.flow-ag-name.cyan{color:var(--cyan)}
+.flow-ag-name.violet{color:var(--violet)}.flow-ag-name.green{color:var(--green)}.flow-ag-name.rose{color:var(--rose)}
+.flow-items{font-size:9px;color:var(--muted);line-height:1.8;font-family:var(--mono)}
+.flow-arr{
+  display:flex;align-items:center;justify-content:center;
+  padding:0 6px;color:var(--dim);font-size:14px;flex-shrink:0
+}
+
+/* AGENT PANE */
+.pane-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+.pane-title{font-size:15px;font-weight:600;letter-spacing:-.2px;font-family:var(--mono)}
+.pane-about{font-size:11px;color:var(--muted);margin-top:3px;line-height:1.55;max-width:520px}
+.ag-badge{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 9px;
+  border-radius:20px;font-size:9px;font-weight:600;border:1px solid;flex-shrink:0;font-family:var(--mono)
+}
+.ag-badge.amber{background:var(--amber-d);color:var(--amber);border-color:var(--amber)}
+.ag-badge.cyan{background:var(--cyan-d);color:var(--cyan);border-color:var(--cyan)}
+.ag-badge.violet{background:var(--violet-d);color:var(--violet);border-color:var(--violet)}
+.ag-badge.green{background:var(--green-d);color:var(--green);border-color:var(--green)}
+.ag-badge.rose{background:var(--rose-d);color:var(--rose);border-color:var(--rose)}
+
+.notice{
+  background:var(--s2);border:1px solid var(--border);
+  border-radius:var(--r);padding:8px 11px;font-size:11px;color:var(--muted);line-height:1.55
+}
+.notice strong{color:var(--text)}
+.notice a{text-decoration:none}
+.notice a:hover{text-decoration:underline}
+.notice.amber{border-left:3px solid var(--amber)}.notice a.amber{color:var(--amber)}
+.notice.cyan{border-left:3px solid var(--cyan)}.notice a.cyan{color:var(--cyan)}
+.notice.violet{border-left:3px solid var(--violet)}.notice a.violet{color:var(--violet)}
+.notice.green{border-left:3px solid var(--green)}.notice a.green{color:var(--green)}
+.notice.rose{border-left:3px solid var(--rose)}.notice a.rose{color:var(--rose)}
+
+.inp-row{display:flex;gap:7px;align-items:flex-start}
+.prompt-in{
+  flex:1;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);
+  color:var(--text);font-family:var(--sans);font-size:12px;padding:8px 11px;
+  outline:none;resize:none;min-height:38px;max-height:100px;line-height:1.5;
+  transition:border-color .15s
+}
+.prompt-in::placeholder{color:var(--dim)}
+
+.btn{
+  display:inline-flex;align-items:center;gap:5px;padding:7px 13px;
+  border-radius:var(--r);font-family:var(--sans);font-size:11px;font-weight:500;
+  cursor:pointer;border:1px solid transparent;transition:all .15s;white-space:nowrap
+}
+.btn:disabled{opacity:.38;cursor:not-allowed}
+.btn-ghost{background:var(--s2);color:var(--text);border-color:var(--border)}
+.btn-ghost:hover:not(:disabled){border-color:var(--border2);background:var(--s3)}
+.btn.amber{background:var(--amber);color:#000}.btn.amber:hover:not(:disabled){opacity:.82}
+.btn.cyan{background:var(--cyan);color:#000}.btn.cyan:hover:not(:disabled){opacity:.82}
+.btn.violet{background:var(--violet);color:#000}.btn.violet:hover:not(:disabled){opacity:.82}
+.btn.green{background:var(--green);color:#000}.btn.green:hover:not(:disabled){opacity:.82}
+.btn.rose{background:var(--rose);color:#000}.btn.rose:hover:not(:disabled){opacity:.82}
+
+/* OUTPUT */
+.out-card{
+  background:var(--s1);border:1px solid var(--border);border-radius:var(--rl);
+  display:flex;flex-direction:column;flex:1;min-height:340px;overflow:hidden
+}
+.out-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:7px 11px;border-bottom:1px solid var(--border);gap:8px;flex-wrap:wrap
+}
+.out-meta{display:flex;align-items:center;gap:9px}
+.mode-tag{
+  font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:4px;
+  border:1px solid var(--border);color:var(--muted);text-transform:uppercase;letter-spacing:.05em
+}
+.meter{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--muted);font-family:var(--mono)}
+.mtrack{width:80px;height:3px;background:var(--s3);border-radius:2px;overflow:hidden}
+.mfill{height:100%;border-radius:2px;transition:width .3s,background .3s}
+.out-acts{display:flex;gap:4px}
+.out-body{
+  flex:1;overflow-y:auto;padding:1rem 1.25rem;
+  font-family:var(--mono);font-size:11px;line-height:1.75;
+  color:var(--text);white-space:pre-wrap;word-break:break-word
+}
+.out-body.empty{
+  font-family:var(--sans);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;color:var(--muted);gap:7px;font-size:11px
+}
+.out-body.empty svg{opacity:.15}
+.stat-row{
+  display:flex;align-items:center;gap:6px;padding:6px 11px;
+  border-top:1px solid var(--border);font-size:9px;color:var(--muted);font-family:var(--mono)
+}
+.sdot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.sdot.idle{background:var(--dim)}.sdot.work{background:var(--amber);animation:pulse 1s infinite}
+.sdot.done{background:var(--green)}.sdot.err{background:var(--rose)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cur{display:inline-block;width:2px;height:10px;background:currentColor;vertical-align:middle;margin-left:1px;animation:blink 1s infinite}
+
+.toast{
+  position:fixed;bottom:1rem;right:1rem;background:var(--s3);
+  border:1px solid var(--border2);border-radius:var(--r);padding:8px 13px;
+  font-size:11px;color:var(--text);opacity:0;transform:translateY(5px);
+  transition:all .2s;pointer-events:none;z-index:999
+}
+.toast.show{opacity:1;transform:none}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="brand">
+    <div class="brand-chip">COE</div>
+    <span class="brand-name">Integration COE Agent Builder</span>
+    <span class="brand-ver">v2.0 · 5 agents</span>
+  </div>
+  <div class="key-wrap">
+    <label>API KEY</label>
+    <input type="password" id="apikey" placeholder="sk-ant-api03-…" oninput="onKey()" autocomplete="off">
+    <div class="kdot no" id="kdot"></div>
+  </div>
+</nav>
+
+<div class="pipe" id="pipe">
+  <span class="pipe-lbl">Pipeline</span>
+  <div class="ps ov active" onclick="showOv()">🗺 Overview</div>
+  <span class="pa">›</span>
+  <div class="ps amber" onclick="goAgent(1)">📋 E1 Estimator</div>
+  <span class="pa">›</span>
+  <div class="ps cyan" onclick="goAgent(2)">🔍 API Cataloguer</div>
+  <span class="pa">›</span>
+  <div class="ps violet" onclick="goAgent(3)">🏛 Solution Designer</div>
+  <span class="pa">›</span>
+  <div class="ps green" onclick="goAgent(4)">⚙ Migration Planner</div>
+  <span class="pa">›</span>
+  <div class="ps rose" onclick="goAgent(5)">📊 Delivery Tracker</div>
+</div>
+
+<div class="shell">
+<aside class="sidebar">
+  <div class="sb-agents" id="sb-agents"></div>
+  <div class="sb-detail" id="sb-detail"></div>
+</aside>
+<main class="main" id="main"></main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── AGENT DATA ────────────────────────────────────────────────────
+const AGENTS = [
+  { id:1, name:'E1 Estimator', sub:'Intake & feasibility', color:'amber', icon:'📋',
+    desc:'Entry point for all COE work. Takes an E1 estimation request and produces a structured recommendation covering feasibility, technology choice, reusable artefacts, technical debt, patching needs, and resourcing guidance for the tribe lead.',
+    fields:[
+      {id:'a1-reqid',label:'Request / CR ID',type:'input',ph:'e.g. E1-2024-0042'},
+      {id:'a1-domain',label:'Business domain',type:'input',ph:'e.g. Retail Payments, Treasury'},
+      {id:'a1-tribe',label:'Tribe / squad',type:'input',ph:'e.g. Platform Tribe, Squad Falcon'},
+      {id:'a1-stack',label:'Current stack',type:'select',opts:['MuleSoft 3.x','MuleSoft 4.x','IBM IIB','Oracle Service Bus','TIBCO','Mixed / unknown']},
+    ],
+    cmds:[
+      {id:'intake',name:'/e1-intake',desc:'Capture & structure the E1 request',about:'Takes a raw E1 estimation request and structures it into a consistent intake record with all fields needed for feasibility assessment and downstream agents.'},
+      {id:'feasibility',name:'/e1-feasibility',desc:'API feasibility & technology recommendation',about:'Assesses feasibility of the requested integration work and produces a MuleSoft vs Spring Boot recommendation with rationale, complexity score, and effort estimate.'},
+      {id:'reusability',name:'/e1-reusability',desc:'Identify reusable artefacts',about:'Scans the described scope against known COE assets and recommends reusable components, templates, and patterns — avoiding duplication across squads.'},
+      {id:'techdebt',name:'/e1-tech-debt',desc:'Technical debt & patching report',about:'Identifies technical debt and version/patch gaps in the current scope and produces a prioritised remediation list with effort and risk ratings.'},
+      {id:'resourcing',name:'/e1-resourcing',desc:'Squad resourcing recommendation',about:'Recommends the right skill mix for the squad based on work scope, including sourcing guidance for specialist roles and vendor resource needs.'},
+      {id:'esum',name:'/e1-summary',desc:'E1 estimation summary report',about:'Consolidates all E1 findings into a structured report for the tribe lead — ready to paste into Confluence or a formal estimation template.'},
+    ]
+  },
+  { id:2, name:'API Cataloguer', sub:'Discover → Logseq MD', color:'cyan', icon:'🔍',
+    desc:'Discovery companion for new joiners or new domains. Interrogates APIs and outputs structured Logseq markdown with backlinks, dependency maps, and agent-consumable MD files that feed all downstream agents.',
+    fields:[
+      {id:'a2-bank',label:'Bank / domain',type:'input',ph:'e.g. Retail Banking, Treasury'},
+      {id:'a2-cat',label:'API category',type:'select',opts:['Core Banking','Payments','Customer / CRM','Risk & Compliance','Reporting & Analytics','Identity & Auth','Notification & Messaging','Integration / Middleware','Unknown / To discover']},
+      {id:'a2-src',label:'Source system',type:'input',ph:'e.g. MuleSoft, legacy SOAP, SAP'},
+    ],
+    cmds:[
+      {id:'catalogue',name:'/catalogue-api',desc:'Capture a single API into Logseq MD',about:'Interrogates an API and outputs a full Logseq page with [[backlinks]], properties, endpoints, dependencies, and migration flags ready for Agent 3.'},
+      {id:'deps',name:'/capture-dependencies',desc:'Map cross-API dependency graph',about:'Produces a dependency map page and migration sequencing recommendation from multiple catalogued API pages.'},
+      {id:'skills',name:'/generate-skills-md',desc:'Produce SKILLS.md from catalogued APIs',about:'Synthesises catalogued API knowledge into SKILLS.md — the agentic context file that Agent 3 reads for N — Norms in the REASONS canvas.'},
+      {id:'specs',name:'/generate-specs-md',desc:'Produce SPECS.md for solution design',about:'Consolidates API contracts and constraints into SPECS.md — feeds into S — Safeguards in the Agent 3 REASONS canvas.'},
+      {id:'session',name:'/session-summary',desc:'End-of-session discovery recap',about:'Produces a structured recap of catalogued APIs, gaps found, open questions, and what is ready for Agent 3 Solution Designer.'},
+    ]
+  },
+  { id:3, name:'Solution Designer', sub:'Architecture & patterns', color:'violet', icon:'🏛️',
+    desc:'The architectural decision layer. Reads E1 output and Logseq MD files to produce the REASONS canvas, reusable component design, integration pattern selection, and formal technology decisions before any build begins.',
+    fields:[
+      {id:'a3-decision',label:'Technology decision',type:'select',opts:['MuleSoft (retain)','Spring Boot (migrate)','Hybrid (facade pattern)','New greenfield API','TBD — needs assessment']},
+      {id:'a3-pattern',label:'Primary pattern',type:'select',opts:['REST API','Event-driven / async','Batch / file-based','SOAP → REST migration','API gateway / facade','Orchestration flow']},
+      {id:'a3-compliance',label:'Compliance constraints',type:'input',ph:'e.g. PSD2, GDPR, FCA, SOX'},
+    ],
+    cmds:[
+      {id:'canvas',name:'/spdd-reasons-canvas',desc:'Generate REASONS canvas from E1 + MD files',about:'Pre-populates the full REASONS canvas (R-E-A-S-O-N-S) from E1 estimation and Logseq MD files. The approved canvas governs all Agent 4 generation.'},
+      {id:'reusable',name:'/design-reusable',desc:'Design reusable component specifications',about:'Produces specifications for reusable artefacts identified in E1 — shared schemas, error handlers, auth modules, logging interceptors — to prevent duplication.'},
+      {id:'patterns',name:'/select-patterns',desc:'Integration pattern selection guide',about:'Evaluates and recommends integration patterns for the scope with rationale, trade-offs, and Spring Boot or MuleSoft implementation notes.'},
+      {id:'adr',name:'/generate-adr',desc:'Architecture Decision Record',about:'Produces a formal ADR for key technology and pattern decisions made during solution design — versioned and ready for Confluence.'},
+      {id:'update',name:'/spdd-prompt-update',desc:'Propagate design changes to canvas',about:'When design decisions change mid-delivery, updates the canvas with a full diff and identifies downstream impact on Agent 4 generation tasks.'},
+    ]
+  },
+  { id:4, name:'Migration Planner', sub:'Build & test execution', color:'green', icon:'⚙️',
+    desc:'Pure execution agent. Receives a signed-off REASONS canvas from Agent 3 and drives code generation, API testing, and synchronisation for MuleSoft → Spring Boot migrations task by task.',
+    fields:[
+      {id:'a4-src',label:'Source platform',type:'select',opts:['MuleSoft 3.x','MuleSoft 4.x','IBM IIB','Oracle Service Bus','TIBCO BW','WSO2','Custom ESB']},
+      {id:'a4-tgt',label:'Target platform',type:'select',opts:['Spring Boot 3.x + Spring Integration','Spring Boot 3.x + Apache Camel','Spring Boot 3.x + REST only','Quarkus','Micronaut']},
+      {id:'a4-approach',label:'Migration approach',type:'select',opts:['Strangler fig (incremental)','Big bang (full cutover)','Parallel run','API facade first']},
+    ],
+    cmds:[
+      {id:'generate',name:'/spdd-generate',desc:'Canvas-driven code generation',about:'Reads the approved REASONS canvas and generates Spring Boot code task by task. Pauses for user review after each task. Safeguards are inviolable.'},
+      {id:'apitest',name:'/spdd-api-test',desc:'Contract parity & compliance tests',about:'Generates tests validating the Spring Boot implementation matches the original MuleSoft contract — parity, boundary, error, and compliance scenarios.'},
+      {id:'sync',name:'/spdd-sync',desc:'Sync deviations back to canvas + MD files',about:'When implementation diverges from canvas, synchronises both the REASONS canvas and the originating Logseq MD files to maintain full knowledge chain consistency.'},
+      {id:'cutover',name:'/plan-cutover',desc:'Cutover & rollback plan',about:'Produces a step-by-step cutover plan with rollback triggers, go/no-go criteria, and communication checklist for each API being migrated.'},
+    ]
+  },
+  { id:5, name:'Delivery Tracker', sub:'Governance & resourcing', color:'rose', icon:'📊',
+    desc:'COE management agent. Tracks squad health, vendor resource effectiveness, technical debt register, patch compliance, and sprint reporting — independent of what is being built.',
+    fields:[
+      {id:'a5-squad',label:'Squad / tribe',type:'input',ph:'e.g. Squad Falcon, Platform Tribe'},
+      {id:'a5-sprint',label:'Sprint / period',type:'input',ph:'e.g. Sprint 24, Q2 2025'},
+      {id:'a5-vendor',label:'Vendor(s)',type:'input',ph:'e.g. Infosys, Wipro, TCS'},
+    ],
+    cmds:[
+      {id:'vendor',name:'/track-vendor',desc:'Vendor resource effectiveness report',about:'Produces a structured effectiveness report for vendor-provided resources: delivery rate, quality metrics, SoW adherence, and action recommendations.'},
+      {id:'squad',name:'/squad-health',desc:'Squad health & resourcing check',about:'Assesses current squad composition against work in flight, identifies skill gaps, and recommends resourcing actions including vendor augmentation.'},
+      {id:'debt',name:'/debt-register',desc:'Technical debt register update',about:'Takes inputs from E1 and delivery work to update the technical debt register with prioritised items, owners, and remediation timelines.'},
+      {id:'patch',name:'/patch-compliance',desc:'Version & patch compliance report',about:'Scans the integration landscape from Logseq MD catalogue for outdated versions and EOL components, and produces a patching priority list.'},
+      {id:'sprint',name:'/sprint-report',desc:'Sprint delivery report for tribe lead',about:'Generates a concise sprint report covering delivery progress, blockers, vendor performance, and debt/patch status — ready for the tribe lead.'},
+    ]
+  }
+];
+
+// ── TEMPLATES ─────────────────────────────────────────────────────
+function getCtx(ag){
+  const f=(id)=>{const el=document.getElementById(id);return el?el.value.trim():''};
+  if(ag===1) return {reqid:f('a1-reqid'),domain:f('a1-domain'),tribe:f('a1-tribe'),stack:f('a1-stack')};
+  if(ag===2) return {bank:f('a2-bank'),cat:f('a2-cat'),src:f('a2-src')};
+  if(ag===3) return {decision:f('a3-decision'),pattern:f('a3-pattern'),compliance:f('a3-compliance')};
+  if(ag===4) return {src:f('a4-src'),tgt:f('a4-tgt'),approach:f('a4-approach')};
+  if(ag===5) return {squad:f('a5-squad'),sprint:f('a5-sprint'),vendor:f('a5-vendor')};
+}
+
+function tpl(agId, cmdId){
+  const c=getCtx(agId);
+  const T={
+    '1-intake':`# Agent 1 — E1 Estimator: /e1-intake
+## Identity
+You are an Integration COE estimation coordinator. When /e1-intake is invoked, structure the raw E1 request into a consistent intake record that all downstream agents can consume.
+
+## Context
+- Request ID: ${c.reqid||'[to be assigned]'}
+- Business domain: ${c.domain||'[required]'}
+- Tribe / squad: ${c.tribe||'[required]'}
+- Current stack: ${c.stack}
+
+## Output — E1 Intake Record
+\`\`\`markdown
+# E1 Intake — [Request Title]
+id:: ${c.reqid||'E1-YYYY-NNNN'}
+domain:: [[${c.domain||'Domain'}]]
+tribe:: [[${c.tribe||'Tribe'}]]
+stack:: [[${c.stack}]]
+received:: YYYY-MM-DD
+status:: [[In Assessment]]
+
+## Request summary
+[One paragraph describing what is being requested]
+
+## Scope
+- In scope: [list]
+- Out of scope: [list]
+- Assumptions: [list]
+
+## Initial classification
+- Type: New API | Integration | Migration | CR | Innovation
+- Complexity: Low | Medium | High | TBD
+- Urgency: Routine | Priority | Critical
+
+## Next steps
+- [ ] /e1-feasibility — technology and feasibility assessment
+- [ ] /e1-reusability — check COE asset library
+- [ ] /e1-tech-debt — identify debt in scope
+- [ ] /e1-resourcing — squad composition recommendation
+\`\`\`
+
+## Rules
+- Ask one clarifying question at a time if the request is ambiguous
+- Never assign complexity without reasoning
+- Flag if the request crosses tribe boundaries — escalation needed
+- Tag all systems mentioned with [[double brackets]] for Logseq`,
+
+    '1-feasibility':`# Agent 1 — E1 Estimator: /e1-feasibility
+## Identity
+You are an Integration COE architect. When /e1-feasibility is invoked, assess feasibility of the E1 request and produce a technology recommendation with full rationale.
+
+## Context
+- Domain: ${c.domain||'[from intake]'}
+- Current stack: ${c.stack}
+- Tribe: ${c.tribe||'[from intake]'}
+
+## Output structure
+
+### 1. Feasibility verdict
+FEASIBLE | FEASIBLE WITH CONDITIONS | NOT FEASIBLE
+Reasoning: [explain why]
+
+### 2. Technology recommendation
+| Option | Fit score | Rationale | Risk |
+|--------|-----------|-----------|------|
+| MuleSoft (retain/extend) | /10 | | |
+| Spring Boot (new/migrate) | /10 | | |
+| Hybrid facade | /10 | | |
+
+**Recommendation:** [chosen option with 3-sentence rationale]
+
+### 3. Complexity assessment
+| Dimension | Rating | Notes |
+|-----------|--------|-------|
+| Integration complexity | Low/Med/High | |
+| Data volume | Low/Med/High | |
+| Security requirements | Low/Med/High | |
+| Downstream dependencies | Low/Med/High | |
+| **Overall** | **Low/Med/High** | |
+
+### 4. Indicative effort
+| Phase | Estimate | Assumptions |
+|-------|----------|-------------|
+| Discovery & design | X days | |
+| Build | X days | |
+| Test | X days | |
+| Cutover | X days | |
+| **Total** | **X days** | |
+
+### 5. Key risks
+[Top 3 risks with likelihood and impact]
+
+### 6. Conditions / dependencies
+[What must be true for this to proceed]
+
+## Rules
+- Never give effort estimates without listing assumptions
+- If ${c.stack} is EOL or high-debt, flag immediately
+- MuleSoft vs Spring Boot decision must reference tribe skill availability`,
+
+    '1-reusability':`# Agent 1 — E1 Estimator: /e1-reusability
+## Identity
+You are an Integration COE asset librarian. When /e1-reusability is invoked, identify reusable assets from the COE library that apply to this E1 request — avoiding duplication and accelerating delivery.
+
+## Context
+- Domain: ${c.domain||'[from intake]'}
+- Stack: ${c.stack}
+- Tribe: ${c.tribe||'[from intake]'}
+
+## Output structure
+
+### 1. Reuse candidates
+Ask the user to describe the integration patterns and API types in scope.
+Then produce:
+
+| Asset | Type | Reuse level | Location | Owner |
+|-------|------|------------|----------|-------|
+| [[Error Handler Template]] | Shared lib | Full reuse | COE GitHub | [[COE Team]] |
+| [[Auth Module — OAuth 2.0]] | Shared lib | Full reuse | | |
+| [[Logging Interceptor]] | Shared lib | Full reuse | | |
+| [[Customer Schema v2]] | Schema | Adapt needed | | |
+
+### 2. Build new (no reuse available)
+[Items that must be built from scratch — flag these for potential future asset extraction]
+
+### 3. Asset gaps in COE library
+[Patterns appearing in this request that should be added to the COE library after delivery]
+
+### 4. Reuse impact on estimate
+Estimated savings from reuse: X days (Y% of total effort)
+
+## Rules
+- Every reuse candidate must have a known owner — do not list orphaned assets
+- "Adapt needed" assets require a design review before use
+- Flag if a similar API already exists in the [[${c.domain||'domain'}]] space — avoid duplication`,
+
+    '1-techdebt':`# Agent 1 — E1 Estimator: /e1-tech-debt
+## Identity
+You are an Integration COE technical debt analyst. When /e1-tech-debt is invoked, identify technical debt and version/patch risks in the scope of this E1 request.
+
+## Context
+- Stack: ${c.stack}
+- Domain: ${c.domain||'[from intake]'}
+
+## Output structure
+
+### 1. Version & patch status
+| Component | Current version | Latest stable | EOL date | Action |
+|-----------|----------------|--------------|----------|--------|
+| ${c.stack} | [current] | [latest] | [date] | Upgrade / Monitor / Critical |
+| JDK / Runtime | | | | |
+| Key dependencies | | | | |
+
+### 2. Technical debt register (scope-specific)
+| Debt item | Type | Severity | Effort to fix | Recommendation |
+|-----------|------|----------|--------------|----------------|
+| [item] | Code/Arch/Infra/Process | High/Med/Low | X days | Fix now / Fix in migration / Accept |
+
+Debt types: Code (quality, coverage), Architecture (outdated patterns, tight coupling), Infrastructure (old runtimes, manual pipelines), Process (missing docs, no runbook)
+
+### 3. Patch priority
+CRITICAL — must fix before delivery: [list]
+HIGH — fix within this delivery: [list]
+MEDIUM — schedule next quarter: [list]
+LOW — log and monitor: [list]
+
+### 4. Debt impact on E1 estimate
+Additional effort for debt remediation: X days
+Recommendation: Include in this E1 | Separate CR | Accept and log
+
+## Rules
+- ${c.stack} EOL or near-EOL components are always CRITICAL
+- Never recommend accepting debt without logging it to the debt register (Agent 5 /debt-register)
+- Flag to Agent 5 /patch-compliance any items requiring landscape-wide patching`,
+
+    '1-resourcing':`# Agent 1 — E1 Estimator: /e1-resourcing
+## Identity
+You are an Integration COE resourcing advisor. When /e1-resourcing is invoked, recommend the right squad composition for this E1 request and identify sourcing actions.
+
+## Context
+- Domain: ${c.domain||'[from intake]'}
+- Stack: ${c.stack}
+- Tribe: ${c.tribe||'[from intake]'}
+
+## Output structure
+
+### 1. Required skill profile
+| Role | Skills needed | FTE | Duration | Source |
+|------|--------------|-----|----------|--------|
+| Integration architect | ${c.stack}, API design | 0.5 | Full delivery | Internal |
+| Senior developer | Spring Boot / ${c.stack} | 1.0 | Build phase | Internal / vendor |
+| QA engineer | API testing, contract testing | 0.5 | Test phase | Internal / vendor |
+| DevOps | CI/CD, container platforms | 0.25 | Build + cutover | Internal |
+
+### 2. Current squad gap analysis
+Ask user for current squad composition, then identify:
+- Skills present: [list]
+- Skills missing: [list]
+- Gaps to fill: [list with sourcing recommendation]
+
+### 3. Vendor resource guidance
+If vendor resources are needed:
+- Skills to source externally: [list]
+- Suggested SoW scope: [brief description]
+- Effectiveness KPIs to track (feeds Agent 5 /track-vendor):
+  - Delivery rate vs commitment
+  - Code review pass rate
+  - Defect injection rate
+  - Knowledge transfer completion
+
+### 4. Resourcing risks
+[Skill scarcity, onboarding time, vendor dependency risks]
+
+## Rules
+- Never recommend a squad with no internal anchor — vendor-only squads are high risk
+- Flag if ${c.stack} skills are scarce in the tribe — may affect technology recommendation
+- Resourcing output feeds directly into Agent 5 /squad-health tracking`,
+
+    '1-esum':`# Agent 1 — E1 Estimator: /e1-summary
+## Identity
+You are an Integration COE estimation lead. When /e1-summary is invoked, consolidate all E1 assessment outputs into a single structured report for the tribe lead.
+
+## Context
+- Request: ${c.reqid||'[ID]'} | Domain: ${c.domain||'[domain]'} | Tribe: ${c.tribe||'[tribe]'}
+
+## Output — E1 Summary Report
+\`\`\`markdown
+# E1 Estimation Report — [Request Title]
+id:: ${c.reqid||'E1-YYYY-NNNN'}
+date:: YYYY-MM-DD
+prepared-by:: [[COE Team]]
+status:: [[Pending Approval]]
+
+## Executive summary
+[3 sentences: what was requested, what we recommend, what it will take]
+
+## Recommendation
+Technology: MuleSoft | Spring Boot | Hybrid
+Approach: [one line]
+Overall complexity: Low | Medium | High
+
+## Effort summary
+| Phase | Estimate | Notes |
+|-------|----------|-------|
+| Discovery & design | X days | |
+| Build | X days | |
+| Test | X days | |
+| Cutover | X days | |
+| Debt remediation | X days | |
+| **Total** | **X days** | |
+
+## Reuse savings
+X days saved through COE asset reuse (Y components identified)
+
+## Key risks
+1. [Risk] — Mitigation: [action]
+2. [Risk] — Mitigation: [action]
+
+## Resourcing
+[Squad composition summary and any sourcing actions needed]
+
+## Technical debt & patching
+[Summary of debt items and patch priorities identified]
+
+## Approval
+- [ ] Tribe lead sign-off
+- [ ] Architecture review (if High complexity)
+- [ ] Security review (if compliance-impacting)
+- [ ] Proceed to Agent 2 API Cataloguer
+\`\`\`
+
+## Rules
+- Summary must be self-contained — the tribe lead should not need to read source documents
+- Effort estimates must match /e1-feasibility output exactly
+- Flag any unresolved open questions that could change the estimate`,
+
+    '2-catalogue':`# Agent 2 — API Cataloguer: /catalogue-api
+## Identity
+You are an Integration COE API discovery assistant helping a new joiner map ${c.bank||'the bank'}'s ${c.cat} APIs. Output structured Logseq markdown that builds a navigable knowledge graph consumed by Agent 3.
+
+## When /catalogue-api is invoked
+Ask the user for the following if not provided:
+1. API name and owning team
+2. Base URL or endpoint pattern
+3. Auth mechanism
+4. Key operations (method + path + purpose)
+5. Known consumers and upstream dependencies
+6. Current status and version
+
+## Logseq page output
+\`\`\`markdown
+---
+type: api
+category:: [[${c.cat}]]
+status:: [[Active]] | [[Deprecated]] | [[Unknown]]
+owner:: [[Team Name]]
+auth:: [[OAuth 2.0]] | [[API Key]] | [[Basic Auth]] | [[mTLS]]
+source-system:: [[${c.src||'MuleSoft'}]]
+reviewed-date:: YYYY-MM-DD
+e1-ref:: [[${c.src||'E1-REF'}]]
+---
+# API Name
+## Summary
+## Endpoints
+| Method | Path | Purpose |
+|--------|------|---------|
+## Dependencies
+- Upstream:: [[System A]]
+- Consumers:: [[App X]], [[App Y]]
+- Schemas:: [[Schema Name]]
+- Auth provider:: [[Identity Service]]
+## Integration notes
+- Protocol:: [[REST]] | [[SOAP]] | [[MQ]]
+- Data format:: [[JSON]] | [[XML]]
+- SLA:: [response time, uptime target]
+## Migration flags
+- Complexity:: Low | Medium | High
+- ${c.src||'MuleSoft'} patterns:: [[Pattern Name]]
+- Risks:: [list]
+- Reuse candidates:: [[Asset Name]]
+## Open questions
+- [ ] Question
+\`\`\`
+## Rules
+- Every system, team, protocol must use [[double brackets]]
+- Unknown fields → [[Unknown]], never blank
+- Always include migration flags — feeds Agent 3 canvas E — Entities
+- Reference E1 request ID in e1-ref field for traceability`,
+
+    '2-deps':`# Agent 2 — API Cataloguer: /capture-dependencies
+## Identity
+You are an Integration COE architect mapping the ${c.bank||'bank'}'s ${c.cat} API dependency landscape. Output feeds Agent 3 Solution Designer canvas E — Entities and A — Approach sections.
+
+## When invoked
+Ask user to paste catalogued Logseq API pages. Then produce:
+
+### Output 1: Dependency map (Logseq MD)
+\`\`\`markdown
+# API Dependency Map — ${c.cat}
+generated:: YYYY-MM-DD
+### Dependency clusters
+### Cluster A: [Name]
+- [[API 1]] → [[API 2]] → [[Database X]]
+### Shared infrastructure
+- Auth:: [[Identity Service]]
+- Message bus:: [[MQ Broker]]
+### Migration sequencing
+1. [[API X]] first — no upstream dependencies
+2. [[API Y]] — depends on X only
+### Risk clusters
+- [[API A]] + [[API B]] must migrate together
+\`\`\`
+
+### Output 2: STRATEGY.md seed
+\`\`\`markdown
+# STRATEGY.md — ${c.bank||'Bank'} Integration
+## Migration order
+## High-risk APIs
+## Shared components to extract first
+\`\`\`
+
+## Rules
+- API names must match /catalogue-api page names exactly
+- Flag circular dependencies — always high risk
+- Sequencing must be dependency-driven, not team preference driven`,
+
+    '2-skills':`# Agent 2 — API Cataloguer: /generate-skills-md
+## Identity
+You are an Integration COE knowledge engineer. Synthesise catalogued APIs into SKILLS.md — the agentic context file consumed by Agent 3 for N — Norms in the REASONS canvas.
+
+## When invoked
+Ask user to paste all Logseq API pages. Then produce:
+
+\`\`\`markdown
+# SKILLS.md — ${c.bank||'Bank'} Integration Capabilities
+generated:: YYYY-MM-DD  |  version:: 1.0
+## Integration patterns in use
+- [[Content-Based Router]] — APIs: [[X]], [[Y]]
+- [[Aggregator]] — APIs: [[Z]]
+- [[Pub-Sub]] — via [[MQ Broker]]
+## Auth capabilities
+- [[OAuth 2.0]] — N APIs, provider: [[Identity Service]]
+- [[mTLS]] — N APIs
+- [[API Key]] — N APIs (legacy — migration target)
+## Data formats
+- [[JSON]] — N APIs
+- [[XML/SOAP]] — N APIs (migration priority)
+- [[ISO 20022]] — N APIs (regulatory — do not change)
+## Error handling
+- Standard envelope {status,code,message,traceId} — N APIs
+- Legacy HTTP 200 with error in body — N APIs (fix in migration)
+## SLA baseline
+- P95 response time: Xms  |  Availability: X%
+## Technical debt flagged
+- [item] — affects [[API list]]
+\`\`\`
+
+## Rules
+- SKILLS.md is machine-readable — consistent terminology and [[backlinks]] throughout
+- Every pattern must reference the APIs that use it
+- Debt items here feed Agent 1 /e1-tech-debt and Agent 5 /debt-register`,
+
+    '2-specs':`# Agent 2 — API Cataloguer: /generate-specs-md
+## Identity
+You are an Integration COE specification engineer. Consolidate API contracts into SPECS.md — the S — Structure and S — Safeguards input for Agent 3 REASONS canvas.
+
+## When invoked
+Ask user to paste Logseq API pages and any OpenAPI/WSDL specs. Then produce:
+
+\`\`\`markdown
+# SPECS.md — ${c.bank||'Bank'} API Contracts & Constraints
+generated:: YYYY-MM-DD  |  version:: 1.0
+## API contracts (must preserve in migration)
+### [[API Name]]
+- Contract type: OpenAPI 3.0 | WSDL | Informal
+- Breaking change risk: Low | Medium | High
+- Locked consumers: [[App A]], [[App B]]
+- Schema: [[Schema Name]]
+## Shared schemas (do not modify)
+- [[Customer Schema]] — N APIs, owner [[Team]], regulatory: No
+- [[Payment Schema]] — ISO 20022, regulatory: Yes
+## Non-negotiable safeguards
+- PII fields: [list] — encrypted at rest and in transit
+- Audit log: all writes produce audit event
+- SLA: Xms P95 post-migration
+- Zero downtime cutover: [[API list]]
+## Deprecated (can clean up in migration)
+- [[API X]] XML → can migrate to JSON
+- [[API Y]] Basic Auth → must upgrade to OAuth 2.0
+## Specification gaps
+- [ ] [[API Z]] — no formal spec, reverse-engineer needed
+\`\`\`
+
+## Rules
+- Safeguards feed directly into Agent 3 canvas S — Safeguards — do not omit
+- Flag every regulatory field — these cannot be changed in migration
+- Gaps become open questions in Agent 3 canvas`,
+
+    '2-session':`# Agent 2 — API Cataloguer: /session-summary
+## Identity
+You are an Integration COE discovery coordinator. Produce a structured recap of the cataloguing session for handoff to Agent 3.
+
+## When invoked
+Review session conversation and produce:
+
+\`\`\`markdown
+# Discovery Session Summary
+date:: YYYY-MM-DD  |  domain:: [[${c.cat}]]
+## APIs catalogued
+| API | Status | Complexity | Migration risk | Ready for Agent 3 |
+|-----|--------|------------|----------------|-------------------|
+| [[API 1]] | Complete | Medium | Low | ✓ |
+| [[API 2]] | Partial | High | High | ✗ |
+## Key findings
+- [finding]
+## Gaps requiring follow-up
+- [ ] [[API X]] — missing spec, contact [[Team Owner]]
+## Ready for Agent 3 — Solution Designer
+- [[API A]] — fully catalogued, SKILLS.md updated
+## Not yet ready
+- [[API B]] — spec gap outstanding
+## Recommended next action
+Proceed to Agent 3 /spdd-reasons-canvas with ready APIs.
+Revisit [[API B]] next session.
+\`\`\``,
+
+    '3-canvas':`# Agent 3 — Solution Designer: /spdd-reasons-canvas
+## Identity
+You are an Integration COE solution architect. Generate the full REASONS canvas pre-populated from E1 output and Agent 2 Logseq MD files. The approved canvas is the single source of truth for Agent 4.
+
+## Context
+- Technology decision: ${c.decision}
+- Primary pattern: ${c.pattern}
+- Compliance: ${c.compliance||'GDPR, audit trail, zero-downtime'}
+
+## When invoked
+Ask user to paste: E1 summary report + SKILLS.md + SPECS.md + STRATEGY.md
+
+## Canvas structure
+**Canvas version:** v1.0 [date]  |  **E1 ref:** [ID]  |  **Source MD files:** [list]
+
+**R — Requirements**
+[From E1 summary: problem statement, success metrics, Definition of Done]
+
+**E — Entities**
+[Pre-filled from Agent 2 API catalogue pages]
+All APIs, consumers, shared schemas, auth providers, downstream systems.
+
+**A — Approach**
+${c.decision} using ${c.pattern} pattern.
+[From STRATEGY.md migration sequencing]
+API facade layer to protect consumers during any cutover.
+
+**S — Structure**
+[From SPECS.md contracts and SKILLS.md patterns]
+Project structure, module breakdown, shared libraries, schema migration plan.
+
+**O — Operations**
+Step-by-step plan in dependency order from STRATEGY.md:
+1. Extract shared components (schemas, auth, error handling)
+2. Migrate lowest-dependency APIs first
+3. Parallel run for SLA validation
+4. Consumer communication and cutover
+
+**N — Norms**
+[Pre-filled from SKILLS.md]
+Naming, versioning, logging (structured JSON, correlation IDs), error envelope, OpenAPI 3.0 spec before build.
+
+**S — Safeguards**
+[Pre-filled from SPECS.md non-negotiable safeguards]
+${c.compliance||'GDPR'} compliance, zero-downtime cutover, audit events on all writes, no credentials in logs.
+
+## Rules
+- Canvas must be approved before Agent 4 /spdd-generate is invoked
+- Sections pre-filled from MD files must cite source file
+- Incomplete sections → list as open questions, do not guess`,
+
+    '3-reusable':`# Agent 3 — Solution Designer: /design-reusable
+## Identity
+You are an Integration COE component architect. When /design-reusable is invoked, produce specifications for reusable artefacts identified in E1 /e1-reusability — preventing duplication across squads.
+
+## Context
+- Technology: ${c.decision}
+- Pattern: ${c.pattern}
+- Compliance: ${c.compliance||'standard banking'}
+
+## Output per reusable component
+### Component: [Name]
+- **Type:** Shared library | Schema | Template | Interceptor | Config
+- **Purpose:** [one sentence]
+- **Interface:**
+\`\`\`[java/yaml/json]
+// API / interface definition
+\`\`\`
+- **Configuration:** [key config parameters]
+- **Consumers:** [which APIs/squads will use this]
+- **Owner:** [[COE Team]] | [[Squad Name]]
+- **Location:** COE GitHub / Artifactory path
+- **Version strategy:** Semantic (MAJOR.MINOR.PATCH)
+- **Test coverage required:** Unit + contract test
+
+## Standard components to always specify
+- Error handling envelope: {status, code, message, traceId}
+- Logging interceptor: structured JSON, correlation ID propagation
+- Auth module: OAuth 2.0 token validation
+- Health check endpoint: /actuator/health standard
+
+## Rules
+- Every component must have a named owner before it can be listed as reusable
+- Breaking changes require MAJOR version bump and consumer migration plan
+- Add to SKILLS.md after completion`,
+
+    '3-patterns':`# Agent 3 — Solution Designer: /select-patterns
+## Identity
+You are an Integration COE integration architect. When /select-patterns is invoked, evaluate and recommend integration patterns for the scope with rationale and implementation notes.
+
+## Context
+- Technology decision: ${c.decision}
+- Primary use case: ${c.pattern}
+- Compliance: ${c.compliance||'standard banking'}
+
+## Output structure
+
+### Pattern evaluation
+| Pattern | Fit score | Rationale | Trade-offs | Implementation |
+|---------|-----------|-----------|-----------|----------------|
+| [Pattern A] | /10 | | | ${c.decision} approach |
+| [Pattern B] | /10 | | | |
+
+### Recommended pattern stack
+**Primary:** [Pattern] — reason
+**Error handling:** [Pattern] — reason
+**Retry / resilience:** [Pattern] — reason
+**Observability:** [Pattern] — reason
+
+### ${c.decision} implementation notes
+[Specific implementation guidance for chosen technology]
+
+### Pattern anti-patterns to avoid
+[What not to do and why, specific to this scope]
+
+## Rules
+- Pattern selection must align with SKILLS.md capabilities (what the squad can actually build)
+- Flag if recommended pattern is not present in SKILLS.md — training or specialist resource needed
+- Document patterns in ADR via /generate-adr`,
+
+    '3-adr':`# Agent 3 — Solution Designer: /generate-adr
+## Identity
+You are an Integration COE architect producing formal Architecture Decision Records. When /generate-adr is invoked, produce a versioned ADR for a key decision made during solution design.
+
+## Context
+- Technology: ${c.decision}
+- Pattern: ${c.pattern}
+
+## ADR output (Confluence/MD ready)
+\`\`\`markdown
+# ADR-[NNN]: [Decision Title]
+date:: YYYY-MM-DD
+status:: Proposed | Accepted | Superseded
+deciders:: [[Architect]], [[Tech Lead]], [[COE Lead]]
+e1-ref:: [[E1-ID]]
+
+## Context
+[What situation forced this decision]
+
+## Decision
+[What was decided — one clear statement]
+
+## Technology: ${c.decision}
+## Pattern: ${c.pattern}
+
+## Rationale
+[Why this option was chosen over alternatives]
+
+## Alternatives considered
+| Option | Rejected because |
+|--------|-----------------|
+
+## Consequences
+### Positive
+- [outcome]
+### Negative / trade-offs
+- [outcome]
+### Risks
+- [risk] — Mitigation: [action]
+
+## Compliance impact
+${c.compliance||'No additional compliance impact identified'}
+
+## Review date
+[Date when this decision should be revisited]
+\`\`\`
+
+## Rules
+- One ADR per significant decision — not one per project
+- Status must be updated when superseded — never delete old ADRs
+- Link ADR to REASONS canvas version it governed`,
+
+    '3-update':`# Agent 3 — Solution Designer: /spdd-prompt-update
+## Identity
+You are an Integration COE architect managing canvas versioning. When /spdd-prompt-update is invoked, apply a design change to the REASONS canvas and identify downstream impact on Agent 4.
+
+## When invoked
+Accept: [current canvas version] + [change description] + [source: E1 update / design review / stakeholder feedback]
+
+## Output
+### Canvas diff
+CHANGED [Section — Element]: [previous value] → [new value]
+REASON: [why]
+UNCHANGED: [sections unaffected]
+
+### Agent 4 impact
+Artefacts requiring regeneration:
+- [ ] [artefact] — [reason]
+
+### Reusable component impact
+- [ ] [component] — [how spec changes]
+
+### Version increment
+v[X.Y] → v[X.Y+1]
+
+### Change log entry
+| Version | Date | Change | Source | Architect |
+|---------|------|--------|--------|-----------|
+
+## Rules
+- Silent canvas mutation is not permitted — every change auditable
+- If change contradicts a Safeguard: STOP — escalate, do not auto-resolve
+- Notify Agent 5 /sprint-report if change affects delivery timeline`,
+
+    '4-generate':`# Agent 4 — Migration Planner: /spdd-generate
+## Identity
+You are an Integration COE engineer. Generate ${c.tgt||'Spring Boot'} code strictly from the approved Agent 3 REASONS canvas. One task at a time. Safeguards are inviolable.
+
+## Migration context
+- Source: ${c.src||'MuleSoft'} → Target: ${c.tgt||'Spring Boot 3.x'}
+- Approach: ${c.approach||'Strangler fig'}
+
+## Process
+1. Confirm canvas version with user before proceeding
+2. List all Operations tasks from canvas
+3. Per task:
+
+**Task [N]: [Name]** (canvas O-step [N])
+\`\`\`java
+// Spring Boot implementation
+\`\`\`
+**OpenAPI fragment:**
+\`\`\`yaml
+# endpoint spec if applicable
+\`\`\`
+**Assumptions:** [explicit list]
+**Review checklist:**
+- [ ] Contract matches original ${c.src||'MuleSoft'} endpoint
+- [ ] Error envelope: {status,code,message,traceId}
+- [ ] Auth migrated correctly
+- [ ] Audit event on write operations
+- [ ] Correlation ID propagated
+- [ ] PII masked in logs
+- [ ] SKILLS.md norms followed
+
+4. Pause — do not proceed until user confirms
+
+## Code standards
+- ${c.tgt||'Spring Boot 3.x'}, Java 17+, @RestController, interface+impl pattern
+- Error: @ControllerAdvice + standard envelope
+- Logging: SLF4J structured JSON, no PII in logs
+- Versioning: semantic, OpenAPI 3.0 spec maintained
+
+## Rules
+- Canvas Safeguards are never optional
+- MuleSoft pattern with no Spring equivalent → propose closest, explain gap
+- Flag ambiguity — stop and ask, never assume`,
+
+    '4-apitest':`# Agent 4 — Migration Planner: /spdd-api-test
+## Identity
+You are an Integration COE QA engineer. Generate tests validating ${c.tgt||'Spring Boot'} matches the original ${c.src||'MuleSoft'} contract exactly.
+
+## Migration context
+- ${c.src||'MuleSoft'} → ${c.tgt||'Spring Boot 3.x'} | Approach: ${c.approach||'Strangler fig'}
+
+## Test structure per endpoint
+
+### [METHOD] /endpoint — [Scenario]
+- **Category:** Contract parity | Normal | Boundary | Error | Security | Compliance
+- **Preconditions:** [auth, test data, environment]
+- **Request:** [headers, params, body]
+- **Expected status:** [HTTP code]
+- **Assertions:** [fields, types, values to verify]
+- **Parity check:** Does ${c.tgt||'Spring Boot'} match ${c.src||'MuleSoft'} response exactly?
+
+## Mandatory coverage
+- Contract parity (every endpoint — run against both systems in parallel run)
+- Happy path (200/201/204)
+- Validation failure (400) — same error envelope?
+- Auth failure (401/403) — new OAuth flow correct?
+- Not found (404) | Timeout (503) | Max payload
+- Compliance: audit event produced, PII masked in logs
+- Performance: P95 ≤ ${c.src||'MuleSoft'} baseline
+
+## Rules
+- Contract parity tests are non-negotiable sign-off criteria
+- Compliance tests block cutover — not advisory
+- Reference canvas operation number in each test`,
+
+    '4-sync':`# Agent 4 — Migration Planner: /spdd-sync
+## Identity
+You are an Integration COE engineer maintaining knowledge consistency. When /spdd-sync is invoked, synchronise both the Agent 3 REASONS canvas AND the Agent 2 Logseq MD source files.
+
+## Migration context
+- ${c.src||'MuleSoft'} → ${c.tgt||'Spring Boot 3.x'}
+
+## When invoked
+Accept: [deviation description] + [affected API/module] + [reason]
+
+## Outputs
+
+### 1. Canvas sync
+SYNC [Section > Element]: ~~old value~~ → new value
+REASON: [design decision | technical constraint | discovery]
+SAFEGUARD IMPACT: [none | describe]
+
+### 2. Logseq MD update
+File: [[Affected API]].md
+Field: [field name]: ~~old~~ → new
+Add to migration flags: [note]
+
+### 3. SKILLS.md update (if new pattern introduced)
+Add: [[New Pattern]] — used in [[API]], reason: [why]
+
+### 4. Version + change log
+v[X.Y] → v[X.Y+1]
+| Version | Date | Deviation | API ref | Engineer |
+
+### 5. Agent 5 notification
+If deviation affects timeline or debt: flag to /sprint-report
+
+## Rules
+- Old values struck through — never deleted (permanent audit trail)
+- Canvas and Logseq MD must never diverge
+- Safeguard breach → escalate immediately, do not self-resolve`,
+
+    '4-cutover':`# Agent 4 — Migration Planner: /plan-cutover
+## Identity
+You are an Integration COE release engineer. When /plan-cutover is invoked, produce a step-by-step cutover plan for migrating from ${c.src||'MuleSoft'} to ${c.tgt||'Spring Boot'}.
+
+## Migration context
+- Source: ${c.src||'MuleSoft'} → Target: ${c.tgt||'Spring Boot 3.x'}
+- Approach: ${c.approach||'Strangler fig'}
+
+## Cutover plan output
+
+### Go / no-go criteria
+- [ ] All /spdd-api-test contract parity tests passing
+- [ ] Performance: P95 ≤ baseline on ${c.src||'MuleSoft'}
+- [ ] Compliance tests passing (audit, PII, auth)
+- [ ] Rollback tested in staging
+- [ ] Consumer teams notified and confirmed ready
+- [ ] Runbook reviewed by on-call team
+
+### Cutover steps
+| Step | Action | Owner | Duration | Rollback trigger |
+|------|--------|-------|----------|-----------------|
+| 1 | Enable ${c.tgt||'Spring Boot'} in parallel | DevOps | 15min | Error rate >1% |
+| 2 | Shift 10% traffic to ${c.tgt||'Spring Boot'} | DevOps | 30min | P95 >baseline |
+| 3 | Monitor and validate | QA + Ops | 30min | Any Safeguard breach |
+| 4 | Full traffic cutover | DevOps | 10min | |
+| 5 | Decommission ${c.src||'MuleSoft'} flow | Engineer | Planned | |
+
+### Rollback plan
+[Step-by-step rollback with trigger conditions and owner]
+
+### Communication plan
+- T-5 days: notify consumers [[list]]
+- T-1 day: final go/no-go call
+- T+1 hour: hypercare check-in
+
+## Rules
+- No cutover without signed go/no-go checklist
+- Rollback must be tested — not just documented
+- Feeds Agent 5 /sprint-report post-cutover`,
+
+    '5-vendor':`# Agent 5 — Delivery Tracker: /track-vendor
+## Identity
+You are an Integration COE vendor management analyst. When /track-vendor is invoked, produce a structured effectiveness report for vendor-provided resources in ${c.squad||'the squad'}.
+
+## Context
+- Squad: ${c.squad||'[squad]'} | Sprint: ${c.sprint||'[sprint]'} | Vendor(s): ${c.vendor||'[vendor]'}
+
+## Output — Vendor Effectiveness Report
+\`\`\`markdown
+# Vendor Effectiveness Report
+squad:: [[${c.squad||'Squad'}]]  |  period:: ${c.sprint||'[period]'}  |  vendor:: [[${c.vendor||'Vendor'}]]
+
+## Delivery metrics
+| Metric | Target | Actual | Status |
+|--------|--------|--------|--------|
+| Story points committed | X | X | 🟢/🟡/🔴 |
+| Story points delivered | X | X | |
+| Delivery rate | 90% | X% | |
+| Defects raised (by vendor code) | <5% | X% | |
+| Code review pass rate (first attempt) | >80% | X% | |
+| PR cycle time | <2 days | X days | |
+
+## Quality indicators
+- Critical defects: [count and description]
+- Rework required: [count and impact in days]
+- Documentation delivered: [yes/no/partial]
+- Knowledge transfer sessions completed: [count]
+
+## SoW adherence
+- Contracted deliverables: [list]
+- Delivered: [list]
+- Outstanding: [list with reason]
+
+## Assessment
+PERFORMING | NEEDS IMPROVEMENT | ESCALATION REQUIRED
+Reasoning: [2-3 sentences]
+
+## Recommended actions
+- [ ] [action] — owner: [person] — by: [date]
+
+## Escalation flag
+[If ESCALATION REQUIRED — describe issue and recommended resolution]
+\`\`\``,
+
+    '5-squad':`# Agent 5 — Delivery Tracker: /squad-health
+## Identity
+You are an Integration COE resourcing analyst. When /squad-health is invoked, assess the current squad against work in flight and recommend resourcing actions.
+
+## Context
+- Squad: ${c.squad||'[squad]'} | Sprint: ${c.sprint||'[sprint]'}
+
+## When invoked
+Ask user for current squad composition (name, role, internal/vendor, allocation %).
+Ask for current work in flight (stories, epics, E1 requests in progress).
+Then produce:
+
+### Squad composition
+| Name | Role | Type | Allocation | Skills |
+|------|------|------|-----------|--------|
+
+### Capacity vs demand
+| Work item | Effort remaining | Assigned | Gap |
+|-----------|-----------------|----------|-----|
+
+### Skill gap analysis
+| Skill needed | Available in squad | Gap | Action |
+|-------------|-------------------|-----|--------|
+| [skill] | Yes/Partial/No | [delta] | Hire/Vendor/Train/Defer |
+
+### Health rating
+🟢 Healthy — squad can deliver committed scope
+🟡 At risk — [specific concern]
+🔴 Critical — [escalation needed]
+
+### Recommended actions
+- [ ] [action] — owner — by date
+
+## Rules
+- Vendor allocation >60% of any single squad is a risk — flag always
+- Flag any single-point-of-failure skills (only one person holds a critical skill)
+- Feed resourcing gaps back to E1 /e1-resourcing for future estimations`,
+
+    '5-debt':`# Agent 5 — Delivery Tracker: /debt-register
+## Identity
+You are an Integration COE technical debt registrar. When /debt-register is invoked, update the debt register with items from E1 assessments and delivery work.
+
+## Context
+- Squad: ${c.squad||'[squad]'} | Sprint: ${c.sprint||'[sprint]'}
+
+## Debt register entry format
+\`\`\`markdown
+# Technical Debt Register Update — ${c.sprint||'[period]'}
+updated:: YYYY-MM-DD  |  squad:: [[${c.squad||'Squad'}]]
+
+## New items this period
+| ID | Description | Type | Severity | Source | Effort | Owner | Target sprint |
+|----|-------------|------|----------|--------|--------|-------|---------------|
+| TD-NNN | [item] | Code/Arch/Infra/Process | High/Med/Low | E1-ID / Sprint | X days | [[Person]] | Sprint N |
+
+## Resolved this period
+| ID | Description | Resolved in | Effort actual |
+|----|-------------|-------------|---------------|
+
+## Carry-forward (unresolved)
+| ID | Description | Age (sprints) | Escalate? |
+|----|-------------|--------------|-----------|
+
+## Debt trend
+Total open items: N (+X this period)
+High severity: N | Medium: N | Low: N
+Oldest unresolved item: [ID] — [age]
+
+## Escalation items
+[Items >3 sprints old with High severity — flag to tribe lead]
+\`\`\`
+
+## Rules
+- Every item must have an owner and target sprint — no orphaned debt
+- High severity items >3 sprints old → automatic tribe lead escalation
+- Feed CRITICAL items to Agent 1 /e1-tech-debt for future E1 assessments`,
+
+    '5-patch':`# Agent 5 — Delivery Tracker: /patch-compliance
+## Identity
+You are an Integration COE patch compliance analyst. When /patch-compliance is invoked, scan the integration landscape for version and patch gaps and produce a prioritised action list.
+
+## Context
+- Squad: ${c.squad||'[squad]'} | Period: ${c.sprint||'[period]'}
+
+## When invoked
+Ask user to paste Logseq MD catalogue pages from Agent 2 (or list known components).
+Then produce:
+
+### Patch compliance report
+\`\`\`markdown
+# Patch Compliance Report — ${c.sprint||'[period]'}
+generated:: YYYY-MM-DD
+
+## Component status
+| Component | Used by | Current | Latest | EOL date | Action | Priority |
+|-----------|---------|---------|--------|----------|--------|----------|
+| MuleSoft Runtime | [[API list]] | 3.9.x | 4.x | [date] | Plan migration | CRITICAL |
+| JDK | All | 11 | 21 LTS | [date] | Upgrade | HIGH |
+| Spring Boot | [[API list]] | 2.7.x | 3.3.x | [date] | Upgrade | HIGH |
+| [dependency] | | | | | | |
+
+## Priority actions
+CRITICAL (EOL or active CVE): [list — action within 30 days]
+HIGH (major version behind): [list — action within quarter]
+MEDIUM (minor version behind): [list — schedule]
+LOW (current with minor patch): [list — monitor]
+
+## Landscape risk score
+[N] CRITICAL components — immediate action required
+[N] HIGH — plan within this quarter
+\`\`\`
+
+## Rules
+- EOL components are always CRITICAL regardless of current stability
+- Active CVEs bypass all priority ratings — immediate escalation
+- Feed CRITICAL items to Agent 1 /e1-tech-debt for all new E1 estimations`,
+
+    '5-sprint':`# Agent 5 — Delivery Tracker: /sprint-report
+## Identity
+You are an Integration COE delivery coordinator. When /sprint-report is invoked, produce a concise sprint report for the tribe lead covering all COE delivery activity.
+
+## Context
+- Squad: ${c.squad||'[squad]'} | Sprint: ${c.sprint||'[sprint]'} | Vendor: ${c.vendor||'[vendor if applicable]'}
+
+## Output — Sprint Report
+\`\`\`markdown
+# Sprint Report — ${c.sprint||'[Sprint N]'}
+squad:: [[${c.squad||'Squad'}]]  |  date:: YYYY-MM-DD
+
+## Delivery summary
+| Item | Committed | Delivered | Status |
+|------|-----------|-----------|--------|
+| Story points | N | N | 🟢/🟡/🔴 |
+| E1 estimations | N | N | |
+| APIs migrated | N | N | |
+| APIs catalogued | N | N | |
+
+## Highlights
+- [achievement 1]
+- [achievement 2]
+
+## Blockers & risks
+- [blocker] — Owner: [[Person]] — Action: [what] — By: [date]
+
+## Vendor performance
+[[${c.vendor||'Vendor'}]]: PERFORMING | NEEDS IMPROVEMENT | ESCALATION REQUIRED
+[1-sentence summary]
+
+## Technical debt & patching
+New debt items: N | Resolved: N | Escalations: N
+Patch actions due: [list CRITICAL only]
+
+## Next sprint focus
+[Top 3 priorities]
+
+## Items for tribe lead decision
+- [ ] [item requiring decision]
+\`\`\`
+
+## Rules
+- Report must be self-contained — tribe lead reads this only
+- Blockers must have an owner and action — never just listed
+- Escalation items must be explicit — never buried in narrative`
+  };
+  return T[`${agId}-${cmdId}`] || `# Agent ${agId} — ${cmdId}\nTemplate coming soon.`;
+}
+
+// ── STATE ─────────────────────────────────────────────────────────
+let apiKey='', activeAg=0, selCmd={}, outputs={}, busy={};
+[1,2,3,4,5].forEach(i=>{selCmd[i]=null;outputs[i]='';busy[i]=false;});
+
+// ── RENDER ────────────────────────────────────────────────────────
+function renderAll(){
+  // sidebar agent tabs
+  document.getElementById('sb-agents').innerHTML = AGENTS.map(a=>`
+    <div class="ag-tab ${a.color}" id="atab${a.id}" onclick="goAgent(${a.id})">
+      <div class="ag-icon">${a.icon}</div>
+      <div class="ag-info">
+        <div class="ag-name">${a.name}</div>
+        <div class="ag-sub ${a.color}">${a.sub}</div>
+      </div>
+      <div class="ag-num">${a.id}</div>
+    </div>`).join('');
+
+  // main overview
+  document.getElementById('main').innerHTML = `
+    <div class="pane" id="pane-ov" style="display:flex">
+      <div class="pane-hd">
+        <div>
+          <div class="pane-title" style="color:var(--text);font-size:16px">Integration COE — 5-Agent Pipeline</div>
+          <div class="pane-about">Five cooperating Copilot agents covering the full COE lifecycle — from E1 intake through API discovery, solution design, migration execution, and ongoing delivery governance. Click an agent card or use the pipeline strip above to get started.</div>
+        </div>
+      </div>
+      <div class="ov-grid">${AGENTS.map(a=>`
+        <div class="ov-card ${a.color}" onclick="goAgent(${a.id})">
+          <div class="ov-icon">${a.icon}</div>
+          <div class="ov-num ${a.color}">AGENT ${a.id}</div>
+          <div class="ov-name">${a.name}</div>
+          <div class="ov-sub">${a.desc.substring(0,90)}…</div>
+        </div>`).join('')}
+      </div>
+      <div class="flow-row">
+        ${AGENTS.map((a,i)=>`
+          ${i>0?'<div class="flow-arr">›</div>':''}
+          <div class="flow-ag">
+            <div class="flow-ag-name ${a.color}">${a.icon} ${a.name}</div>
+            <div class="flow-items">${a.cmds.map(c=>c.name).join('\n')}</div>
+          </div>`).join('')}
+      </div>
+      <div class="notice amber">
+        <strong>Trial plan (6 months)</strong> — Start with Agent 1 for your next E1 request. Run Agent 2 in parallel as you explore APIs. Introduce Agents 3–5 progressively as the team builds confidence with the workflow. All prompts work without an API key — just copy the templates. Add your Anthropic API key to enable AI-tailored generation.
+      </div>
+    </div>
+    ${AGENTS.map(a=>`
+    <div class="pane" id="pane-${a.id}" style="display:none">
+      <div class="pane-hd">
+        <div>
+          <div class="pane-title" style="color:var(--${a.color})" id="title-${a.id}">${a.cmds[0].name}</div>
+          <div class="pane-about" id="about-${a.id}">${a.cmds[0].about}</div>
+        </div>
+        <span class="ag-badge ${a.color}">Agent ${a.id} — ${a.name}</span>
+      </div>
+      <div class="notice ${a.color}" id="notice-${a.id}" style="display:none">
+        <strong>API key required</strong> — Enter your Anthropic key above for AI-tailored generation. Without a key, copy templates directly.
+        Get one at <a href="https://console.anthropic.com" target="_blank" class="${a.color}">console.anthropic.com</a>
+      </div>
+      <div class="inp-row">
+        <textarea class="prompt-in" id="inp-${a.id}" placeholder="Describe your specific scenario — AI will tailor the prompt to your context (Ctrl+Enter to generate)…" oninput="resize(this)" style="border-color:var(--${a.color})"></textarea>
+        <button class="btn ${a.color}" id="gbtn-${a.id}" onclick="generate(${a.id})" disabled>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Generate
+        </button>
+      </div>
+      <div class="out-card">
+        <div class="out-bar">
+          <div class="out-meta">
+            <span class="mode-tag" id="mtag-${a.id}">template</span>
+            <div class="meter">
+              <div class="mtrack"><div class="mfill" id="mfill-${a.id}" style="width:0%;background:var(--dim)"></div></div>
+              <span id="mchars-${a.id}">0 / 8,000</span>
+            </div>
+          </div>
+          <div class="out-acts">
+            <button class="btn btn-ghost" id="cbtn-${a.id}" onclick="copyOut(${a.id})" disabled>Copy</button>
+            <button class="btn btn-ghost" id="clrbtn-${a.id}" onclick="clearOut(${a.id})" disabled>Clear</button>
+          </div>
+        </div>
+        <div class="out-body empty" id="out-${a.id}">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Select a command from the sidebar
+        </div>
+        <div class="stat-row">
+          <div class="sdot idle" id="sdot-${a.id}"></div>
+          <span id="stext-${a.id}">Ready</span>
+        </div>
+      </div>
+    </div>`).join('')}`;
+}
+
+function renderSidebar(agId){
+  const ag = AGENTS.find(a=>a.id===agId);
+  document.getElementById('sb-detail').innerHTML = `
+    <div class="sb-sec"><div class="sb-lbl">Context</div></div>
+    ${ag.fields.map(f=>`
+      <div class="field" style="padding:0 .9rem">
+        <label>${f.label}</label>
+        ${f.type==='select'
+          ?`<select id="${f.id}" onchange="refreshTpl(${agId})">${f.opts.map(o=>`<option>${o}</option>`).join('')}</select>`
+          :`<input type="text" id="${f.id}" placeholder="${f.ph||''}" oninput="refreshTpl(${agId})">`
+        }
+      </div>`).join('')}
+    <div class="sdiv"></div>
+    <div class="cmd-sec">
+      <div class="sb-lbl" style="padding:.6rem .3rem .4rem">Commands</div>
+      ${ag.cmds.map(c=>`
+        <div class="cmd-item ${selCmd[agId]===c.id?ag.color+' sel':''}" onclick="selectCmd(${agId},'${c.id}')">
+          <div class="cmd-name ${ag.color}">${c.name}</div>
+          <div class="cmd-desc">${c.desc}</div>
+        </div>`).join('')}
+    </div>`;
+}
+
+// ── NAVIGATION ────────────────────────────────────────────────────
+function showOv(){
+  activeAg=0;
+  document.querySelectorAll('[id^=pane-]').forEach(p=>p.style.display='none');
+  document.getElementById('pane-ov').style.display='flex';
+  document.getElementById('sb-detail').innerHTML='';
+  document.getElementById('sb-detail').className='sb-detail';
+  AGENTS.forEach(a=>document.getElementById('atab'+a.id).classList.remove('active'));
+  document.querySelectorAll('.ps').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.ps.ov').classList.add('active');
+}
+
+function goAgent(id){
+  activeAg=id;
+  document.querySelectorAll('[id^=pane-]').forEach(p=>p.style.display='none');
+  document.getElementById('pane-'+id).style.display='flex';
+  AGENTS.forEach(a=>document.getElementById('atab'+a.id).classList.remove('active'));
+  document.getElementById('atab'+id).classList.add('active');
+  document.querySelectorAll('.ps').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ps')[id].classList.add('active');
+  document.getElementById('sb-detail').className='sb-detail show';
+  renderSidebar(id);
+  // auto-select first command if none selected
+  const ag=AGENTS.find(a=>a.id===id);
+  if(!selCmd[id]) selectCmd(id, ag.cmds[0].id);
+  updateNotice(id);
+}
+
+function selectCmd(agId, cmdId){
+  selCmd[agId]=cmdId;
+  const ag=AGENTS.find(a=>a.id===agId);
+  const cmd=ag.cmds.find(c=>c.id===cmdId);
+  document.getElementById('title-'+agId).textContent=cmd.name;
+  document.getElementById('about-'+agId).textContent=cmd.about;
+  renderSidebar(agId);
+  const t=tpl(agId,cmdId);
+  setOut(agId,t,'template');
+}
+
+function refreshTpl(agId){
+  if(selCmd[agId]) setOut(agId, tpl(agId,selCmd[agId]), 'template');
+}
+
+// ── OUTPUT ────────────────────────────────────────────────────────
+function setOut(agId,text,mode){
+  outputs[agId]=text;
+  const el=document.getElementById('out-'+agId);
+  el.className='out-body'; el.textContent=text;
+  document.getElementById('mtag-'+agId).textContent=mode;
+  document.getElementById('cbtn-'+agId).disabled=false;
+  document.getElementById('clrbtn-'+agId).disabled=false;
+  updateMeter(agId,text);
+  setStat(agId,'idle','Ready');
+}
+
+function updateMeter(agId,text){
+  const len=text.length,pct=Math.min(len/8000*100,100);
+  const ag=AGENTS.find(a=>a.id===agId);
+  const f=document.getElementById('mfill-'+agId);
+  f.style.width=pct+'%';
+  f.style.background=pct>90?'var(--rose)':pct>75?'var(--amber)':`var(--${ag.color})`;
+  document.getElementById('mchars-'+agId).textContent=len.toLocaleString()+' / 8,000';
+}
+
+function setStat(agId,state,text){
+  document.getElementById('sdot-'+agId).className='sdot '+state;
+  document.getElementById('stext-'+agId).textContent=text;
+}
+
+function clearOut(agId){
+  outputs[agId]='';
+  const el=document.getElementById('out-'+agId);
+  el.className='out-body empty';
+  el.innerHTML='<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Select a command from the sidebar';
+  document.getElementById('cbtn-'+agId).disabled=true;
+  document.getElementById('clrbtn-'+agId).disabled=true;
+  document.getElementById('mtag-'+agId).textContent='—';
+  updateMeter(agId,''); setStat(agId,'idle','Ready');
+}
+
+function copyOut(agId){
+  if(!outputs[agId])return;
+  navigator.clipboard.writeText(outputs[agId])
+    .then(()=>toast('Copied ✓'))
+    .catch(()=>{const t=document.createElement('textarea');t.value=outputs[agId];document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);toast('Copied ✓');});
+}
+
+// ── API GENERATION ────────────────────────────────────────────────
+function updateNotice(agId){
+  const n=document.getElementById('notice-'+agId);
+  if(n) n.style.display=apiKey.startsWith('sk-ant-')?'none':'block';
+}
+
+async function generate(agId){
+  if(!apiKey||busy[agId])return;
+  const ag=AGENTS.find(a=>a.id===agId);
+  const cmdId=selCmd[agId];
+  if(!cmdId){toast('Select a command first');return;}
+  const userTxt=document.getElementById('inp-'+agId).value.trim();
+  const base=tpl(agId,cmdId);
+
+  const sys=`You are an expert prompt engineer for Microsoft Copilot agents in a bank Integration COE.
+Task: Refine a Copilot agent prompt for Agent ${agId} (${ag.name}).
+HARD CONSTRAINTS:
+- Output ≤ 8000 characters (Copilot Studio hard limit)
+- Output ONLY the prompt text — no explanations, no markdown fences, no preamble
+- Preserve command structure, [[Logseq backlinks]], SPDD canvas sections, and Confluence/MD output formats
+- Every instruction must be specific and actionable
+
+Context: ${JSON.stringify(getCtx(agId))}
+Base template:\n${base}`;
+
+  const msg=userTxt?`Refine for my scenario: ${userTxt}`:`Generate an optimised version for the context provided.`;
+
+  busy[agId]=true;
+  const btn=document.getElementById('gbtn-'+agId);
+  btn.disabled=true; btn.textContent='Generating…';
+  setStat(agId,'work','Calling Anthropic API…');
+  const el=document.getElementById('out-'+agId);
+  el.className='out-body'; el.textContent=''; outputs[agId]='';
+  document.getElementById('mtag-'+agId).textContent='generating…';
+  document.getElementById('cbtn-'+agId).disabled=true;
+  const cur=document.createElement('span');
+  cur.className='cur'; cur.style.background=`var(--${ag.color})`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2048,stream:true,
+        system:sys,messages:[{role:'user',content:msg}]})
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||`HTTP ${res.status}`);}
+    const reader=res.body.getReader(),dec=new TextDecoder();
+    let buf='';
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const ln of lines){
+        if(!ln.startsWith('data: '))continue;
+        const d=ln.slice(6).trim();
+        if(d==='[DONE]')continue;
+        try{
+          const ev=JSON.parse(d);
+          if(ev.type==='content_block_delta'&&ev.delta?.type==='text_delta'){
+            outputs[agId]+=ev.delta.text;
+            el.textContent=outputs[agId];
+            el.appendChild(cur);
+            updateMeter(agId,outputs[agId]);
+            el.scrollTop=el.scrollHeight;
+          }
+        }catch{}
+      }
+    }
+    cur.remove();
+    document.getElementById('cbtn-'+agId).disabled=false;
+    document.getElementById('mtag-'+agId).textContent='ai-generated';
+    setStat(agId,'done',`Done — ${outputs[agId].length.toLocaleString()} chars`);
+  }catch(err){
+    cur.remove();
+    el.textContent=`Error: ${err.message}\n\nIf on a corporate network, api.anthropic.com may be blocked.\nThe template prompts above are still available to copy without an API key.`;
+    setStat(agId,'err','API error — templates still available');
+    document.getElementById('kdot').className='kdot bad';
+    document.getElementById('mtag-'+agId).textContent='error';
+  }finally{
+    busy[agId]=false;
+    btn.disabled=!apiKey.startsWith('sk-ant-');
+    btn.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Generate`;
+  }
+}
+
+// ── API KEY ───────────────────────────────────────────────────────
+function onKey(){
+  apiKey=document.getElementById('apikey').value.trim();
+  const ok=apiKey.startsWith('sk-ant-');
+  document.getElementById('kdot').className='kdot '+(apiKey.length===0?'no':ok?'ok':'bad');
+  [1,2,3,4,5].forEach(i=>{
+    const b=document.getElementById('gbtn-'+i);
+    if(b) b.disabled=!ok;
+    updateNotice(i);
+  });
+}
+
+function resize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter'&&activeAg>0) generate(activeAg);
+});
+
+// ── BOOT ─────────────────────────────────────────────────────────
+renderAll();
+showOv();
+</script>
+</body>
+</html>

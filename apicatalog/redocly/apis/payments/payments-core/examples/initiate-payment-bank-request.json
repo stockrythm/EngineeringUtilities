@@ -1,0 +1,19 @@
+{
+  "_comment": "POST /payments — initiate a bank transfer payment",
+  "_headers": {
+    "Authorization": "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "Content-Type": "application/json",
+    "X-Trace-Id": "1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d"
+  },
+
+  "amount": {
+    "amount": 150000,
+    "currency": "GBP"
+  },
+  "method": "BANK_TRANSFER",
+  "reference": "Invoice INV-2024-0042",
+  "metadata": {
+    "invoiceId": "INV-2024-0042",
+    "supplierId": "sup_3mKzPqRx"
+  }
+}

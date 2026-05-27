@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Catalog Portal</title>
+  <link href="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.min.css" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --purple-50:  #EEEDFE; --purple-600: #534AB7; --purple-800: #3C3489;
+      --teal-50:    #E1F5EE; --teal-600:   #0F6E56; --teal-800:   #085041;
+      --coral-50:   #FAECE7; --coral-600:  #993C1D; --coral-800:  #712B13;
+      --gray-50:    #F1EFE8; --gray-600:   #5F5E5A; --gray-800:   #444441;
+      --text:       #1F1E1D;
+      --text-muted: #5F5E5A;
+      --border:     rgba(31,30,29,0.15);
+      --bg:         #fafaf8;
+      --white:      #ffffff;
+      --radius:     8px;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           background: var(--bg); color: var(--text); line-height: 1.6; }
+
+    /* ── Layout ── */
+    .shell { display: grid; grid-template-columns: 280px 1fr; min-height: 100vh; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: var(--white); border-right: 1px solid var(--border);
+      padding: 24px 0; position: sticky; top: 0; height: 100vh;
+      overflow-y: auto; display: flex; flex-direction: column; gap: 0;
+    }
+    .sidebar-header { padding: 0 20px 20px; border-bottom: 1px solid var(--border); }
+    .sidebar-header h1 { font-size: 15px; font-weight: 600; color: var(--text); }
+    .sidebar-header p  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .tribe-group { padding: 12px 0 4px; }
+    .tribe-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-muted);
+      padding: 0 20px; margin-bottom: 4px;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 20px; cursor: pointer; border: none; background: none;
+      width: 100%; text-align: left; font-size: 13px; color: var(--text);
+      transition: background 0.1s;
+    }
+    .sidebar-link:hover { background: var(--gray-50); }
+    .sidebar-link.active { background: var(--purple-50); color: var(--purple-800); font-weight: 500; }
+    .badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 10px;
+      font-weight: 600; margin-left: auto; white-space: nowrap;
+    }
+    .badge-coe     { background: var(--purple-50); color: var(--purple-800); }
+    .badge-pay     { background: var(--teal-50);   color: var(--teal-800);   }
+    .badge-cards   { background: var(--coral-50);  color: var(--coral-800);  }
+
+    /* ── Main ── */
+    .main { display: flex; flex-direction: column; }
+
+    /* ── API Card (overview) ── */
+    .api-card {
+      background: var(--white); border-bottom: 1px solid var(--border);
+      padding: 32px 40px;
+    }
+    .api-card-header {
+      display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px;
+    }
+    .api-card-dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; margin-top: 6px;
+    }
+    .dot-coe   { background: var(--purple-600); }
+    .dot-pay   { background: var(--teal-600);   }
+    .dot-cards { background: var(--coral-600);  }
+
+    .api-card-title   { font-size: 22px; font-weight: 600; }
+    .api-card-version { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .meta-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px; margin-bottom: 20px;
+    }
+    .meta-item { font-size: 13px; }
+    .meta-item strong { display: block; font-size: 11px; font-weight: 600;
+                        text-transform: uppercase; letter-spacing: 0.06em;
+                        color: var(--text-muted); margin-bottom: 2px; }
+    .meta-item a { color: var(--purple-600); text-decoration: none; }
+    .meta-item a:hover { text-decoration: underline; }
+
+    /* ── Dep tables ── */
+    .dep-section { margin-bottom: 20px; }
+    .dep-section h3 { font-size: 13px; font-weight: 600; margin-bottom: 8px;
+                      color: var(--text-muted); }
+    .dep-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .dep-table th { text-align: left; padding: 6px 12px; font-size: 11px;
+                    font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+                    color: var(--text-muted); background: var(--gray-50);
+                    border-bottom: 1px solid var(--border); }
+    .dep-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .dep-table tr:last-child td { border-bottom: none; }
+    .criticality-required        { color: var(--teal-800); font-weight: 500; }
+    .criticality-degraded-without { color: var(--coral-800); font-weight: 500; }
+
+    /* ── Toggle button ── */
+    .spec-toggle {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: var(--radius);
+      background: var(--white); font-size: 13px; font-weight: 500;
+      cursor: pointer; color: var(--text); transition: background 0.1s;
+    }
+    .spec-toggle:hover { background: var(--gray-50); }
+    .spec-toggle.open { background: var(--purple-50); border-color: var(--purple-600);
+                        color: var(--purple-800); }
+
+    /* ── Redoc panel ── */
+    .redoc-panel { border-top: 1px solid var(--border); display: none; }
+    .redoc-panel.visible { display: block; }
+    .redoc-panel redoc { display: block; }
+
+    /* ── SLA tier pill ── */
+    .tier-pill {
+      display: inline-block; padding: 2px 8px; border-radius: 10px;
+      font-size: 11px; font-weight: 600;
+    }
+    .tier-1 { background: var(--teal-50);   color: var(--teal-800); }
+    .tier-2 { background: var(--purple-50); color: var(--purple-800); }
+    .tier-3 { background: var(--gray-50);   color: var(--gray-800); }
+
+    /* ── Loading ── */
+    .loading { padding: 60px; text-align: center; color: var(--text-muted); font-size: 14px; }
+    .error   { padding: 60px; text-align: center; color: var(--coral-800); font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h1>API Catalog</h1>
+      <p id="api-count">Loading…</p>
+    </div>
+    <div id="sidebar-links"></div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main" id="main">
+    <div class="loading">Loading catalog from registry.json…</div>
+  </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/redoc@latest/bundles/redoc.standalone.js"></script>
+<script>
+// ── Tribe colour helpers ──────────────────────────────────────────────────
+function tribeClass(tribe) {
+  if (tribe === 'integration-coe') return 'coe';
+  if (tribe === 'payments')        return 'pay';
+  if (tribe === 'cards')           return 'cards';
+  return 'coe';
+}
+function badgeLabel(tribe) {
+  if (tribe === 'integration-coe') return 'CoE';
+  if (tribe === 'payments')        return 'Payments';
+  if (tribe === 'cards')           return 'Cards';
+  return tribe;
+}
+
+// ── Build sidebar ─────────────────────────────────────────────────────────
+function buildSidebar(apis) {
+  const sidebar = document.getElementById('sidebar-links');
+  document.getElementById('api-count').textContent = `${apis.length} API${apis.length !== 1 ? 's' : ''}`;
+
+  // Group by tribe
+  const groups = {};
+  apis.forEach(api => {
+    groups[api.tribe] = groups[api.tribe] || [];
+    groups[api.tribe].push(api);
+  });
+
+  const tribeOrder = ['integration-coe', 'payments', 'cards'];
+  tribeOrder.forEach(tribe => {
+    if (!groups[tribe]) return;
+    const tc = tribeClass(tribe);
+    const groupEl = document.createElement('div');
+    groupEl.className = 'tribe-group';
+    groupEl.innerHTML = `<div class="tribe-label">${badgeLabel(tribe)}</div>`;
+    groups[tribe].forEach(api => {
+      const btn = document.createElement('button');
+      btn.className = 'sidebar-link';
+      btn.dataset.id = api.id;
+      btn.innerHTML = `
+        <span>${api.title}</span>
+        <span class="badge badge-${tc}">v${api.version}</span>
+      `;
+      btn.addEventListener('click', () => scrollToApi(api.id, btn));
+      groupEl.appendChild(btn);
+    });
+    sidebar.appendChild(groupEl);
+  });
+}
+
+function scrollToApi(id, btn) {
+  document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const el = document.getElementById('api-' + id.replace('/', '-'));
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Build main content ────────────────────────────────────────────────────
+function buildMain(apis) {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  apis.forEach(api => {
+    const tc    = tribeClass(api.tribe);
+    const safeId = api.id.replace('/', '-');
+
+    // Dependency rows
+    const upstreamRows = (api.upstreamServices || []).map(u => `
+      <tr>
+        <td>${u.name}</td>
+        <td><span class="badge badge-${tribeClass(u.tribe)}">${badgeLabel(u.tribe)}</span></td>
+        <td><span class="criticality-${u.criticality}">${u.criticality}</span></td>
+      </tr>`).join('') || `<tr><td colspan="3" style="color:var(--text-muted);font-style:italic">None</td></tr>`;
+
+    const downstreamRows = (api.downstreamConsumers || []).map(d => `
+      <tr>
+        <td>${d.name}</td>
+        <td><span class="badge badge-${tribeClass(d.tribe)}">${badgeLabel(d.tribe)}</span></td>
+      </tr>`).join('') || `<tr><td colspan="2" style="color:var(--text-muted);font-style:italic">None</td></tr>`;
+
+    const section = document.createElement('section');
+    section.id = 'api-' + safeId;
+    section.className = 'api-card';
+    section.innerHTML = `
+      <div class="api-card-header">
+        <div class="api-card-dot dot-${tc}"></div>
+        <div>
+          <div class="api-card-title">${api.title}</div>
+          <div class="api-card-version">v${api.version} &nbsp;·&nbsp;
+            <span class="tribe-label" style="display:inline">${api.owningTeam}</span>
+          </div>
+        </div>
+        <span class="tier-pill tier-${api.serviceTier}" style="margin-left:auto">
+          Tier ${api.serviceTier}
+        </span>
+      </div>
+
+      <div class="meta-grid">
+        <div class="meta-item">
+          <strong>Slack</strong>
+          <code style="font-size:12px">${api.slackChannel}</code>
+        </div>
+        <div class="meta-item">
+          <strong>Runbook</strong>
+          <a href="${api.runbook}" target="_blank">Open runbook ↗</a>
+        </div>
+        <div class="meta-item">
+          <strong>Availability SLA</strong>
+          ${api.sla.availability}
+        </div>
+        <div class="meta-item">
+          <strong>Response time P99</strong>
+          ${api.sla.responseTimeP99}
+        </div>
+      </div>
+
+      <div class="dep-section">
+        <h3>Upstream dependencies</h3>
+        <table class="dep-table">
+          <thead><tr><th>Service</th><th>Tribe</th><th>Criticality</th></tr></thead>
+          <tbody>${upstreamRows}</tbody>
+        </table>
+      </div>
+
+      <div class="dep-section">
+        <h3>Downstream consumers</h3>
+        <table class="dep-table">
+          <thead><tr><th>Consumer</th><th>Tribe</th></tr></thead>
+          <tbody>${downstreamRows}</tbody>
+        </table>
+      </div>
+
+      <button class="spec-toggle" onclick="toggleSpec('${safeId}', this)">
+        ▶ View full API spec
+      </button>
+
+      <div class="redoc-panel" id="redoc-${safeId}">
+        <!-- Redocly mounts here on demand -->
+      </div>
+    `;
+    main.appendChild(section);
+  });
+}
+
+// ── Lazy Redoc mount ──────────────────────────────────────────────────────
+const mounted = {};
+
+function toggleSpec(safeId, btn) {
+  const panel   = document.getElementById('redoc-' + safeId);
+  const isOpen  = panel.classList.contains('visible');
+
+  if (isOpen) {
+    panel.classList.remove('visible');
+    btn.classList.remove('open');
+    btn.textContent = '▶ View full API spec';
+    return;
+  }
+
+  panel.classList.add('visible');
+  btn.classList.add('open');
+  btn.textContent = '▼ Hide API spec';
+
+  if (!mounted[safeId]) {
+    mounted[safeId] = true;
+    // Find the spec URL from the registry
+    const api = window._catalog.find(a => a.id.replace('/', '-') === safeId);
+    const el  = document.createElement('redoc');
+    el.setAttribute('spec-url', api.spec);
+    el.setAttribute('hide-hostname', 'true');
+    panel.appendChild(el);
+    Redoc.init(api.spec, {
+      hideHostname: true,
+      hideLoading: false,
+      nativeScrollbars: false,
+      theme: { typography: { fontSize: '14px' } }
+    }, el);
+  }
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+fetch('catalog/registry.json')
+  .then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  })
+  .then(data => {
+    window._catalog = data.apis;
+    buildSidebar(data.apis);
+    buildMain(data.apis);
+    // Activate first sidebar link
+    const first = document.querySelector('.sidebar-link');
+    if (first) first.classList.add('active');
+  })
+  .catch(err => {
+    document.getElementById('main').innerHTML =
+      `<div class="error">
+        <strong>Could not load catalog/registry.json</strong><br>
+        Make sure you're running a local HTTP server (not file://).<br>
+        <code style="font-size:12px;color:var(--text-muted)">${err.message}</code>
+      </div>`;
+  });
+
+// ── Sidebar active tracking on scroll ────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id   = entry.target.id.replace('api-', '').replace('-', '/');
+      const link = document.querySelector(`.sidebar-link[data-id="${id}"]`);
+      if (link) {
+        document.querySelectorAll('.sidebar-link').forEach(b => b.classList.remove('active'));
+        link.classList.add('active');
+      }
+    }
+  });
+}, { threshold: 0.3 });
+
+// Attach observer after render
+setTimeout(() => {
+  document.querySelectorAll('section[id^="api-"]').forEach(s => observer.observe(s));
+}, 500);
+</script>
+</body>
+</html>
