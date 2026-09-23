@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- No network access: everything this page needs is inside this file. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>∫ Markdown to TiddlyWiki · Integration CoE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231A2233'/%3E%3Ctext x='16' y='25' font-family='Georgia,serif' font-style='italic' font-size='26' fill='%23D1A45A' text-anchor='middle'%3E%E2%88%AB%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --paper:#F2F4F7; --surface:#FFFFFF; --ink:#1A2233; --muted:#586379; --rule:#D5DBE4;
+  --brass:#8F621A; --brass-soft:#F3E8D3; --ok:#2E6B4F; --warn:#9A4A12; --code:#EEF1F5;
+  --serif:"Iowan Old Style","Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"Cascadia Mono","Cascadia Code",Consolas,"SFMono-Regular",Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{--paper:#11151D;--surface:#181E29;--ink:#E4E8EF;--muted:#98A2B3;--rule:#2B3445;
+    --brass:#D6AA5E;--brass-soft:#2E2718;--ok:#7CC4A0;--warn:#E9A26B;--code:#1F2634;color-scheme:dark}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.5 var(--sans)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+
+.wrap{max-width:1480px;margin:0 auto;padding:0 20px}
+
+/* masthead: the integral from md to tw */
+.mast{display:flex;align-items:center;gap:18px;padding:22px 0 18px}
+.mark{position:relative;width:64px;height:72px;flex:none;font-family:var(--serif)}
+.mark .int{position:absolute;left:4px;top:-14px;font-size:84px;line-height:1;font-style:italic;color:var(--brass)}
+.mark .up,.mark .lo{position:absolute;font-size:15px;font-style:italic;color:var(--ink)}
+.mark .up{left:42px;top:0}
+.mark .lo{left:22px;bottom:-2px}
+.mast h1{font-family:var(--serif);font-weight:600;font-size:28px;line-height:1.15;margin:0;letter-spacing:.005em}
+.mast p{margin:3px 0 0;color:var(--muted);font-size:14px}
+
+/* document strip */
+.strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--rule)}
+.doc{display:inline-flex;align-items:center;border:1px solid var(--rule);border-radius:999px;background:var(--surface);overflow:hidden}
+.doc button{border:0;background:none;padding:5px 12px;cursor:pointer;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc .x{padding:5px 10px 5px 4px;color:var(--muted)}
+.doc.on{border-color:var(--ink);background:var(--ink)}
+.doc.on button{color:var(--paper)}
+.btn{border:1px solid var(--rule);background:var(--surface);border-radius:6px;padding:6px 12px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.spacer{flex:1}
+
+/* options */
+details.opts{border:1px solid var(--rule);border-radius:8px;background:var(--surface);margin:4px 0 14px}
+details.opts summary{cursor:pointer;padding:10px 14px;font-weight:600}
+details.opts summary span{font-weight:400;color:var(--muted);margin-left:8px;font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 28px;padding:4px 14px 16px}
+fieldset{border:0;margin:0;padding:8px 0;min-width:0}
+legend{font-family:var(--serif);font-weight:600;font-size:16px;padding:0;margin-bottom:6px}
+.check{display:flex;gap:8px;align-items:flex-start;margin:6px 0}
+.check input{margin-top:4px}
+.field{display:block;margin:8px 0}
+.field span{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+.field input,.field select,.field textarea{width:100%;border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:6px 9px}
+.field textarea{font-family:var(--mono);font-size:13px;min-height:62px;resize:vertical}
+.hint{font-size:13px;color:var(--muted);margin:4px 0 0}
+code,kbd{font-family:var(--mono);font-size:.9em;background:var(--code);padding:1px 4px;border-radius:4px}
+
+/* panes */
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:920px){.panes{grid-template-columns:1fr}}
+.pane{background:var(--surface);border:1px solid var(--rule);border-radius:8px;display:flex;flex-direction:column;min-width:0;position:relative}
+.phead{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--rule);min-height:48px;flex-wrap:wrap}
+.phead h2{font-family:var(--serif);font-size:17px;margin:0;font-weight:600}
+.phead .meta{color:var(--muted);font-size:13px}
+.titlebox{flex:1;min-width:180px;display:flex;align-items:center;gap:6px}
+.titlebox input{flex:1;min-width:0;border:1px solid var(--rule);border-radius:6px;background:var(--paper);padding:4px 8px}
+.titlebox label{font-size:13px;color:var(--muted)}
+textarea.src,.view pre,textarea.outtext{font-family:var(--mono);font-size:13px;line-height:1.55;tab-size:4}
+textarea.src,textarea.outtext{flex:1;width:100%;min-height:62vh;border:0;background:transparent;padding:12px 14px;resize:vertical;outline-offset:-2px}
+.drop{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:color-mix(in srgb,var(--brass-soft) 88%,transparent);border:2px dashed var(--brass);border-radius:8px;font-family:var(--serif);font-size:20px;z-index:3}
+body.dragging .drop{display:flex}
+
+.tabs{display:flex;gap:2px}
+.tabs button{border:0;background:none;padding:6px 10px;border-radius:6px;cursor:pointer;color:var(--muted)}
+.tabs button[aria-selected="true"]{color:var(--ink);background:var(--paper);font-weight:600}
+.tabs .n{font-size:12px;margin-left:4px;padding:0 6px;border-radius:999px;background:var(--rule);color:var(--ink)}
+.tabs .n.warn{background:var(--warn);color:var(--surface)}
+.view{flex:1;display:flex;flex-direction:column;min-height:62vh;overflow:auto}
+.view[hidden]{display:none}
+.tid{border-bottom:1px solid var(--rule);padding:10px 14px}
+.tid header{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.tid h3{font-family:var(--serif);font-size:16px;margin:0}
+.tid .tags{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.tid .role{font-size:12px;color:var(--brass)}
+.tid pre{margin:8px 0 0;padding:10px;background:var(--code);border-radius:6px;overflow:auto;max-height:280px;white-space:pre-wrap;word-break:break-word}
+.tid .btn{padding:2px 9px;font-size:13px;margin-left:auto}
+.report{padding:12px 14px}
+.report ol{margin:0;padding-left:20px}
+.report li{margin:0 0 10px}
+.report .where{font-size:12px;color:var(--muted)}
+.report code{display:inline-block;margin-top:3px;white-space:pre-wrap;word-break:break-all}
+.report .clean{color:var(--ok)}
+.stats{font-size:13px;color:var(--muted);margin-top:14px;border-top:1px solid var(--rule);padding-top:10px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--rule)}
+
+footer{color:var(--muted);font-size:14px;padding:22px 0 40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px 32px}
+footer h2{font-family:var(--serif);color:var(--ink);font-size:17px;margin:0 0 4px}
+footer ol,footer p{margin:0;padding-left:18px}
+footer p{padding:0}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 16px;border-radius:6px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <div class="mark" aria-hidden="true"><span class="int">∫</span><span class="up">tw</span><span class="lo">md</span></div>
+    <div>
+      <h1>Markdown to TiddlyWiki</h1>
+      <p>Integration CoE converter. Runs entirely inside this file; nothing is sent anywhere.</p>
+    </div>
+  </header>
+
+  <div class="strip" role="toolbar" aria-label="Documents">
+    <div id="docs" style="display:contents"></div>
+    <button class="btn" id="newDoc" type="button">New document</button>
+    <button class="btn" id="openBtn" type="button">Open .md files…</button>
+    <input type="file" id="fileIn" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple hidden>
+    <span class="spacer"></span>
+    <span class="meta hint">Tip: drop Markdown files anywhere on the page.</span>
+  </div>
+
+  <details class="opts" id="opts">
+    <summary>Conversion options <span id="optSummary"></span></summary>
+    <div class="grid">
+      <fieldset>
+        <legend>Title and tags</legend>
+        <label class="check"><input type="checkbox" id="o_h1AsTitle"> <span>Use the single <code>#</code> heading as the tiddler title</span></label>
+        <label class="check"><input type="checkbox" id="o_promoteHeadings"> <span>Then move the other headings up one level (<code>##</code> becomes <code>!</code>)</span></label>
+        <label class="field"><span>Tags for every tiddler (TiddlyWiki format)</span><input id="o_tags" spellcheck="false"></label>
+        <p class="hint">Front-matter <code>title</code>, <code>tags</code> and other keys are also picked up as fields.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Reusable sections</legend>
+        <label class="check"><input type="checkbox" id="o_split"> <span>Split each section into its own tiddler, at heading level
+          <select id="o_splitLevel" aria-label="Heading level to split at"><option value="1">#</option><option value="2">##</option><option value="3">###</option><option value="4">####</option></select></span></label>
+        <label class="field"><span>Section tiddler title: <code>{doc}</code>, <code>{section}</code>, <code>{n}</code></span><input id="o_sectionTitle" spellcheck="false"></label>
+        <label class="field"><span>Parent tiddler shows each section as</span>
+          <select id="o_wrapStyle">
+            <option value="shiraz">Shiraz details (collapsible)</option>
+            <option value="heading">Heading + transclusion</option>
+            <option value="transclude">Transclusion only</option>
+            <option value="custom">Custom template</option>
+          </select></label>
+        <label class="field" id="customWrap"><span>Custom template: <code>$summary$</code>, <code>$tiddler$</code>, <code>$heading$</code>, <code>$n$</code></span><textarea id="o_customTemplate" spellcheck="false"></textarea></label>
+        <label class="check"><input type="checkbox" id="o_tagSectionsWithParent"> <span>Tag sections with the parent title and keep their order</span></label>
+      </fieldset>
+      <fieldset>
+        <legend>Safety</legend>
+        <label class="check"><input type="checkbox" id="o_escapeCamelCase"> <span>Stop CamelCase words (e.g. <code>MuleSoft</code>) becoming accidental links</span></label>
+        <label class="check"><input type="checkbox" id="o_passthroughTW"> <span>Keep TiddlyWiki syntax already in the Markdown: <code>{{…}}</code>, <code>&lt;&lt;…&gt;&gt;</code>, <code>[[…]]</code></span></label>
+        <p class="hint">With the second option on, you can ask the AI tool to write <code>{{Common/Retry Policy}}</code> where shared content belongs, and it survives conversion.</p>
+        <button class="btn" type="button" id="resetOpts" style="margin-top:10px">Restore default options</button>
+      </fieldset>
+    </div>
+  </details>
+
+  <main class="panes">
+    <section class="pane" aria-labelledby="inH">
+      <div class="phead">
+        <h2 id="inH">Markdown</h2>
+        <div class="titlebox"><label for="titleIn">Title</label><input id="titleIn" spellcheck="false" placeholder="From front matter, # heading or file name"></div>
+      </div>
+      <textarea class="src" id="md" spellcheck="false" aria-label="Markdown source" placeholder="Paste Markdown from your AI tool here, or open .md files."></textarea>
+      <div class="drop">Drop Markdown files to convert them</div>
+    </section>
+
+    <section class="pane" aria-labelledby="outH">
+      <div class="phead">
+        <h2 id="outH" class="sr">TiddlyWiki output</h2>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" aria-controls="v_text" id="t_text">Wikitext</button>
+          <button role="tab" aria-selected="false" aria-controls="v_tids" id="t_tids">Tiddlers <span class="n" id="nTids">1</span></button>
+          <button role="tab" aria-selected="false" aria-controls="v_rep" id="t_rep">Report <span class="n" id="nWarn">0</span></button>
+        </div>
+        <span class="spacer"></span>
+        <span class="meta" id="outTitle"></span>
+      </div>
+      <div class="view" id="v_text" role="tabpanel" aria-labelledby="t_text"><textarea class="outtext" id="out" readonly spellcheck="false" aria-label="Converted wikitext"></textarea></div>
+      <div class="view" id="v_tids" role="tabpanel" aria-labelledby="t_tids" hidden></div>
+      <div class="view" id="v_rep" role="tabpanel" aria-labelledby="t_rep" hidden><div class="report" id="report"></div></div>
+      <div class="actions">
+        <button class="btn primary" type="button" id="dlJson">Download import file (.json)</button>
+        <button class="btn" type="button" id="copyText">Copy wikitext</button>
+        <button class="btn" type="button" id="dlTid">Download .tid</button>
+        <button class="btn" type="button" id="dlAll" hidden>Download all documents (.json)</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <h2>Importing into TiddlyWiki</h2>
+      <ol>
+        <li>Download the import file.</li>
+        <li>Drag it onto your open wiki (or use the Import button in the Tools tab).</li>
+        <li>Review the list, then click Import.</li>
+      </ol>
+    </div>
+    <div>
+      <h2>Reusing sections with Shiraz</h2>
+      <p>With splitting on, the parent tiddler calls <code>&lt;&lt;details&gt;&gt;</code> once per section and transcludes the section tiddler as its <code>src</code>. Point other pages at the same section tiddler to reuse it. If your Shiraz version expects different parameters, switch to a custom template.</p>
+    </div>
+    <div>
+      <h2>Check the report</h2>
+      <p>Anything that TiddlyWiki can't express exactly (code inside list items, raw HTML, oversized tables) is listed in the Report tab with the line it came from.</p>
+    </div>
+  </footer>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* md2tw converter engine: Markdown (CommonMark/GFM subset) -> TiddlyWiki 5 wikitext */
+var MD2TW = (function () {
+  'use strict';
+  var PO = '\uE000', PC = '\uE001';
+
+  var DEFAULTS = {
+    h1AsTitle: true,
+    promoteHeadings: true,
+    escapeCamelCase: true,
+    passthroughTW: true,
+    split: false,
+    splitLevel: 2,
+    sectionTitle: '{doc}/{section}',
+    wrapStyle: 'shiraz',
+    customTemplate: '<<details summary:"""$summary$""" src:"""{{$tiddler$}}""">>',
+    tags: '[[Integration CoE]]',
+    tagSectionsWithParent: true
+  };
+
+  var TEMPLATES = {
+    shiraz: '<<details summary:"""$summary$""" src:"""{{$tiddler$}}""">>',
+    heading: '$heading$ $summary$\n\n{{$tiddler$}}',
+    transclude: '{{$tiddler$}}'
+  };
+
+  function sanitizeTitle(s) {
+    return String(s).replace(/[\[\]{}|]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  function plainText(md) {
+    return String(md)
+      .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\[[^\]]*\]/g, '$1')
+      .replace(/`+([^`]*)`+/g, '$1')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/(^|\W)__([^_]+)__(?!\w)/g, '$1$2')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/(^|\W)_([^_]+)_(?!\w)/g, '$1$2')
+      .replace(/~~([^~]+)~~/g, '$1')
+      .replace(/<[^>]+>/g, '')
+      .replace(/\\([\\`*_{}\[\]()#+\-.!|~<>])/g, '$1')
+      .replace(/"""/g, '"')
+      .trim();
+  }
+
+  function parseTags(str) {
+    var out = [], re = /\[\[([^\]]+)\]\]|(\S+)/g, m;
+    str = String(str || '');
+    while ((m = re.exec(str))) {
+      var t = (m[1] || m[2]).trim();
+      if (t && out.indexOf(t) < 0) out.push(t);
+    }
+    return out;
+  }
+  function stringifyTags(arr) {
+    return arr.map(function (t) { return /\s/.test(t) ? '[[' + t + ']]' : t; }).join(' ');
+  }
+
+  function twDate(d) {
+    function p(n, w) { n = String(n); while (n.length < w) n = '0' + n; return n; }
+    return d.getUTCFullYear() + p(d.getUTCMonth() + 1, 2) + p(d.getUTCDate(), 2) +
+      p(d.getUTCHours(), 2) + p(d.getUTCMinutes(), 2) + p(d.getUTCSeconds(), 2) + p(d.getUTCMilliseconds(), 3);
+  }
+
+  /* ---------------- inline ---------------- */
+
+  function escapeLiteral(c) {
+    return { '|': '&#124;', '<': '&lt;', '>': '&gt;', '`': '&#96;' }[c] || c;
+  }
+
+  function convertInline(text, ctx) {
+    var store = [];
+    function protect(s) { store.push(s); return PO + (store.length - 1) + PC; }
+    var t = String(text);
+
+    // code spans (TW uses the same backtick syntax)
+    t = t.replace(/(`+)([\s\S]*?[^`])\1(?!`)/g, function (m) { ctx.stats.code++; return protect(m); });
+
+    // backslash escapes
+    t = t.replace(/\\([\\`*_{}\[\]()#+\-.!|~<>])/g, function (m, c) { return protect(escapeLiteral(c)); });
+
+    // existing TiddlyWiki syntax passes through untouched
+    if (ctx.opts.passthroughTW) {
+      t = t.replace(/\{\{\{[\s\S]*?\}\}\}|\{\{[^{}]+\}\}|<<[\s\S]*?>>|\[img\[[^\]]*\]\]|\[\[[^\[\]]+\]\]/g, function (m) {
+        ctx.stats.passthrough++; return protect(m);
+      });
+    }
+
+    // footnote references
+    t = t.replace(/\[\^([^\]\s]+)\]/g, function (m, id) {
+      if (!ctx.footnotes[id]) return m;
+      ctx.usedFootnotes[id] = true;
+      return protect('^^' + id + '^^');
+    });
+
+    // autolinks
+    t = t.replace(/<((?:https?|ftp|mailto):[^\s>]+)>/gi, function (m, u) { return protect(u); });
+    t = t.replace(/<([^\s@<>]+@[^\s@<>]+\.[^\s@<>]+)>/g, function (m, e) { return protect('[[' + e + '|mailto:' + e + ']]'); });
+
+    // inline HTML tags and comments
+    t = t.replace(/<!--[\s\S]*?-->|<\/?[A-Za-z][A-Za-z0-9-]*(?:\s[^<>]*)?\/?>/g, function (m) { return protect(m); });
+
+    var URL_RE = '((?:[^()\\s]|\\([^()\\s]*\\))*)';
+    var TITLE_RE = '(?:\\s+(?:"[^"]*"|\'[^\']*\'|\\([^)]*\\)))?';
+
+    function image(alt, src) {
+      ctx.stats.images++;
+      alt = plainText(alt).replace(/[|\]]/g, ' ').trim();
+      return protect(alt ? '[img[' + alt + '|' + src + ']]' : '[img[' + src + ']]');
+    }
+    t = t.replace(new RegExp('!\\[([^\\]]*)\\]\\(\\s*<?' + URL_RE + '>?' + TITLE_RE + '\\s*\\)', 'g'), function (m, alt, src) {
+      return image(alt, src);
+    });
+    t = t.replace(/!\[([^\]]*)\]\[([^\]]*)\]/g, function (m, alt, ref) {
+      var r = ctx.refs[(ref || alt).toLowerCase()];
+      return r ? image(alt, r) : m;
+    });
+
+    function link(label, url) {
+      ctx.stats.links++;
+      var internal = /^#/.test(url);
+      var target = internal ? sanitizeTitle(decodeURIComponent(url.slice(1).replace(/\+/g, ' '))) : url;
+      if (!label) return protect(internal ? '[[' + target + ']]' : url);
+      var simple = label.indexOf(PO) < 0 && !/[|\]*_`~<\[]/.test(label);
+      if (simple) return protect('[[' + label.trim() + '|' + target + ']]');
+      var inner = convertInline(label, ctx);
+      if (internal) return protect('<$link to="""' + target + '""">' + inner + '</$link>');
+      return protect('<a href="' + url.replace(/"/g, '%22') + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>');
+    }
+    // restore placeholders inside labels before recursing
+    function restoreIn(s) { return s.replace(new RegExp(PO + '(\\d+)' + PC, 'g'), function (m, i) { return store[+i]; }); }
+
+    t = t.replace(new RegExp('\\[([^\\[\\]]*)\\]\\(\\s*<?' + URL_RE + '>?' + TITLE_RE + '\\s*\\)', 'g'), function (m, label, url) {
+      if (label.indexOf(PO) >= 0) {
+        // label contains image/code: build HTML link with already-converted pieces
+        var inner = restoreIn(label);
+        ctx.stats.links++;
+        return protect('<a href="' + url.replace(/"/g, '%22') + '" target="_blank" rel="noopener noreferrer">' + inner + '</a>');
+      }
+      return link(label, url);
+    });
+    t = t.replace(/\[([^\[\]]+)\]\[([^\[\]]*)\]/g, function (m, label, ref) {
+      var r = ctx.refs[(ref || label).toLowerCase()];
+      return r ? link(label, r) : m;
+    });
+    t = t.replace(/\[([^\[\]]+)\](?!\()/g, function (m, label) {
+      var r = ctx.refs[label.toLowerCase()];
+      return r ? link(label, r) : m;
+    });
+
+    // bare URLs (TiddlyWiki auto-links them)
+    t = t.replace(/\b(?:https?|ftp):\/\/[^\s<>"'`\uE000\uE001]+[^\s<>"'`.,;:!?)\]\uE000\uE001]/gi, function (m) { return protect(m); });
+
+    // neutralise sequences that mean something different in TiddlyWiki
+    t = t.replace(/'(?=')/g, '&#39;')
+      .replace(/\/(?=\/)/g, '&#47;')
+      .replace(/,(?=,)/g, '&#44;')
+      .replace(/\^(?=\^)/g, '&#94;')
+      .replace(/@(?=@)/g, '&#64;')
+      .replace(/-(?=-)/g, '&#45;');
+    if (!ctx.opts.passthroughTW) {
+      t = t.replace(/\{(?=\{)/g, '&#123;').replace(/<(?=<)/g, '&lt;').replace(/\[(?=\[)/g, '&#91;');
+    }
+
+    // emphasis
+    t = t.replace(/\*\*\*(?=\S)([\s\S]*?\S)\*\*\*/g, "''//$1//''");
+    t = t.replace(/\*\*(?=\S)([\s\S]*?\S)\*\*/g, "''$1''");
+    t = t.replace(/(^|[^\w])__(?=\S)([\s\S]*?\S)__(?!\w)/g, "$1''$2''");
+    t = t.replace(/\*(?=[^\s*])([^*]*?[^\s*]|[^\s*])\*/g, '//$1//');
+    t = t.replace(/(^|[^\w])_(?=[^\s_])([^_]*?[^\s_]|[^\s_])_(?!\w)/g, '$1//$2//');
+    t = t.replace(/==(?=\S)([^=]*?\S)==/g, '<mark>$1</mark>');
+    // ~~strike~~ is identical in both syntaxes
+
+    if (ctx.opts.escapeCamelCase) {
+      t = t.replace(/(^|[^\w~&#])([A-Z]+[a-z]+[A-Z][A-Za-z0-9]*)\b/g, function (m, pre, w) {
+        ctx.stats.camel++; return pre + '~' + w;
+      });
+    }
+
+    // restore (may be nested)
+    var guard = 0;
+    while (t.indexOf(PO) >= 0 && guard++ < 10) t = restoreIn(t);
+    return t;
+  }
+
+  /* ---------------- blocks ---------------- */
+
+  var RE = {
+    fence: /^(\s*)(`{3,}|~{3,})\s*([^\s`]*)[^`]*$/,
+    atx: /^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/,
+    hr: /^ {0,3}([-*_])(?:[ \t]*\1){2,}[ \t]*$/,
+    tableSep: /^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)*\|?\s*$/,
+    quote: /^ {0,3}>/,
+    list: /^( *)([-*+]|\d{1,9}[.)])(?:[ \t]+(.*)|[ \t]*$)/,
+    html: /^ {0,3}<(\/?(?:div|table|thead|tbody|tr|td|th|details|summary|pre|p|section|article|aside|ul|ol|li|blockquote|figure|figcaption|dl|dt|dd|h[1-6]|hr|center|nav|header|footer|iframe|style|script|svg)\b|!--)/i,
+    setext1: /^ {0,3}=+[ \t]*$/,
+    setext2: /^ {0,3}-+[ \t]*$/
+  };
+
+  function isBlank(l) { return /^\s*$/.test(l); }
+
+  function isTableStart(lines, i) {
+    return i + 1 < lines.length && lines[i].indexOf('|') >= 0 && RE.tableSep.test(lines[i + 1]) && lines[i + 1].indexOf('-') >= 0;
+  }
+
+  function startsBlock(lines, i) {
+    var l = lines[i];
+    return RE.fence.test(l) || RE.atx.test(l) || RE.hr.test(l) || RE.quote.test(l) ||
+      RE.list.test(l) || RE.html.test(l) || isTableStart(lines, i);
+  }
+
+  function headingText(level, text, ctx) {
+    var n = level - (ctx.shift || 0);
+    if (n < 1) n = 1;
+    ctx.stats.headings++;
+    return new Array(n + 1).join('!') + ' ' + convertInline(text || '', ctx);
+  }
+
+  function splitRow(row) {
+    var s = row.trim();
+    if (s.charAt(0) === '|') s = s.slice(1);
+    if (s.charAt(s.length - 1) === '|' && s.charAt(s.length - 2) !== '\\') s = s.slice(0, -1);
+    var cells = [], cur = '', inCode = 0, i;
+    for (i = 0; i < s.length; i++) {
+      var c = s.charAt(i);
+      if (c === '\\' && s.charAt(i + 1) === '|') { cur += '\\|'; i++; continue; }
+      if (c === '`') inCode = !inCode;
+      if (c === '|' && !inCode) { cells.push(cur); cur = ''; continue; }
+      cur += c;
+    }
+    cells.push(cur);
+    return cells.map(function (c) { return c.trim(); });
+  }
+
+  function convertTable(rows, ctx) {
+    ctx.stats.tables++;
+    var header = splitRow(rows[0]);
+    var aligns = splitRow(rows[1]).map(function (c) {
+      var l = c.charAt(0) === ':', r = c.charAt(c.length - 1) === ':';
+      return l && r ? 'c' : r ? 'r' : l ? 'l' : '';
+    });
+    function cell(txt, a) {
+      txt = txt.replace(/(`+)([^`]*\|[^`]*)\1/g, function (m, b, code) {
+        return '<code>' + code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\\?\|/g, '&#124;') + '</code>';
+      });
+      var v = convertInline(txt, ctx);
+      if (v === '') v = ' ';
+      if (a === 'c') return ' ' + v + ' ';
+      if (a === 'r') return ' ' + v;
+      if (a === 'l') return v + ' ';
+      return v;
+    }
+    var n = header.length, out = [];
+    out.push('|' + header.map(function (h, i) { return cell(h, aligns[i]); }).join('|') + '|h');
+    for (var r = 2; r < rows.length; r++) {
+      var cells = splitRow(rows[r]);
+      while (cells.length < n) cells.push('');
+      if (cells.length > n) {
+        ctx.warn('Table row has more cells than the header; extra cells were merged.', rows[r]);
+        cells = cells.slice(0, n - 1).concat([cells.slice(n - 1).join(' / ')]);
+      }
+      out.push('|' + cells.map(function (c, i) { return cell(c, aligns[i]); }).join('|') + '|');
+    }
+    return out.join('\n');
+  }
+
+  function convertList(lines, i, ctx) {
+    var items = [], stack = [], last = null, sawBlank = false, start = i, startNum = 1;
+    for (; i < lines.length; i++) {
+      var l = lines[i];
+      if (isBlank(l)) { sawBlank = true; continue; }
+      var m = RE.list.exec(l);
+      if (m && !RE.hr.test(l)) {
+        var indent = m[1].length;
+        var ordered = /\d/.test(m[2]);
+        var type = ordered ? '#' : '*';
+        if (ordered && !items.length) startNum = parseInt(m[2], 10);
+        if (items.length && indent < stack[0].indent + 2 && stack[0].type !== type) break; // new list of other kind
+        while (stack.length > 1 && indent < stack[stack.length - 1].indent - 1) stack.pop();
+        if (!stack.length || indent >= stack[stack.length - 1].indent + 2) stack.push({ indent: indent, type: type });
+        else stack[stack.length - 1].type = type;
+        var txt = m[3] || '';
+        var task = /^\[([ xX])\]\s+/.exec(txt);
+        if (task) { txt = txt.slice(task[0].length); ctx.stats.tasks++; }
+        last = {
+          prefix: stack.map(function (s) { return s.type; }).join(''),
+          task: task ? (task[1] === ' ' ? '\u2610 ' : '\u2611 ') : '',
+          parts: [txt]
+        };
+        items.push(last);
+        sawBlank = false;
+        continue;
+      }
+      var lead = /^( *)/.exec(l)[1].length;
+      var trimmed = l.trim();
+      var isBlockish = RE.fence.test(l) || /^>/.test(trimmed) || isTableStart(lines, i) || RE.atx.test(trimmed) || RE.html.test(trimmed);
+      if (isBlockish) {
+        if (lead > 0 && items.length) {
+          ctx.warn('A ' + (RE.fence.test(l) ? 'code block' : 'table/quote/heading') +
+            ' was nested inside a list item. TiddlyWiki list items are single-line, so the block was placed between list parts; numbering continues via an HTML <ol start>.', trimmed);
+        }
+        break;
+      }
+      if (sawBlank && lead < 2) break;          // un-indented paragraph ends the list
+      if (last) last.parts.push((sawBlank ? '<br><br>' : '') + trimmed);
+      sawBlank = false;
+    }
+    ctx.stats.lists++;
+    var out = items.map(function (it) {
+      var joined = it.parts.map(function (p, k) {
+        if (k === 0) return p;
+        return p.indexOf('<br><br>') === 0 ? p : ' ' + p;
+      }).join('');
+      return it.prefix + ' ' + it.task + convertInline(joined, ctx);
+    });
+    if (startNum > 1) {
+      // continue numbering (e.g. after a code block interrupted the list): use HTML <ol start>
+      var html = [], cur = null;
+      out.forEach(function (line) {
+        if (/^# /.test(line)) { if (cur) html.push(cur); cur = { head: line.slice(2), kids: [] }; }
+        else if (cur) cur.kids.push(line.slice(1));
+      });
+      if (cur) html.push(cur);
+      var parts = html.map(function (it) {
+        return it.kids.length ? '<li>\n\n' + it.head + '\n\n' + it.kids.join('\n') + '\n\n</li>' : '<li>' + it.head + '</li>';
+      });
+      return { text: '<ol start="' + startNum + '">\n\n' + parts.join('\n') + '\n\n</ol>', next: i === start ? i + 1 : i };
+    }
+    return { text: out.join('\n'), next: i === start ? i + 1 : i };
+  }
+
+  function convertBlocks(lines, ctx) {
+    var out = [], i = 0;
+    while (i < lines.length) {
+      var l = lines[i], m;
+      if (isBlank(l)) { i++; continue; }
+
+      // fenced code
+      if ((m = RE.fence.exec(l))) {
+        var indent = m[1].length, fence = m[2], lang = m[3] || '', body = [];
+        i++;
+        while (i < lines.length) {
+          var cl = lines[i];
+          var close = new RegExp('^\\s*' + fence.charAt(0) + '{' + fence.length + ',}\\s*$');
+          if (close.test(cl)) { i++; break; }
+          body.push(cl.replace(new RegExp('^ {0,' + indent + '}'), ''));
+          i++;
+        }
+        if (body.some(function (b) { return /^```/.test(b); })) {
+          ctx.warn('Code block contains a ``` line; TiddlyWiki will end the block early.', body.join('\n').slice(0, 60));
+        }
+        ctx.stats.codeBlocks++;
+        out.push('```' + lang + '\n' + body.join('\n') + '\n```');
+        continue;
+      }
+
+      if ((m = RE.atx.exec(l))) { out.push(headingText(m[1].length, m[2], ctx)); i++; continue; }
+
+      if (RE.hr.test(l)) { out.push('---'); i++; continue; }
+
+      if (isTableStart(lines, i)) {
+        var rows = [lines[i], lines[i + 1]];
+        i += 2;
+        while (i < lines.length && !isBlank(lines[i]) && lines[i].indexOf('|') >= 0) rows.push(lines[i++]);
+        out.push(convertTable(rows, ctx));
+        continue;
+      }
+
+      if (RE.quote.test(l)) {
+        var ql = [];
+        while (i < lines.length && !isBlank(lines[i]) && (RE.quote.test(lines[i]) || !startsBlock(lines, i))) {
+          ql.push(lines[i].replace(/^ {0,3}> ?/, ''));
+          i++;
+        }
+        // a blank line followed by more ">" continues the quote
+        while (i + 1 < lines.length && isBlank(lines[i]) && RE.quote.test(lines[i + 1])) {
+          ql.push('');
+          i++;
+          while (i < lines.length && RE.quote.test(lines[i])) { ql.push(lines[i].replace(/^ {0,3}> ?/, '')); i++; }
+        }
+        var label = '';
+        var alert = /^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*$/i.exec(ql[0] || '');
+        if (alert) {
+          ql.shift();
+          label = "''" + alert[1].charAt(0).toUpperCase() + alert[1].slice(1).toLowerCase() + "''\n\n";
+          ctx.stats.alerts++;
+        }
+        ctx.depth = (ctx.depth || 0) + 1;
+        var inner = label + convertBlocks(ql, ctx).join('\n\n');
+        ctx.depth--;
+        ctx.stats.quotes++;
+        out.push(ctx.depth > 0 ? '<blockquote>\n\n' + inner + '\n\n</blockquote>' : '<<<\n' + inner + '\n<<<');
+        continue;
+      }
+
+      if (RE.list.test(l) && !RE.hr.test(l)) {
+        var res = convertList(lines, i, ctx);
+        out.push(res.text);
+        i = res.next;
+        continue;
+      }
+
+      if (RE.html.test(l)) {
+        var hl = [];
+        while (i < lines.length && !isBlank(lines[i])) hl.push(lines[i++]);
+        ctx.stats.html++;
+        ctx.warn('Raw HTML block passed through unchanged. Markdown inside it will not be converted.', hl[0]);
+        out.push(hl.join('\n'));
+        continue;
+      }
+
+      // indented code block (only when not continuing a list)
+      if (/^( {4}|\t)/.test(l) && ctx.lastWasParaEnd !== false) {
+        var cb = [];
+        while (i < lines.length && (/^( {4}|\t)/.test(lines[i]) || (isBlank(lines[i]) && i + 1 < lines.length && /^( {4}|\t)/.test(lines[i + 1])))) {
+          cb.push(lines[i].replace(/^( {4}|\t)/, ''));
+          i++;
+        }
+        ctx.stats.codeBlocks++;
+        out.push('```\n' + cb.join('\n') + '\n```');
+        continue;
+      }
+
+      // paragraph (+ setext headings)
+      var para = [];
+      while (i < lines.length && !isBlank(lines[i])) {
+        if (para.length && RE.setext1.test(lines[i])) { out.push(headingText(1, para.join(' '), ctx)); para = null; i++; break; }
+        if (para.length && RE.setext2.test(lines[i])) { out.push(headingText(2, para.join(' '), ctx)); para = null; i++; break; }
+        if (para.length && startsBlock(lines, i)) break;
+        para.push(lines[i]);
+        i++;
+      }
+      if (para && para.length) {
+        var joined = para.map(function (p, k) {
+          var hard = /( {2,}|\\)$/.test(p) && k < para.length - 1;
+          return p.replace(/( {2,}|\\)$/, '').trim() + (hard ? '<br>' : '');
+        }).join(' ').replace(/<br> /g, '<br>');
+        out.push(convertInline(joined, ctx));
+      }
+    }
+    return out;
+  }
+
+  /* ---------------- document ---------------- */
+
+  function preprocess(md, ctx) {
+    var lines = String(md).replace(/\r\n?/g, '\n').replace(/\t/g, '    ').split('\n');
+    var fm = {};
+    // YAML front matter
+    if (/^---\s*$/.test(lines[0] || '')) {
+      for (var e = 1; e < Math.min(lines.length, 60); e++) {
+        if (/^(---|\.\.\.)\s*$/.test(lines[e])) {
+          var block = lines.slice(1, e);
+          if (block.every(function (b) { return isBlank(b) || /^[A-Za-z0-9_.-]+\s*:/.test(b) || /^\s+-\s/.test(b) || /^\s/.test(b); })) {
+            var key = null;
+            block.forEach(function (b) {
+              var kv = /^([A-Za-z0-9_.-]+)\s*:\s*(.*)$/.exec(b);
+              if (kv) { key = kv[1].toLowerCase(); fm[key] = kv[2].replace(/^["']|["']$/g, ''); }
+              else if (key && /^\s+-\s+/.test(b)) {
+                fm[key] = (fm[key] ? fm[key] + ', ' : '') + b.replace(/^\s+-\s+/, '').replace(/^["']|["']$/g, '');
+              }
+            });
+            lines = lines.slice(e + 1);
+            ctx.stats.frontMatter = Object.keys(fm).length;
+          }
+          break;
+        }
+      }
+    }
+    // reference definitions and footnotes (outside code fences)
+    var kept = [], inFence = null;
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i], f = RE.fence.exec(l);
+      if (f) {
+        if (!inFence) inFence = f[2].charAt(0);
+        else if (f[2].charAt(0) === inFence && !f[3]) inFence = null;
+        kept.push(l); continue;
+      }
+      if (inFence) { kept.push(l); continue; }
+      var fn = /^ {0,3}\[\^([^\]]+)\]:\s*(.*)$/.exec(l);
+      if (fn) {
+        var txt = fn[2];
+        while (i + 1 < lines.length && /^ {2,}\S/.test(lines[i + 1])) txt += ' ' + lines[++i].trim();
+        ctx.footnotes[fn[1]] = txt;
+        ctx.footnoteOrder.push(fn[1]);
+        continue;
+      }
+      var rd = /^ {0,3}\[([^\]]+)\]:\s*<?(\S+?)>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]*\)))?\s*$/.exec(l);
+      if (rd) { ctx.refs[rd[1].toLowerCase()] = rd[2]; continue; }
+      kept.push(l);
+    }
+    return { lines: kept, fm: fm };
+  }
+
+  function headingsOutsideFences(lines) {
+    var res = [], inFence = null;
+    lines.forEach(function (l, idx) {
+      var f = RE.fence.exec(l);
+      if (f) {
+        if (!inFence) inFence = f[2].charAt(0);
+        else if (f[2].charAt(0) === inFence && !f[3]) inFence = null;
+        return;
+      }
+      if (inFence) return;
+      var m = RE.atx.exec(l);
+      if (m) res.push({ index: idx, level: m[1].length, text: (m[2] || '').trim() });
+    });
+    return res;
+  }
+
+  function newCtx(opts) {
+    var ctx = {
+      opts: opts, refs: {}, footnotes: {}, footnoteOrder: [], usedFootnotes: {}, shift: 0, depth: 0,
+      warnings: [],
+      stats: { headings: 0, lists: 0, tasks: 0, tables: 0, codeBlocks: 0, code: 0, links: 0, images: 0, quotes: 0, alerts: 0, html: 0, camel: 0, passthrough: 0, frontMatter: 0 }
+    };
+    ctx.warn = function (msg, sample) {
+      ctx.warnings.push({ msg: msg, sample: String(sample || '').trim().slice(0, 90), where: ctx.where || '' });
+    };
+    return ctx;
+  }
+
+  function footnoteBlock(ctx) {
+    var ids = ctx.footnoteOrder.filter(function (id) { return ctx.usedFootnotes[id]; });
+    if (!ids.length) return '';
+    var saved = ctx.usedFootnotes;
+    var lines = ids.map(function (id) { return '* ^^' + id + '^^ ' + convertInline(ctx.footnotes[id], ctx); });
+    ctx.usedFootnotes = saved;
+    return '---\n\n' + lines.join('\n');
+  }
+
+  function applyTemplate(tpl, vars) {
+    return tpl.replace(/\$(summary|tiddler|heading|n)\$/g, function (m, k) { return vars[k]; });
+  }
+
+  /**
+   * convertDocument(markdown, {name, options}) -> {title, tiddlers:[{title,text,tags,...}], warnings, stats}
+   */
+  function convertDocument(md, meta) {
+    meta = meta || {};
+    var opts = {};
+    Object.keys(DEFAULTS).forEach(function (k) { opts[k] = (meta.options && k in meta.options) ? meta.options[k] : DEFAULTS[k]; });
+    var ctx = newCtx(opts);
+    var pre = preprocess(md, ctx);
+    var lines = pre.lines, fm = pre.fm;
+    var heads = headingsOutsideFences(lines);
+
+    // title
+    var title = meta.title ? String(meta.title) : (fm.title ? plainText(fm.title) : '');
+    var h1s = heads.filter(function (h) { return h.level === 1; });
+    if (opts.h1AsTitle && h1s.length === 1 && heads[0] === h1s[0]) {
+      if (!title) title = plainText(h1s[0].text);
+      lines = lines.slice(0, h1s[0].index).concat(lines.slice(h1s[0].index + 1));
+      heads = headingsOutsideFences(lines);
+      if (opts.promoteHeadings && !heads.some(function (h) { return h.level === 1; })) ctx.shift = 1;
+    } else if (opts.h1AsTitle && h1s.length > 1) {
+      ctx.warn('Document has ' + h1s.length + ' top-level (#) headings, so none was used as the tiddler title.', h1s[1].text);
+    }
+    if (!title) title = (meta.name || 'Untitled document').replace(/\.(md|markdown|txt)$/i, '').replace(/[-_]+/g, ' ');
+    title = sanitizeTitle(title) || 'Untitled document';
+
+    var baseTags = parseTags(opts.tags);
+    if (fm.tags) {
+      fm.tags.replace(/^\[|\]$/g, '').split(',').forEach(function (t) {
+        t = t.trim().replace(/^["']|["']$/g, '');
+        if (t && baseTags.indexOf(t) < 0) baseTags.push(t);
+      });
+    }
+    var extraFields = {};
+    Object.keys(fm).forEach(function (k) {
+      if (k === 'title' || k === 'tags') return;
+      var fk = k.replace(/[^a-z0-9_.-]/g, '-');
+      if (['text', 'type', 'created', 'modified', 'list'].indexOf(fk) < 0) extraFields[fk] = fm[k];
+    });
+
+    var now = twDate(new Date());
+    function tiddler(t, text, tags, fields) {
+      var o = { title: t, text: text, tags: stringifyTags(tags), type: 'text/vnd.tiddlywiki', created: now, modified: now };
+      if (meta.name) o['md2tw-source'] = meta.name;
+      Object.keys(fields || {}).forEach(function (k) { o[k] = fields[k]; });
+      return o;
+    }
+
+    var tiddlers = [];
+    var splitHeads = opts.split ? heads.filter(function (h) { return h.level === +opts.splitLevel; }) : [];
+    if (opts.split && !splitHeads.length) {
+      ctx.warn('Split is on, but the document has no level-' + opts.splitLevel + ' headings. Produced a single tiddler.', '');
+    }
+
+    if (!splitHeads.length) {
+      ctx.where = title;
+      var body = convertBlocks(lines, ctx).join('\n\n');
+      var fnb = footnoteBlock(ctx);
+      if (fnb) body += '\n\n' + fnb;
+      tiddlers.push(tiddler(title, body, baseTags, extraFields));
+    } else {
+      var intro = lines.slice(0, splitHeads[0].index);
+      var sections = splitHeads.map(function (h, k) {
+        var end = k + 1 < splitHeads.length ? splitHeads[k + 1].index : lines.length;
+        return { heading: h.text, lines: lines.slice(h.index + 1, end) };
+      });
+      var tpl = opts.wrapStyle === 'custom' ? opts.customTemplate : (TEMPLATES[opts.wrapStyle] || TEMPLATES.shiraz);
+      var parentParts = [];
+      ctx.where = title;
+      var introText = convertBlocks(intro, ctx).join('\n\n');
+      if (introText) parentParts.push(introText);
+      var used = {}; used[title.toLowerCase()] = 1;
+      var sectionTiddlers = [];
+      var levelMarks = new Array(Math.max(1, +opts.splitLevel - ctx.shift) + 1).join('!');
+      sections.forEach(function (s, k) {
+        var sumPlain = plainText(s.heading) || ('Section ' + (k + 1));
+        var n = (k + 1 < 10 ? '0' : '') + (k + 1);
+        var st = sanitizeTitle(opts.sectionTitle.replace(/\{doc\}/g, title).replace(/\{section\}/g, sumPlain).replace(/\{n\}/g, n));
+        if (!st) st = title + '/' + n;
+        var key = st.toLowerCase();
+        if (used[key]) { var c = 2; while (used[key + ' (' + c + ')']) c++; st = st + ' (' + c + ')'; key = st.toLowerCase(); ctx.warn('Duplicate section title renamed to "' + st + '".', s.heading); }
+        used[key] = 1;
+        ctx.where = st;
+        var stext = convertBlocks(s.lines, ctx).join('\n\n');
+        if (!stext.trim()) ctx.warn('Section is empty.', s.heading);
+        var stags = baseTags.slice();
+        if (opts.tagSectionsWithParent && stags.indexOf(title) < 0) stags.push(title);
+        sectionTiddlers.push(tiddler(st, stext, stags, { caption: sumPlain, 'source-document': title }));
+        parentParts.push(applyTemplate(tpl, { summary: sumPlain.replace(/"""/g, '"'), tiddler: st, heading: levelMarks, n: n }));
+      });
+      ctx.where = title;
+      var fnb2 = footnoteBlock(ctx);
+      if (fnb2) parentParts.push(fnb2);
+      var pf = Object.assign({}, extraFields);
+      if (opts.tagSectionsWithParent) pf.list = stringifyTags(sectionTiddlers.map(function (t) { return t.title; }));
+      tiddlers.push(tiddler(title, parentParts.join('\n\n'), baseTags, pf));
+      tiddlers = tiddlers.concat(sectionTiddlers);
+    }
+
+    return { title: title, tiddlers: tiddlers, warnings: ctx.warnings, stats: ctx.stats };
+  }
+
+  function toTid(t) {
+    var head = Object.keys(t).filter(function (k) { return k !== 'text'; }).map(function (k) {
+      return k + ': ' + String(t[k]).replace(/\n/g, ' ');
+    });
+    return head.join('\n') + '\n\n' + t.text + '\n';
+  }
+
+  return {
+    convertDocument: convertDocument, convertInline: convertInline, toTid: toTid,
+    DEFAULTS: DEFAULTS, TEMPLATES: TEMPLATES, parseTags: parseTags
+  };
+})();
+
+</script>
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var SAMPLE = [
+    '---',
+    'tags: [API, Payments]',
+    'owner: Integration CoE',
+    '---',
+    '',
+    '# Payments API Onboarding Standard',
+    '',
+    'This standard explains how a **tribe** connects to the *Payments* gateway through MuleSoft. Contact the [Integration CoE](mailto:integration.coe@example.com) before you start.',
+    '',
+    '## Prerequisites',
+    '',
+    '1. Raise an access request in the IAM portal',
+    '2. Register your client application',
+    '   - Sandbox first',
+    '   - Production after CAB approval',
+    '3. Store `client_id` and `client_secret` in the vault',
+    '',
+    '## Error handling',
+    '',
+    '| Code | Meaning | Retry? |',
+    '|:-----|:--------|:------:|',
+    '| 400 | Invalid request | No |',
+    '| 503 | Gateway unavailable | **Yes** |',
+    '',
+    '{{Common/Retry Policy}}',
+    '',
+    '> [!WARNING]',
+    '> Never write card numbers (PAN) to logs.',
+    '',
+    '## Sample request',
+    '',
+    '```http',
+    'POST /payments/v2/transfers HTTP/1.1',
+    'Authorization: Bearer <token>',
+    '```',
+    ''
+  ].join('\n');
+
+  var OPT_KEYS = Object.keys(MD2TW.DEFAULTS);
+  var opts = load('md2tw.options', {}) || {};
+  OPT_KEYS.forEach(function (k) { if (!(k in opts)) opts[k] = MD2TW.DEFAULTS[k]; });
+
+  var docs = [{ id: 1, name: 'sample.md', md: SAMPLE, title: '' }];
+  var active = 0, nextId = 2, result = null, timer = null;
+
+  function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable: fine */ } }
+
+  /* ---------- options ---------- */
+  function bindOptions() {
+    OPT_KEYS.forEach(function (k) {
+      var el = $('o_' + k); if (!el) return;
+      if (el.type === 'checkbox') el.checked = !!opts[k]; else el.value = opts[k];
+      el.addEventListener(el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input', function () {
+        opts[k] = el.type === 'checkbox' ? el.checked : el.value;
+        save('md2tw.options', opts);
+        syncOptionUI(); schedule();
+      });
+    });
+    syncOptionUI();
+  }
+  function syncOptionUI() {
+    $('customWrap').style.display = opts.wrapStyle === 'custom' ? '' : 'none';
+    ['o_splitLevel', 'o_sectionTitle', 'o_wrapStyle', 'o_customTemplate', 'o_tagSectionsWithParent'].forEach(function (id) { $(id).disabled = !opts.split; });
+    $('o_promoteHeadings').disabled = !opts.h1AsTitle;
+    var parts = [];
+    parts.push(opts.split ? 'splitting at ' + new Array(+opts.splitLevel + 1).join('#') + ' into ' + ({ shiraz: 'Shiraz details', heading: 'headings + transclusion', transclude: 'transclusions', custom: 'a custom template' })[opts.wrapStyle] : 'one tiddler per document');
+    if (opts.tags) parts.push('tags ' + opts.tags);
+    $('optSummary').textContent = parts.join(', ');
+  }
+  $('resetOpts').addEventListener('click', function () {
+    OPT_KEYS.forEach(function (k) { opts[k] = MD2TW.DEFAULTS[k]; var el = $('o_' + k); if (!el) return; if (el.type === 'checkbox') el.checked = !!opts[k]; else el.value = opts[k]; });
+    save('md2tw.options', opts); syncOptionUI(); schedule();
+    toast('Default options restored');
+  });
+
+  /* ---------- documents ---------- */
+  function renderDocs() {
+    var box = $('docs'); box.innerHTML = '';
+    docs.forEach(function (d, i) {
+      var w = document.createElement('span'); w.className = 'doc' + (i === active ? ' on' : '');
+      var b = document.createElement('button'); b.type = 'button'; b.textContent = d.name; b.title = d.name;
+      b.setAttribute('aria-pressed', i === active);
+      b.addEventListener('click', function () { active = i; showDoc(); });
+      w.appendChild(b);
+      if (docs.length > 1) {
+        var x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×';
+        x.setAttribute('aria-label', 'Close ' + d.name);
+        x.addEventListener('click', function () { docs.splice(i, 1); if (active >= docs.length) active = docs.length - 1; showDoc(); });
+        w.appendChild(x);
+      }
+      box.appendChild(w);
+    });
+    $('dlAll').hidden = docs.length < 2;
+  }
+  function showDoc() {
+    renderDocs();
+    $('md').value = docs[active].md;
+    $('titleIn').value = docs[active].title || '';
+    convert();
+  }
+  $('md').addEventListener('input', function () { docs[active].md = this.value; schedule(); });
+  $('titleIn').addEventListener('input', function () { docs[active].title = this.value.trim(); schedule(); });
+  $('newDoc').addEventListener('click', function () {
+    docs.push({ id: nextId++, name: 'Untitled ' + nextId, md: '', title: '' });
+    active = docs.length - 1; showDoc(); $('md').focus();
+  });
+  $('openBtn').addEventListener('click', function () { $('fileIn').click(); });
+  $('fileIn').addEventListener('change', function () { addFiles(this.files); this.value = ''; });
+
+  function addFiles(list) {
+    var files = Array.prototype.filter.call(list || [], function (f) { return /\.(md|markdown|txt)$/i.test(f.name) || /^text\//.test(f.type); });
+    if (!files.length) { toast('Only .md, .markdown or .txt files can be converted'); return; }
+    var pending = files.length;
+    // replace the untouched sample when real files arrive
+    if (docs.length === 1 && docs[0].md === SAMPLE) docs = [];
+    files.forEach(function (f) {
+      var r = new FileReader();
+      r.onload = function () {
+        docs.push({ id: nextId++, name: f.name, md: String(r.result), title: '' });
+        if (--pending === 0) { active = docs.length - 1; showDoc(); toast(files.length + (files.length === 1 ? ' file' : ' files') + ' opened'); }
+      };
+      r.onerror = function () { if (--pending === 0) showDoc(); toast('Could not read ' + f.name); };
+      r.readAsText(f);
+    });
+  }
+  var dragDepth = 0;
+  window.addEventListener('dragenter', function (e) { if (hasFiles(e)) { dragDepth++; document.body.classList.add('dragging'); } });
+  window.addEventListener('dragleave', function () { if (--dragDepth <= 0) { dragDepth = 0; document.body.classList.remove('dragging'); } });
+  window.addEventListener('dragover', function (e) { if (hasFiles(e)) e.preventDefault(); });
+  window.addEventListener('drop', function (e) {
+    if (!hasFiles(e)) return;
+    e.preventDefault(); dragDepth = 0; document.body.classList.remove('dragging');
+    addFiles(e.dataTransfer.files);
+  });
+  function hasFiles(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
+
+  /* ---------- conversion ---------- */
+  function run(d) { return MD2TW.convertDocument(d.md, { name: d.name, title: d.title, options: opts }); }
+  function schedule() { clearTimeout(timer); timer = setTimeout(convert, 120); }
+
+  function convert() {
+    var d = docs[active];
+    try { result = run(d); }
+    catch (e) { result = null; $('out').value = 'Conversion failed: ' + e.message; return; }
+    var main = result.tiddlers.find(function (t) { return !t['source-document']; }) || result.tiddlers[0];
+    $('out').value = main.text;
+    $('outTitle').textContent = main.title;
+    $('titleIn').placeholder = result.title;
+    $('nTids').textContent = result.tiddlers.length;
+    var nw = $('nWarn'); nw.textContent = result.warnings.length; nw.className = 'n' + (result.warnings.length ? ' warn' : '');
+    $('dlTid').disabled = result.tiddlers.length > 1;
+    $('dlTid').title = result.tiddlers.length > 1 ? 'Several tiddlers were produced; use the import file instead' : '';
+    renderTiddlers(); renderReport();
+  }
+
+  function renderTiddlers() {
+    var v = $('v_tids'); v.innerHTML = '';
+    result.tiddlers.forEach(function (t, i) {
+      var a = document.createElement('article'); a.className = 'tid';
+      var h = document.createElement('header');
+      var h3 = document.createElement('h3'); h3.textContent = t.title;
+      var role = document.createElement('span'); role.className = 'role';
+      role.textContent = result.tiddlers.length > 1 ? (t['source-document'] ? 'section' : 'parent') : '';
+      var tags = document.createElement('span'); tags.className = 'tags'; tags.textContent = t.tags;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.textContent = 'Copy';
+      b.setAttribute('aria-label', 'Copy wikitext of ' + t.title);
+      b.addEventListener('click', function () { copy(t.text, 'Copied ' + t.title); });
+      h.appendChild(h3); h.appendChild(role); h.appendChild(tags); h.appendChild(b);
+      var pre = document.createElement('pre'); pre.textContent = t.text || '(empty)';
+      a.appendChild(h); a.appendChild(pre); v.appendChild(a);
+    });
+  }
+
+  function renderReport() {
+    var r = $('report'); r.innerHTML = '';
+    if (!result.warnings.length) {
+      var p = document.createElement('p'); p.className = 'clean';
+      p.textContent = 'Everything converted without known losses.'; r.appendChild(p);
+    } else {
+      var ol = document.createElement('ol');
+      result.warnings.forEach(function (w) {
+        var li = document.createElement('li');
+        li.appendChild(document.createTextNode(w.msg));
+        if (w.where) { var s = document.createElement('div'); s.className = 'where'; s.textContent = 'In ' + w.where; li.appendChild(s); }
+        if (w.sample) { var c = document.createElement('code'); c.textContent = w.sample; li.appendChild(c); }
+        ol.appendChild(li);
+      });
+      r.appendChild(ol);
+    }
+    var s = result.stats, bits = [];
+    [['headings', 'heading'], ['lists', 'list'], ['tables', 'table'], ['codeBlocks', 'code block'], ['links', 'link'], ['images', 'image'],
+     ['quotes', 'quote'], ['tasks', 'task item'], ['camel', 'CamelCase word escaped', 'CamelCase words escaped'], ['passthrough', 'TiddlyWiki construct kept', 'TiddlyWiki constructs kept'],
+     ['frontMatter', 'front-matter field', 'front-matter fields']].forEach(function (d) {
+      var n = s[d[0]]; if (n) bits.push(n + ' ' + (n === 1 ? d[1] : (d[2] || d[1] + 's')));
+    });
+    var st = document.createElement('p'); st.className = 'stats';
+    st.textContent = bits.length ? 'Converted: ' + bits.join(', ') + '.' : 'Nothing to convert yet.';
+    r.appendChild(st);
+  }
+
+  /* ---------- tabs ---------- */
+  var tabs = ['text', 'tids', 'rep'];
+  tabs.forEach(function (k) {
+    $('t_' + k).addEventListener('click', function () { selectTab(k); });
+    $('t_' + k).addEventListener('keydown', function (e) {
+      var i = tabs.indexOf(k);
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        var n = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+        selectTab(n); $('t_' + n).focus();
+      }
+    });
+  });
+  function selectTab(k) {
+    tabs.forEach(function (x) {
+      $('t_' + x).setAttribute('aria-selected', x === k);
+      $('t_' + x).tabIndex = x === k ? 0 : -1;
+      $('v_' + x).hidden = x !== k;
+    });
+  }
+  selectTab('text');
+
+  /* ---------- output ---------- */
+  function fileName(s, ext) { return (s.replace(/[\\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim() || 'tiddlers') + ext; }
+  function download(name, text, type) {
+    var blob = new Blob([text], { type: type + ';charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  }
+  function copy(text, msg) {
+    function fallback() {
+      var ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove(); toast(ok ? msg : 'Copy blocked by the browser; select the text and press Ctrl+C');
+    }
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(function () { toast(msg); }, fallback);
+    else fallback();
+  }
+  $('copyText').addEventListener('click', function () { if (result) copy($('out').value, 'Wikitext copied'); });
+  $('dlTid').addEventListener('click', function () {
+    if (!result || result.tiddlers.length !== 1) return;
+    var t = result.tiddlers[0]; download(fileName(t.title, '.tid'), MD2TW.toTid(t), 'text/plain'); toast('Downloaded ' + fileName(t.title, '.tid'));
+  });
+  $('dlJson').addEventListener('click', function () {
+    if (!result) return;
+    download(fileName(result.title, '.json'), JSON.stringify(result.tiddlers, null, 2), 'application/json');
+    toast('Downloaded ' + result.tiddlers.length + (result.tiddlers.length === 1 ? ' tiddler' : ' tiddlers'));
+  });
+  $('dlAll').addEventListener('click', function () {
+    var all = [], warns = 0;
+    docs.forEach(function (d) { var r = run(d); all = all.concat(r.tiddlers); warns += r.warnings.length; });
+    download('md2tw-import.json', JSON.stringify(all, null, 2), 'application/json');
+    toast('Downloaded ' + all.length + ' tiddlers from ' + docs.length + ' documents' + (warns ? ' (' + warns + ' report items)' : ''));
+  });
+
+  var tt = null;
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+
+  bindOptions();
+  showDoc();
+})();
+</script>
+</body>
+</html>
